@@ -1,0 +1,36 @@
+{
+  "name": "plantcare-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev apps/web --hostname 127.0.0.1 --port 3000",
+    "build": "next build apps/web",
+    "start": "next start apps/web --hostname 127.0.0.1 --port 3000",
+    "typecheck": "next typegen apps/web && tsc --noEmit -p apps/web/tsconfig.json",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:production": "node scripts/check-production.mjs",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "engines": {"node": ">=24.0.0"},
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "lucide-react": "1.55.0",
+    "zod": "4.6.6",
+    "sharp": "0.35.5",
+    "decimal.js": "10.6.0",
+    "bcryptjs": "3.0.3",
+    "pdf-lib": "1.17.1",
+    "@pdf-lib/fontkit": "1.1.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "vitest": "5.0.3",
+    "@playwright/test": "1.64.0"
+  }
+}
