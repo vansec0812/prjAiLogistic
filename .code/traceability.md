@@ -84,6 +84,8 @@ Tất cả hàng **OPEN** về nghiệm thu đầy đủ/release. Website local 
 
 ## Coverage và cách dùng
 
+Evidence bổ sung 2026-10-15 (không đóng hàng OPEN): readiness/no-op save cho FR-10..17/26; report/ảnh/fallback và export bundle cho FR-18..19/21/24; purpose consent/AI-off cho FR-48/53. Tests tại `tests/report-knowledge.test.ts`, `tests/retrieval-eval.test.ts`, `tests/e2e/workflow.spec.ts`; RAG read-only là scope bổ sung người dùng chọn, không tương đương acceptance đầy đủ chat/alternatives. Giới hạn nguồn/provider/chuyên môn tại `research/README.md` và `.code/implementation.md`.
+
 Có 53 FR: 35 P0, 18 P1; 15 NFR; UI index tại `ui-spec.md`; TC-01..14 tại `test-strategy.md`.
 
 Trước review task, bổ sung đường dẫn PR/test/report ở backlog; không thay OPEN bằng DONE nếu acceptance chưa có evidence. TC-13/14 kiểm NFR xuyên suốt; không có TC gốc cho một FR không có nghĩa bỏ kiểm thử FR đó.

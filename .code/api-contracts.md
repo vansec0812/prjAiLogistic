@@ -82,3 +82,20 @@ Không cần AI consent vì không gọi Gemini. Server pin versions, tạo job/
 - SMS challenge không lộ phone/account; low-entropy OTP hash cần secret pepper/HMAC và rate limit được review, không chỉ hash không khóa.
 
 Version contract khi đổi field/enum/schema; fixtures cho adapter errors/schema; không giữ API key trong DTO. Bằng chứng contract gồm OpenAPI validate, integration tests quyền và generated-client build sau bootstrap.
+
+## Extension local — 2026-10-15
+
+Base path `/api/v1`, response `{data,meta.request_id}`; private/no-store, session/owner và CSRF cho mutation theo implementation hiện hành (không thay toàn bộ contract đề xuất).
+
+| Endpoint | Contract thực |
+| --- | --- |
+| `GET /cases/:id/readiness` | `{ready,done,total,items,missing}`; owner, 8 kiểm input, không là approval safety |
+| `GET /knowledge/sources` | `{version,sources,trainingStatus:NOT_FINE_TUNED}`; session, không raw document/PII |
+| `GET /knowledge/search?q=&scope=` | scope `POTTED_PLANTS` mặc định, `CACTUS`, `MARITIME`; ghi chú đúng scope/READ, tối đa 5 mặc định |
+| `POST /knowledge/answers` | `{question,consent_id,scope?}`, Idempotency-Key; purpose AI_KNOWLEDGE, config/rate/quota; 202 `{job_id}` |
+| `POST /cases/:id/exports` | `{version_id,format?}`, format PDF mặc định/MARKDOWN/JSON/BUNDLE; Idempotency-Key, owner/pinned version |
+| `GET /exports/:jobId` | File private; PDF `.pdf`, Markdown `.md`, JSON `.json`, ZIP `.zip`; không gồm ảnh private/account |
+
+Consent enum thêm `AI_KNOWLEDGE`, notice `local-v2`. Job enum thêm KNOWLEDGE, pin `question,knowledgeVersion,knowledgeContext,consentId`; output riêng read-only. Citation/schema lỗi là AI_INVALID_CITATION/AI_INVALID_OUTPUT; missing pinned context AI_CONTEXT_MISSING; provider chưa cấu hình AI_UNAVAILABLE/AI_CONFIG; consent bị thu hồi/wrong purpose chặn trước call. Chưa có OpenAPI/generated client formal cho extension này.
+
+PATCH case cùng name/input/expected version là no-op (version/status/selection giữ nguyên). Đổi tên riêng tăng case version, giữ selection/status nếu inputHash không đổi. Đổi input kỹ thuật vẫn STALE. Date gửi không hợp lệ/quá khứ bị từ chối generate. Đầu vào thiếu vẫn có diagnostic từ server; readiness UI giúp sửa trước.

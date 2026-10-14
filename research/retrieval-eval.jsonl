@@ -1,0 +1,12 @@
+{"id":"pot-soil","question":"chậu đất giá thể soil pot","scope":"POTTED_PLANTS","must_include":["FEDEX-01"],"must_exclude":["EUCAP-02","RSUTHESIS-01"]}
+{"id":"pot-lock","question":"cố định carton insert chậu","scope":"POTTED_PLANTS","must_include":["FEDEX-02"],"must_exclude":["RSUTHESIS-01"]}
+{"id":"canopy","question":"đệm tán lá xê dịch","scope":"POTTED_PLANTS","must_include":["UFP-01"],"must_exclude":["EUCAP-02"]}
+{"id":"water","question":"bầu đất nước ẩm","scope":"POTTED_PLANTS","must_include":["EMS-03"],"must_exclude":["EUCAP-02"]}
+{"id":"label","question":"nhãn hướng orientation bàn giao","scope":"POTTED_PLANTS","must_include":["FEDEX-03"],"must_exclude":[]}
+{"id":"receipt","question":"nhận mở kiện bằng chứng","scope":"POTTED_PLANTS","must_include":["NTC-01"],"must_exclude":[]}
+{"id":"photo-measure","question":"ảnh hình số đo","scope":"POTTED_PLANTS","must_include":["CAYXINH-03"],"must_exclude":[]}
+{"id":"container-wrong-scope","question":"container 8°C","scope":"POTTED_PLANTS","must_include":[],"must_exclude":["EUCAP-02"],"expect_empty":true}
+{"id":"container-right-scope","question":"container ngưỡng nhiệt","scope":"MARITIME","must_include":["EUCAP-02"],"must_exclude":["FEDEX-01"]}
+{"id":"cactus-design","question":"xương rồng khay khóa","scope":"CACTUS","must_include":["RSUTHESIS-01"],"must_exclude":["FEDEX-01"]}
+{"id":"unread-video","question":"7CWFVLRrmZI wPgmmcQDes4","scope":"POTTED_PLANTS","must_include":[],"must_exclude":[],"expect_empty":true}
+{"id":"unknown-model","question":"RandomForest MDPI benchmark","scope":"POTTED_PLANTS","must_include":[],"must_exclude":[],"expect_empty":true}

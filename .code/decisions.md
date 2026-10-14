@@ -38,4 +38,14 @@ Mỗi decision khi đổi ghi: status, ngày, người xác nhận, context/opti
 
 ## Bổ sung cho website local — 2026-10-12
 
+Xem ADR bổ sung 2026-10-15 ở cuối file; các quyết định OPEN ban đầu không được tự coi là đóng.
+
 ADR-001 tại [implementation.md](implementation.md) ghi lựa chọn reversible Next.js route handlers/SQLite/private filesystem/DB jobs để chạy trên máy hiện có Node 24, không Docker. Đây là quyết định triển khai bản local trong scope người dùng yêu cầu, không phải owner approval đổi baseline production. Những decision chuyên môn/provider/policy trong bảng trên vẫn OPEN.
+
+## ADR-002: Tri thức/RAG và report v2 — 2026-10-15
+
+**Quyết định người dùng:** tích hợp tri thức/RAG trước. Dùng corpus ghi chú thủ công có URL/scope/access/limitations/review; lexical retrieval local chạy được khi AI off, Gemini explanation tùy chọn có consent riêng. Không có fine-tuning/weights mới, không đưa video chưa xem hoặc abstract/metadata vào safety claims. Nghiên cứu container/xương rồng tách scope, không thay ngưỡng Rule Engine.
+
+**Quyết định triển khai:** readiness 8 kiểm input, no-op/name-only saves giữ selection khi input hash không đổi; report v2 và template draft-steps-2 chi tiết; PDF/Markdown/JSON/ZIP pin snapshot; asset AI cây mẫu FOLIAGE có manifest/provenance/fallback. Replay template draft-steps-1 giữ bước/schema cũ. Ảnh nhóm cây khác và ca riêng cần tài sản phù hợp + review sau; không tự nhận diện hay phê duyệt kỹ thuật qua ảnh mẫu.
+
+Mọi corpus/template/rule/ảnh chưa chuyên gia duyệt; nguồn không cho quyền dùng training mặc định. Semantic evaluation, model/provider thật, embeddings/budget tiền và expert review tiếp tục OPEN. Evidence chi tiết ở [implementation.md](implementation.md), [research/rag-implementation.md](../research/rag-implementation.md).

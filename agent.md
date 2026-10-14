@@ -34,6 +34,8 @@ Baseline stack trong plan là đề xuất. Khi bootstrap kiểm phiên bản/h�
 
 - Một hồ sơ một cây/chậu; không tạo tính năng nhiều cây, thương mại hoặc tracking thật nếu chưa có đặc tả.
 - AI chỉ gợi ý; confidence tự đánh giá không phải xác suất đúng/an toàn. Trường USER confirmed không bị AI overwrite.
+- Tri thức/RAG tra cứu theo scope và nguồn đã đọc; pin knowledge version/context trong job. Citation membership không chứng minh nội dung đúng. Không dùng abstract/metadata/video chưa xem để suy claim safety, không tự biến nguồn UNREVIEWED thành rule PUBLISHED.
+- Ảnh photorealistic AI có provenance/nhãn/fallback, không là ảnh cây/kiện thực hoặc bằng chứng checklist. Nghiên cứu/RAG không được báo là training trọng số; quyền dataset/ảnh và evaluation cần bằng chứng riêng.
 - Số đo/cân để tính khả thi phải đã xác nhận. Số unknown dùng `null + status`, không dùng 0 hoặc chuỗi trong cột số.
 - Chi phí chỉ là vật tư; unknown khác miễn phí. Tái sử dụng cần provenance; không bịa CO2 hay claim giảm hư.
 - Rule/template/catalog/ảnh production là published và có approval/fixture. Không tự áp dụng ngưỡng draft cho mọi cây.

@@ -1,8 +1,8 @@
 # PlantCare — AI Logistic
 
-Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đóng gói **một cây/chậu cho một hành trình**. Người dùng nhập hoặc tải ảnh, đo/cân thực tế, xác nhận vật tư và bối cảnh vận chuyển. Rule Engine tạo phương án có giải thích, sơ đồ từng bước và checklist; hồ sơ được lưu trên server để xem lại, xuất PDF hoặc chia sẻ phiên bản chỉ xem.
+Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đóng gói **một cây/chậu cho một hành trình**. Người dùng nhập hoặc tải ảnh, đo/cân thực tế, xác nhận vật tư và bối cảnh vận chuyển. Rule Engine tạo phương án có giải thích, ảnh/sơ đồ từng bước và checklist; hồ sơ được lưu trên server để xem lại, xuất PDF hoặc chia sẻ phiên bản chỉ xem.
 
-**Trạng thái:** bản local có frontend/backend hoạt động. Quy tắc và sơ đồ hiện là **DRAFT**, chưa được duyệt chuyên môn để vận chuyển cây thật. Dự án chưa đạt toàn bộ release gate R0/R1 và chưa triển khai lên hosting production.
+**Trạng thái:** bản local có frontend/backend hoạt động. Quy tắc, nội dung và ảnh minh họa hiện là **DRAFT**, chưa được duyệt chuyên môn để vận chuyển cây thật. Dự án chưa đạt toàn bộ release gate R0/R1 và chưa triển khai lên hosting production.
 
 Repository: [vansec0812/prjAiLogistic](https://github.com/vansec0812/prjAiLogistic).
 
@@ -30,10 +30,10 @@ Repository: [vansec0812/prjAiLogistic](https://github.com/vansec0812/prjAiLogist
 | Hồ sơ | Dashboard, tạo/lưu nháp, wizard cây → vật tư → hành trình → xem lại; optimistic version | Một cây/chậu; chưa có tổ chức hoặc nhiều kiện |
 | Ảnh | JPEG/PNG/WebP, giải mã/chuẩn hóa, bỏ metadata, private owner proxy | Tối đa 10 MB/ảnh, 30 MP, 12 ảnh/hồ sơ; AI không thay đo/cân |
 | Phương án | Engine kiểm fit/load/vật tư, phần chi phí đã biết, rule trace và snapshot | Một phương án fixture; chưa nhiều alternatives |
-| Đóng gói | Sáu bước có sơ đồ, checklist theo version, nhập số đo/cân kiện thực, completion atomic/idempotent | Rule/template/sơ đồ DRAFT; lượng dùng theo vật tư đã chọn trong phương án |
+| Đóng gói | Sáu bước có thao tác/điểm kiểm/điểm dừng và ảnh AI (FOLIAGE) hoặc sơ đồ, checklist theo version, nhập số đo/cân kiện thực, completion atomic/idempotent | Rule/template/sơ đồ DRAFT; lượng dùng theo vật tư đã chọn trong phương án |
 | Kho và mẫu | Kho riêng, không âm stock, chỉ trừ khi hoàn tất; mẫu tạo nháp cần xác nhận lại | Chưa đầy đủ lịch sử adjustment/correction sau hoàn tất |
 | Lịch sử | Phiên bản bất biến, STALE khi input đổi, feedback, tự khai báo bàn giao/nhận | Không tracking nhà vận chuyển thật |
-| PDF và chia sẻ | PDF Unicode/sơ đồ/trace từ snapshot; link chỉ xem tối đa 7 ngày, thu hồi ngay | Share không gồm snapshot đầu vào, ảnh gốc hoặc PII tài khoản |
+| PDF và chia sẻ | PDF/Markdown/JSON/ZIP chi tiết có bill, thao tác, ảnh, nguồn và trace từ snapshot; link chỉ xem tối đa 7 ngày, thu hồi ngay | Share không gồm snapshot đầu vào, ảnh gốc hoặc PII tài khoản |
 | Hỗ trợ và nội dung | Ticket mô tả/thread của owner, thông báo job, ba bài hướng dẫn chuẩn bị | Chưa chuyên gia được phân công hoặc CMS đầy đủ |
 | AI/quản trị | Vision adapter tùy chọn, consent riêng/revoke, quota số calls; admin read-only có role gate | Chưa provider integration, budget tiền, chat, ảnh AI/admin publishing |
 
@@ -69,7 +69,7 @@ flowchart LR
     Suggestion --> UI
 ```
 
-Frontend trình bày dữ liệu; server quyết định quyền/eligibility. Engine không import HTTP/DB/SDK Gemini. AI chỉ gợi ý nhận diện; dữ liệu đã xác nhận không tự bị AI ghi đè.
+Frontend trình bày dữ liệu; server quyết định quyền/eligibility. Engine không import HTTP/DB/SDK Gemini. AI chỉ gợi ý nhận diện/giải thích nguồn; dữ liệu đã xác nhận không tự bị AI ghi đè.
 
 SQLite/private filesystem/job trong process là lựa chọn local không cần Docker. NestJS/PostgreSQL/Redis trong kế hoạch gốc là **baseline đề xuất**; lựa chọn local không đồng nghĩa đã chốt kiến trúc production. Xem [.code/implementation.md](.code/implementation.md).
 
@@ -130,7 +130,7 @@ Trên macOS/Linux: `cp .env.example apps/web/.env.local`. Sửa giá trị rồi
 | `APP_ORIGIN` | Origin được phép mutation. Dev mặc định cho `http://127.0.0.1:3000`/`http://localhost:3000`; production cần cấu hình rõ |
 | `PLANTCARE_DATA_DIR` | Đường dẫn tuyệt đối storage private; trống dùng `.data/` repository root |
 | `GEMINI_API_KEY` | Secret server; trống thì AI không bật, nhập tay vẫn hoạt động |
-| `GEMINI_VISION_MODEL` | Model ID được cấu hình phía server, không hardcode UI |
+| `GEMINI_VISION_MODEL` | Model ID cho Vision và RAG local adapter, cấu hình phía server, không hardcode UI |
 | `AI_DAILY_CALL_LIMIT` | Trần external calls toàn app/ngày UTC, mặc định `20`; số nguyên 1–1000; chưa là budget tiền |
 | `SMS_ADAPTER_URL` | HTTPS endpoint SMS adapter; chưa provider đã chọn/kiểm chứng |
 | `SMS_ADAPTER_TOKEN` | Bearer token server gửi tới SMS adapter, không trả client |
@@ -150,11 +150,19 @@ SMS adapter nhận POST JSON `{phone, code, purpose, request_id}` với purpose 
 6. **Xem lại → Tạo hướng dẫn**: server lưu job; UI hiện stage thực, có thể rời trang.
 7. Đọc kết quả/trace: FAIL/thiếu điều kiện cần sửa input; cảnh báo acknowledgeable cần xác nhận trước checklist.
 8. Xem sáu bước/sơ đồ, đánh dấu checklist, nhập số đo/cân kiện thực tế để **Xác nhận hoàn tất**.
-9. Tải PDF, lưu mẫu hoặc chia sẻ version chỉ xem; thu hồi link khi cần.
+9. Tải PDF hoặc gói ZIP (PDF + Markdown + JSON + ảnh), lưu mẫu hoặc chia sẻ version chỉ xem; thu hồi link khi cần.
 
 Tài khoản riêng: số E.164, ví dụ `+84901234567`; username 4–30 ký tự chữ thường/số/`.`/`_`; mật khẩu 12–128 ký tự. OTP local có nhãn, không gửi SMS thật; hết hạn 5 phút, dùng một lần, tối đa 5 lần thử, gửi lại có cooldown.
 
-Không Gemini vẫn hoàn tất luồng manual. Consent không tick sẵn; nhận diện AI, ảnh AI và chia sẻ chuyên gia là mục đích riêng. Bản ghi consent không có nghĩa mọi tính năng đó đã bật.
+Không Gemini vẫn hoàn tất luồng manual. Consent không tick sẵn; nhận diện AI, hỏi AI với nguồn, ảnh AI và chia sẻ chuyên gia là mục đích riêng. Bản ghi consent không có nghĩa mọi tính năng đó đã bật.
+
+### Tri thức có nguồn và đầu ra mới
+
+Mở **Tri thức có nguồn** trong menu hoặc `/app/knowledge`; chọn phạm vi cây chậu/xương rồng/container rồi tra cứu. Bộ runtime có 11 metadata nguồn, 11 claims ngắn đã triage, tất cả UNREVIEWED. Lexical retrieval chạy local; chưa phải embeddings hoặc training trọng số. Video chưa đọc transcript/frame và bài chỉ có abstract/metadata không cấp claim cho retrieval. Xem [research/README.md](research/README.md).
+
+**Hỏi AI với nguồn** cần cấu hình Gemini + consent AI_KNOWLEDGE riêng. Job pin context/version, có quota/timeout/citation/schema check; câu trả lời chỉ tham khảo, không sửa số đo, rule, checklist hoặc kho. Chưa gọi provider thật trong QA. Không nhập thông tin cá nhân vào câu hỏi.
+
+Trang xem lại chỉ rõ dữ liệu còn thiếu; giá unknown vẫn hợp lệ. Lưu dữ liệu không đổi giữ phương án đã chọn. Report thêm assumptions, bill/thành tiền, thao tác/điểm kiểm/điểm dừng, handover/recipient checks và sources. Ảnh photorealistic là cây mẫu trầu bà cho FOLIAGE, không là ảnh kiện thật. SVG giữ cho nhóm khác và làm fallback. ZIP chứa asset tương đối để xem offline; Markdown riêng dùng đường dẫn asset website.
 
 ## 6. Luồng nghiệp vụ và dữ liệu
 
@@ -202,7 +210,7 @@ Base path: `/api/v1`. Thành công: `{data, meta}`; lỗi: `{error: {code, messa
 | `POST /uploads`, `GET/DELETE /uploads/:id` | Multipart ảnh/private proxy; upload cần `case_id`, `purpose`, `file` |
 | `GET/POST /materials`, `PATCH/DELETE /materials/:id` | Kho riêng; PATCH cần expected version |
 | `GET/POST /templates`, `POST /templates/:id/clone` | Mẫu/nháp cần xác nhận lại |
-| `POST /cases/:id/exports`, `GET /exports/:jobId` | Job PDF/download private |
+| `POST /cases/:id/exports`, `GET /exports/:jobId` | Job PDF/Markdown/JSON/ZIP và download private |
 | `GET/POST /cases/:id/shares`, `DELETE /shares/:id` | Tạo/list/revoke link |
 | `GET /shared/:token` | Projection version chỉ xem |
 | `GET/POST /consents`, `DELETE /consents/:id` | Consent/revoke |
@@ -219,7 +227,7 @@ Private API cần cookie HttpOnly và owner check. Mutation cần Origin hợp l
 | Lệnh PowerShell | Nội dung |
 | --- | --- |
 | `npm.cmd run typecheck` | Sinh Next.js route types bằng `next typegen`, rồi TypeScript strict; chạy được ngay sau clone/cài dependencies |
-| `npm.cmd run test` | 18 unit test engine |
+| `npm.cmd run test` | 31 test engine/readiness/export/citation/retrieval/template replay |
 | `npm.cmd run build` | Production compilation/TypeScript |
 | `npm.cmd run check` | Typecheck + unit + build; không gồm E2E |
 | `npx.cmd playwright install chromium` | Browser test trước E2E lần đầu |
@@ -232,7 +240,7 @@ macOS/Linux dùng `npm`/`npx`. E2E tự mở **3001**, cache `.next-e2e`, DB `.d
 
 Artifacts local: `output/qa/` screenshot/PDF, `test-results/` trace lỗi, không commit. `next-env.d.ts` và route types được Next.js sinh tự động, không commit; `typecheck` tự tạo trước khi kiểm. Đọc trace: `npx.cmd playwright show-trace <path-to-trace.zip>`. PDF QA tùy chọn sau E2E: `uv run --with pymupdf python scripts/inspect-export.py`; không dependency runtime.
 
-Typecheck, 18 unit test, 5 E2E suites, production build/smoke đã qua ở bản local bàn giao **12/10/2026**. Đây là evidence kỹ thuật phạm vi đã triển khai; chưa thay provider integration, chuyên môn hoặc NFR acceptance.
+Bản đầu ngày **12/10/2026** qua typecheck, 18 unit test, 5 E2E suites và production build/smoke. Bản nâng cấp ngày **15/10/2026** có 31 test unit/regression (gồm 12 ca retrieval), 6 E2E suites và QA PDF 11 trang; evidence build/smoke cập nhật tại [.code/implementation.md](.code/implementation.md). Đây là evidence kỹ thuật phạm vi đã triển khai; chưa thay provider integration, chuyên môn hoặc NFR acceptance.
 
 ## 9. Cấu trúc repository
 
@@ -242,11 +250,14 @@ prjAiLogistic/
 │   ├── src/app/              Pages, route handlers, layout, CSS
 │   ├── src/components/       Shell, wizard, plans, auth, screens
 │   ├── src/server/           Auth, DB, API, jobs, seed, PDF/adapters
-│   ├── public/illustrations/ SVG landing và sáu bước
+│   ├── public/illustrations/ SVG fallback và sáu bước
+│   ├── public/photos/        7 ảnh AI PNG gốc/WebP và manifest
 │   └── next.config.ts        Runtime/build/CSP
 ├── packages/
 │   ├── domain/src/           Input/plan/version contracts
-│   └── rule-engine/src/      Engine thuần/fixture DRAFT
+│   ├── rule-engine/src/      Engine thuần/fixture DRAFT/report
+│   └── knowledge/src/        Corpus ngắn, scope/retrieval/citation validation
+├── research/                 Review nguồn, RAG và regression dataset
 ├── tests/                    Unit + API/browser E2E
 ├── scripts/                  Sơ đồ, PDF QA, production smoke
 ├── .code/                    Thiết kế, ADR, backlog, traceability/evidence
@@ -307,7 +318,7 @@ Không xóa `.data` nếu còn dữ liệu cần giữ. Issue gồm bước tái
 
 - Approval catalog/rule/template/sơ đồ chuyên môn; fixture **2 cm, 10–32 °C, 48 giờ** chưa là ngưỡng vận chuyển thực đã kiểm chứng.
 - SMS/Gemini/weather/route thật, evaluation/accuracy/model regression, transient retry/schema repair và budget tiền.
-- Alternatives/chat/ảnh AI; expert assignment/shared scope/revision, admin publishing/CMS/reporting.
+- Alternatives/chat theo đầy đủ SRS và ảnh AI tùy biến cho cây thực; expert assignment/shared scope/revision, admin publishing/CMS/reporting.
 - Provenance từng field, weather validity, stock adjustment history/lượng dùng thực.
 - Policy retention/purge/xóa tài khoản/đổi số/provider cleanup/backup.
 - Worker độc lập, migration/scale, restore/metrics/alerts/load/performance, WCAG/cross-browser/pilot.
@@ -318,6 +329,7 @@ FR/NFR chưa nghiệm thu đầy đủ tiếp tục OPEN trong traceability. B�
 
 | Tài liệu | Mục đích |
 | --- | --- |
+| [Research/RAG](research/README.md) | Nguồn đã đọc, scope/license, integration/evaluation và giới hạn |
 | [SRS PDF](PlantCare_SRS_ChiTiet_UI.pdf) | Nguồn yêu cầu v1.0, 116 trang |
 | [agent.md](agent.md) | Invariants/quyền/workflow/Definition of Done |
 | [plan.md](plan.md) | Lộ trình/milestone/dependency/release gates |

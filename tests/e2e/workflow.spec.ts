@@ -2,6 +2,7 @@ import { test, expect, request, type APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';
+import { unzipSync, strFromU8 } from 'fflate';
 import type { CaseRecord, PlanVersion } from '../../packages/domain/src/index';
 
 const origin='http://127.0.0.1:3001';
@@ -86,11 +87,11 @@ test('completion is atomic, checklist-bound and idempotent; only selected materi
   await a.client.dispose();
 });
 
-test('pinned share revocation, private photo, sanitized template and actual PDF export',async()=>{
+test('pinned share revocation, private photo, sanitized template and actual PDF export',async({page})=>{
   test.setTimeout(60000);const a=await actor(),b=await actor();const c=await create(a),v=await generate(a,c);
   const share=await value(await mutate(a,`cases/${c.id}/shares`,{version_id:v.id,days:1}));
   const shared=await value(await b.client.get('/api/v1'+share.url));expect(shared.id).toBe(v.id);expect(shared.snapshot).toBeUndefined();expect(JSON.stringify(shared)).not.toContain(a.phone);
-  await mutate(a,'shares/'+share.id,{},'delete');expect((await b.client.get('/api/v1'+share.url)).status()).toBe(404);
+  await page.goto(share.url.replace('/shares/','/shared/'));await expect(page.locator('.step-photo figcaption')).toContainText('Ảnh AI cây mẫu');await expect(page.locator('.step-viewer .step-instructions ol li')).toHaveCount(3);await page.screenshot({path:'output/qa/shared-desktop.png',fullPage:true});await mutate(a,'shares/'+share.id,{},'delete');expect((await b.client.get('/api/v1'+share.url)).status()).toBe(404);
   const template=await value(await mutate(a,'templates',{case_id:c.id,name:'Mẫu test'}));
   const clone=await value(await mutate(a,'templates/'+template.id+'/clone'));expect(clone.input.plant.confirmed).toBe(false);expect(clone.input.shipment.departure).toBe('');expect(clone.input.materials.every((m:any)=>!m.confirmed)).toBe(true);
   const png=await sharp({create:{width:10,height:10,channels:3,background:'#146445'}}).png().toBuffer();
@@ -101,7 +102,24 @@ test('pinned share revocation, private photo, sanitized template and actual PDF 
   await expect.poll(async()=>{job=await value(await a.client.get('/api/v1/jobs/'+exported.job_id));return job.status;},{timeout:30000}).toBe('SUCCEEDED');
   const pdf=await a.client.get('/api/v1/exports/'+exported.job_id);expect(pdf.status()).toBe(200);const bytes=await pdf.body();expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
   mkdirSync('output/qa',{recursive:true});writeFileSync('output/qa/export.pdf',bytes);expect((await b.client.get('/api/v1/exports/'+exported.job_id)).status()).toBe(404);
+  const bundle=await value(await mutate(a,`cases/${c.id}/exports`,{version_id:v.id,format:'BUNDLE'},'post',randomUUID()));
+  await expect.poll(async()=>{job=await value(await a.client.get('/api/v1/jobs/'+bundle.job_id));return job.status;},{timeout:30000}).toBe('SUCCEEDED');
+  const archive=await a.client.get('/api/v1/exports/'+bundle.job_id);expect(archive.headers()['content-type']).toContain('application/zip');const archiveBytes=await archive.body();writeFileSync('output/qa/export.zip',archiveBytes);
+  const files=unzipSync(archiveBytes);expect(Object.keys(files)).toEqual(expect.arrayContaining(['PlantCare.pdf','PlantCare.json','PlantCare.md','assets/step-1-v2.webp','assets/step-6-v2.webp']));
+  const serialized=JSON.parse(strFromU8(files['PlantCare.json']));expect(serialized.version_id).toBe(v.id);expect(serialized.input_hash).toBe(v.inputHash);expect(serialized.provenance.model_fine_tuned).toBe(false);expect(strFromU8(files['PlantCare.md'])).toContain('### Tiêu chí kiểm');expect(JSON.stringify(serialized)).not.toContain(a.phone);
+  expect((await b.client.get('/api/v1/exports/'+bundle.job_id)).status()).toBe(404);
   await a.client.dispose();await b.client.dispose();
+});
+
+test('no-op saves preserve selection; knowledge search is scoped and requires purpose consent for AI',async()=>{
+  const a=await actor();let c=await create(a);const v=await generate(a,c);await select(a,c,v);c=await value(await a.client.get('/api/v1/cases/'+c.id));
+  const saved=await value(await mutate(a,`cases/${c.id}`,{name:c.name,input:c.input,expected_version:c.version},'patch'));expect(saved.version).toBe(c.version);expect(saved.status).toBe('PACKING');expect(saved.selectedVersion).toBe(v.id);
+  const renamed=await value(await mutate(a,`cases/${c.id}`,{name:'Đổi tên không đổi kỹ thuật',input:c.input,expected_version:c.version},'patch'));expect(renamed.selectedVersion).toBe(v.id);expect(renamed.status).toBe('PACKING');
+  const ready=await value(await a.client.get(`/api/v1/cases/${c.id}/readiness`));expect(ready.ready).toBe(true);
+  const search=await value(await a.client.get('/api/v1/knowledge/search?q='+encodeURIComponent('giữ chậu cố định đất')));expect(search.items.length).toBeGreaterThan(0);expect(search.items.every((i:any)=>i.scope==='POTTED_PLANTS'&&i.source.access==='READ')).toBe(true);
+  const consent=await value(await mutate(a,'consents',{purpose:'AI_ANALYSIS',accepted:true}));expect((await mutate(a,'knowledge/answers',{question:'Giữ chậu thế nào?',consent_id:consent.id})).status()).toBe(403);
+  const correct=await value(await mutate(a,'consents',{purpose:'AI_KNOWLEDGE',accepted:true}));expect((await mutate(a,'knowledge/answers',{question:'Giữ chậu thế nào?',consent_id:correct.id})).status()).toBe(503);await mutate(a,'consents/'+correct.id,{},'delete');expect((await mutate(a,'knowledge/answers',{question:'Giữ chậu thế nào?',consent_id:correct.id})).status()).toBe(403);
+  await a.client.dispose();
 });
 
 test('responsive UI: landing, dashboard, wizard and plan walkthrough',async({page})=>{
@@ -113,7 +131,7 @@ test('responsive UI: landing, dashboard, wizard and plan walkthrough',async({pag
   await page.goto('/app/new');await page.getByPlaceholder('Ví dụ: Trầu bà gửi Đà Nẵng').fill('Hồ sơ UI test');await page.getByRole('button',{name:/Hoặc tạo hồ sơ mẫu/}).click();await expect(page).toHaveURL(/\/plant$/);
   const caseId=new URL(page.url()).pathname.split('/')[3];
   await page.screenshot({path:'output/qa/wizard-desktop.png',fullPage:true});
-  for(let i=0;i<3;i++)await page.getByRole('button',{name:'Lưu & tiếp tục'}).click();
+  for(const stage of ['materials','shipment','review']){await page.getByRole('button',{name:'Lưu & tiếp tục'}).click();await expect(page).toHaveURL(new RegExp('/'+stage+'$'));}
   await page.getByRole('button',{name:'Tạo hướng dẫn',exact:true}).click();await expect(page).toHaveURL(/\/plans\?version=/,{timeout:20000});
   await expect(page.getByText('Cần xác nhận cảnh báo',{exact:true}).first()).toBeVisible();await page.screenshot({path:'output/qa/plan-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});await expect.poll(async()=>{const b=await page.locator('.sidebar').boundingBox();return b?b.x+b.width:0;}).toBeLessThanOrEqual(0);await page.screenshot({path:'output/qa/plan-mobile.png',fullPage:true});
@@ -126,7 +144,7 @@ test('responsive UI: landing, dashboard, wizard and plan walkthrough',async({pag
   await page.getByLabel('Khối lượng kiện (kg)').fill('4,1');await page.getByLabel('Dài kiện (cm)').fill('34');await page.getByLabel('Rộng kiện (cm)').fill('34');await page.getByLabel('Cao kiện (cm)').fill('59');
   await page.getByRole('dialog').getByRole('button',{name:'Xác nhận hoàn tất'}).click();await expect(page.getByText('Đã đóng gói',{exact:true})).toBeVisible();
   await page.goto('/app');await expect(page.locator('.stat-card strong').first()).not.toHaveText('—');await page.screenshot({path:'output/qa/dashboard-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  expect(errors).toEqual([]);
+  await page.goto('/app/knowledge');await expect(page.getByRole('heading',{name:'Kiến thức cho từng bước chuẩn bị'})).toBeVisible();await expect(page.getByRole('button',{name:'Hỏi AI với nguồn'})).toBeDisabled();await expect(page.getByRole('checkbox')).not.toBeChecked();await expect(page.locator('.knowledge-results article').first()).toBeVisible();await page.screenshot({path:'output/qa/knowledge-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.getByLabel('Phạm vi nguồn').selectOption('CACTUS');await page.getByLabel('Nội dung cần tìm').fill('xương rồng khay khóa');await page.getByRole('button',{name:'Tra cứu nguồn',exact:true}).click();await expect(page.locator('.source-badge').filter({hasText:'RSUTHESIS-01'})).toBeVisible();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'output/qa/knowledge-desktop.png',fullPage:true});expect(errors).toEqual([]);
   const session=(await(await page.request.get('/api/v1/session')).json()).data;
   await page.request.delete('/api/v1/cases/'+caseId,{headers:{Origin:origin,'x-csrf-token':session.csrf}});
 });

@@ -21,6 +21,17 @@ export interface CaseInput {plant: PlantInput; materials: MaterialInput[]; shipm
 export interface Step {
   id: string; order: number; code: string; title: string; instruction: string;
   check: string; warning: string; ruleIds: string[]; illustration: string;
+  schematic?:string; illustrationKind?:'AI_PHOTOREALISTIC'|'SCHEMATIC'; illustrationNotice?:string;
+  goal?:string; actions?:string[]; checkpoints?:string[]; stopConditions?:string[];
+  materialIds?:string[]; tools?:string[]; evidenceIds?:string[]; expectedResult?:string;
+}
+export interface EvidenceReference {id:string;title:string;url:string;scope:string;limitation:string;reviewStatus:'UNREVIEWED';}
+export interface PackingReport {
+  schemaVersion:'packing-report-v2';knowledgeVersion:string;generationMode:'DETERMINISTIC_RULE_TEMPLATE';
+  summary:string;preflight:{label:string;value:string;status:'KNOWN'|'UNKNOWN'}[];
+  materials:{id:string;category:MaterialInput['category'];name:string;quantity:number;unit:string;unitPrice:number|null;subtotal:number|null;weight:number|null}[];
+  assumptions:string[];stopConditions:string[];handover:string[];recipientChecks:string[];
+  references:EvidenceReference[];limits:string[];
 }
 export interface RuleTrace {ruleId:string;version:string;name:string;outcome:string;reason:string;source:string;}
 export interface RulePack {
@@ -33,6 +44,7 @@ export interface Plan {
   boxId:string|null; usedMaterialIds:string[]; package:{length:number|null;width:number|null;height:number|null;weight:number|null};
   cost:{known:number;completeness:'FULL'|'PARTIAL'|'UNKNOWN'}; ruleVersion:string; templateVersion:string;
   developmentOnly:boolean;
+  report?:PackingReport;
 }
 export interface CaseRecord {id:string;name:string;version:number;status:string;input:CaseInput;updatedAt:string;createdAt:string;selectedVersion:string|null;demo:boolean;}
 export interface PlanVersion {id:string;caseId:string;number:number;inputHash:string;snapshot:CaseInput;plan:Plan;createdAt:string;stale:boolean;}
@@ -41,3 +53,4 @@ export const emptyInput = (): CaseInput => ({
   materials:[], shipment:{origin:'',destination:'',departure:'',duration:null,mode:'Xe tải thường',carrier:'',orientation:'UPRIGHT',minTemp:null,maxTemp:null,weatherSource:'',confirmed:false,observedAt:'',coverage:'ENDPOINTS'},priority:'SAFETY'
 });
 export const blankMaterial = (id:string,category:MaterialInput['category']='BOX'):MaterialInput => ({id,category,name:category==='BOX'?'Hộp carton':'Vật tư mới',quantity:1,unit:'cái',price:null,weight:null,length:null,width:null,height:null,maxLoad:null,confirmed:false,reusable:false,condition:'GOOD'});
+export { getReadiness, type ReadinessItem } from './readiness';

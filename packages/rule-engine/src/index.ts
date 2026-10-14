@@ -1,12 +1,20 @@
 import Decimal from 'decimal.js';
 import type { CaseInput, Plan, RulePack, Step } from '../../domain/src/index';
+import { buildReport, enrichSteps } from './report';
 
 export const draftRulePack: RulePack = {
   id:'LOCAL_PACK',version:'draft-local-1',status:'DRAFT',approvedBy:null,
   source:'SRS p.11-13, 38; fixture phát triển, chưa duyệt chuyên môn',
-  groups:['FOLIAGE','FLOWERING','SUCCULENT'],paddingCm:2,templateVersion:'draft-steps-1'
+  groups:['FOLIAGE','FLOWERING','SUCCULENT'],paddingCm:2,templateVersion:'draft-steps-2'
 };
 export function evaluate(input:CaseInput, pack:RulePack=draftRulePack, development=false):Plan {
+  const result=evaluateCore(input,pack,development);
+  if(pack.templateVersion!=='draft-steps-2')return result;
+  result.report=buildReport(input,pack,result);
+  if(result.steps.length)result.steps=enrichSteps(input,result,result.steps);
+  return result;
+}
+function evaluateCore(input:CaseInput, pack:RulePack, development:boolean):Plan {
   const p:Plan={outcome:'PASS',risk:'UNKNOWN',warnings:[],missingFields:[],missingMaterials:[],trace:[],steps:[],boxId:null,usedMaterialIds:[],
     package:{length:null,width:null,height:null,weight:null},cost:{known:0,completeness:'UNKNOWN'},ruleVersion:pack.version,templateVersion:pack.templateVersion,developmentOnly:pack.status!=='PUBLISHED'};
   const trace=(ruleId:string,name:string,outcome:string,reason:string)=>p.trace.push({ruleId,version:pack.version,name,outcome,reason,source:pack.source});

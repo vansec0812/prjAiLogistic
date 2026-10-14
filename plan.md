@@ -111,3 +111,7 @@ R0 chỉ được phát hành khi mọi FR P0 có evidence đạt, không lỗi 
 Theo yêu cầu tiếp theo của người dùng, đã tạo website có frontend và backend lưu dữ liệu, xử lý Rule Engine, versions/checklist/kho/PDF/share. Chạy theo [README.md](README.md); phạm vi/evidence/ADR tại [.code/implementation.md](.code/implementation.md). SQLite và job trong process là lựa chọn local reversible; không mặc định đổi baseline hoặc approval production.
 
 Các milestone/FR/NFR vẫn cần nghiệm thu đúng acceptance và release gate phía trên. Quy tắc/sơ đồ hiện DRAFT; provider thật, policy, chuyên gia/admin đầy đủ và bằng chứng NFR chưa hoàn tất. Việc website chạy/test local không đóng toàn bộ R0/R1.
+
+## 11. Tối ưu flow và RAG — 2026-10-15
+
+Người dùng chọn tri thức/RAG trước. Đã thêm readiness, lưu không đổi input giữ selection, báo cáo chi tiết PDF/Markdown/JSON/ZIP, thư viện ảnh AI gần ảnh chụp có fallback và kho tra cứu có scope. Nguồn và giới hạn tại [research/README.md](research/README.md); evidence thực tại [.code/implementation.md](.code/implementation.md). Không thay ngưỡng fixture bằng số từ bài báo; không có fine-tuning hoặc evaluation provider thật. RAG là tính năng tra cứu read-only bổ sung, không đồng nghĩa nghiệm thu FR chat/alternatives đầy đủ.

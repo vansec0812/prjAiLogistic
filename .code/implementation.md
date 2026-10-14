@@ -47,3 +47,29 @@ E2E cấu hình server và storage riêng, không dùng DB người dùng. CLI c
 5. Provider integration, DB restart/fault/lease recovery, property/fuzz/concurrency tải cao, performance/restore/alert/accuracy/pilot và accessibility audit cần evidence riêng.
 
 Không có secrets trong client, không bật billing hoặc deploy. Các thiếu hụt ở trên được nói rõ trên UI liên quan và README; không dựng kết quả provider/tracking/chuyên gia giả.
+
+## Nâng cấp flow, report và RAG — 2026-10-15
+
+Yêu cầu bổ sung của người dùng: tối ưu flow, đầu ra chi tiết, ảnh giống ảnh chụp, tìm hiểu nguồn và chọn RAG trước. Phạm vi liên quan FR-10..19, FR-21..24, FR-26, FR-48/53 và TC-02/03/08/09/10/12; không đóng toàn bộ acceptance hoặc FR chat/alternatives.
+
+- Readiness trước generate: 8 kiểm, link đúng bước còn thiếu, giá unknown không chặn; server chặn ngày gửi không hợp lệ/quá khứ. Navigation giữ trạng thái đang chuyển để tránh bấm tiếp liên tiếp cùng bước.
+- PATCH không đổi dữ liệu không tạo revision hoặc mất selection. Đổi tên riêng giữ phương án nếu input hash không đổi; input kỹ thuật thay đổi vẫn STALE.
+- Report packing-report-v2: bill/thành tiền, input-specific preflight, assumptions, thao tác/checkpoints/stop conditions/tools/material IDs, handover/recipient checks, sources/scope/limitations. Rule physics vẫn draft-local-1, chưa đổi các ngưỡng chuyên môn.
+- PDF Unicode, Markdown, JSON provenance và ZIP chứa cả tài liệu + ảnh/fallback; owner/CSRF/idempotency/private storage. Share projection bỏ account/raw snapshot/private uploads, generic material names; trang chia sẻ giữ nhãn ảnh AI và thao tác chi tiết.
+- 7 ảnh AI mới, 3 ảnh đã sửa qua ImageGen để kiểm bố cục hộp/kiện; PNG gốc, WebP tổng khoảng 1,39 MB, hash/provenance trong manifest. FOLIAGE dùng cây mẫu trầu bà; nhóm khác giữ SVG. PDF embed JPEG, mẫu 11 trang khoảng 1,03 MB. Ảnh không là chứng cứ checklist hoặc approval kỹ thuật.
+- `/app/knowledge`: 11 metadata nguồn, 11 claims, lexical retrieval tách cây chậu/xương rồng/container; abstract/metadata và 16 video chưa đọc excluded khỏi claims. Readiness/report không cần external provider.
+- Gemini RAG read-only có AI_KNOWLEDGE consent riêng, pinned context/version, idempotency, quota/rate/timeout và strict schema/citation membership. Citation đúng ID không bảo đảm semantic truth; server giữ needs_expert cho corpus UNREVIEWED. Adapter chưa gọi model thật.
+
+Evidence ngày 2026-10-15:
+
+| Check | Kết quả |
+| --- | --- |
+| `npm.cmd run typecheck` | PASS |
+| `npm.cmd test` | 31 test PASS, trong đó một test chạy 12 ca retrieval và lưu output/qa/retrieval-eval.json |
+| `npm.cmd run test:e2e` | 6 suites PASS, thêm ZIP thực/private owner, no-op save, readiness, purpose consent và UI tri thức mobile/desktop |
+| `npm.cmd run test:e2e -- --grep "pinned share"` | PASS sau cập nhật trang chia sẻ: nhãn AI + ba thao tác nhìn thấy, revoke/private export/ZIP |
+| `npm.cmd run build` | PASS; fix asset tracing để chỉ scope public, bản cuối không có warning toàn project |
+| `npm.cmd run test:production` | PASS: dev auth disabled, private API 401, storage 404, CSP không unsafe-eval |
+| PDF/layout | Render 11 trang bằng PyMuPDF, kiểm từng trang: Unicode/6 bước/ảnh/cảnh báo/bill/trace/nguồn, không cắt/chồng chữ |
+
+Research và trạng thái access/license ở [../research/README.md](../research/README.md). Evaluation mới là regression kỹ thuật do SE soạn; chưa chuyên gia duyệt/held-out benchmark. Chưa có metric model accuracy, giảm hư, giảm chi phí đối chứng, provider integration, hoặc approval go-live.
