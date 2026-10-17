@@ -9,3 +9,7 @@ next-env.d.ts
 test-results/
 playwright-report/
 output/qa/
+
+.next-*/
+__pycache__/
+*.py[cod]

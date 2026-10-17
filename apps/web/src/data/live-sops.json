@@ -1,0 +1,946 @@
+{
+  "schema_version": "plantmove-live-sop-v2",
+  "sources": [
+    {
+      "id": "S02",
+      "title": "Eurosender — succulents and cacti",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "accessed_at": "2026-10-16",
+      "locator": "How to pack bare-root succulents; How to pack and ship succulents in pots; How to pack and ship cactus",
+      "limitation": "Hướng dẫn tham khảo nước ngoài; không là tiêu chuẩn Việt Nam hoặc xác nhận nhận gửi."
+    },
+    {
+      "id": "S12",
+      "title": "Izzy’s Tropicals — small plants",
+      "url": "https://izzyplants.com/blogs/the-complete-guide-to-shipping-plants/how-to-ship-small-plants-a-complete-step-by-step-guide",
+      "accessed_at": "2026-10-16",
+      "locator": "What Counts as a Small Plant; Option A; Option B",
+      "limitation": "Cây nhỏ, có nêu small pothos; chưa xác nhận riêng giống hoặc điều kiện Việt Nam. Các mức của nguồn chỉ là phạm vi thẩm định."
+    }
+  ],
+  "sops": [
+    {
+      "id": "SUCCULENT-POTTED-ES",
+      "plant": "succulent",
+      "shipping_form": "POTTED",
+      "title": "Sen đá — nguyên chậu",
+      "source_ids": [
+        "S02"
+      ],
+      "scope": "Nhóm mọng nước của nguồn; giống cụ thể phải được shop thẩm định.",
+      "steps": [
+        {
+          "id": "ESP-01",
+          "title": "Xác nhận chậu",
+          "instruction": "Ưu tiên chậu nhựa khi phù hợp.",
+          "speech_vi": "Ưu tiên chậu nhựa khi phù hợp.",
+          "manual": "Shop đã xác nhận loại chậu và quyết định giữ hoặc thay chậu; không tự thay chỉ theo ảnh.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 1",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESP-02",
+          "title": "Kiểm tra độ khô",
+          "instruction": "Kiểm tra đất đủ khô trước khi gói.",
+          "speech_vi": "Kiểm tra đất đủ khô trước khi gói.",
+          "manual": "Người phụ trách đã kiểm trực tiếp độ khô theo phương pháp của shop. Nếu chưa có cách xác định, dừng.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 2",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESP-03",
+          "title": "Giữ đất trong chậu",
+          "instruction": "Phủ mặt đất bằng màng nhựa.",
+          "speech_vi": "Phủ mặt đất bằng màng nhựa.",
+          "manual": "Đã kiểm trực tiếp hiệu quả giữ đất và ảnh hưởng của lớp phủ tới cây.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 3",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ miệng chậu và vùng tiếp giáp thân vào khung hình trước khi bọc cây.",
+          "criteria": [
+            {
+              "id": "ESP-03-C1",
+              "visible_pass": "Thấy màng phủ trên vùng đất cần giữ, không thấy khoảng đất hở ở vùng cần phủ.",
+              "visible_fail": "Không có màng hoặc còn vùng đất hở rõ trong vùng cần phủ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESP-04",
+          "title": "Kiểm lớp bảo vệ",
+          "instruction": "Bổ sung giấy mềm khi cần.",
+          "speech_vi": "Bổ sung giấy mềm khi cần.",
+          "manual": "Đã kiểm vật liệu và cách bọc không ép, gãy lá, thân hoặc gai. Số lớp do người duyệt xác định; ảnh không đếm được lớp bị che.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 4",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ lớp bọc ngoài vào khung hình; kiểm phần bên trong trước khi che kín.",
+          "criteria": [
+            {
+              "id": "ESP-04-C1",
+              "visible_pass": "Thấy lớp bọc giấy quanh cây.",
+              "visible_fail": "Không thấy lớp bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESP-05",
+          "title": "Đặt vào hộp",
+          "instruction": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "speech_vi": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "manual": "Đã kiểm trực tiếp độ cố định, độ chắc và mức ép. Không cần lắc cây để AI kiểm.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 5",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa hộp còn mở, toàn bộ cây và vùng chèn vào khung hình từ trên xuống.",
+          "criteria": [
+            {
+              "id": "ESP-05-C1",
+              "visible_pass": "Cây đã bọc nằm trong hộp; thấy bố trí vật liệu bên trong.",
+              "visible_fail": "Cây chưa ở trong hộp hoặc lớp bọc đã tuột, cây nằm ngoài lớp bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESP-06",
+          "title": "Đóng hộp",
+          "instruction": "Đóng và niêm kín hộp.",
+          "speech_vi": "Đóng và niêm kín hộp.",
+          "manual": "Đã kiểm các mặt hộp, chất lượng niêm kín, dữ liệu đơn và yêu cầu nhận gửi; nhãn không bảo đảm kiện luôn thẳng đứng.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 6",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa mặt đang kiểm vào khung hình. Kiểm từng mặt còn lại trực tiếp; một ảnh không chứng minh toàn bộ hộp.",
+          "criteria": [
+            {
+              "id": "ESP-06-C1",
+              "visible_pass": "Mặt đang thấy đã đóng; không có khe mở rõ hoặc bộ phận cây nhô qua đường đóng.",
+              "visible_fail": "Mặt đang thấy còn mở, bật nắp hoặc có bộ phận cây bị kẹp nhô qua đường đóng."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "limits": null,
+      "version": "2026.10-trial.1",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": "SUC-POT-ES"
+    },
+    {
+      "id": "SUCCULENT-BARE_ROOT-ES",
+      "plant": "succulent",
+      "shipping_form": "BARE_ROOT",
+      "title": "Sen đá — rễ trần",
+      "source_ids": [
+        "S02"
+      ],
+      "scope": "Nhóm mọng nước của nguồn; giống cụ thể phải được shop thẩm định.",
+      "steps": [
+        {
+          "id": "ESB-01",
+          "title": "Chuẩn bị trước ngày gửi",
+          "instruction": "Nguồn đề xuất tưới trước gửi 4–5 ngày.",
+          "speech_vi": "Nguồn đề xuất tưới trước gửi 4–5 ngày.",
+          "manual": "Shop đã thẩm định lịch chuẩn bị cho đúng loài và ngày gửi. Đây không phải lịch tưới mặc định cho mọi cây.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 1",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESB-02",
+          "title": "Chuẩn bị rễ trần",
+          "instruction": "Lấy cây khỏi đất; rễ còn ẩm cần chờ thêm.",
+          "speech_vi": "Lấy cây khỏi đất; rễ còn ẩm cần chờ thêm.",
+          "manual": "Người có kinh nghiệm xác nhận loài phù hợp rễ trần, tình trạng rễ và điều kiện đủ khô; không suy độ khô từ ảnh.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 2",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESB-03",
+          "title": "Bọc cây rễ trần",
+          "instruction": "Bọc cây rễ trần bằng giấy mềm.",
+          "speech_vi": "Bọc cây rễ trần bằng giấy mềm.",
+          "manual": "Đã kiểm tình trạng rễ và cách bọc không làm hư cây.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 3",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ cây và lớp bọc vào khung hình trước khi đặt hộp.",
+          "criteria": [
+            {
+              "id": "ESB-03-C1",
+              "visible_pass": "Thấy giấy bọc cây, không còn chậu trong gói rễ trần.",
+              "visible_fail": "Không có lớp giấy bọc hoặc còn nguyên chậu trong nhánh rễ trần."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESB-04",
+          "title": "Kiểm lớp bảo vệ",
+          "instruction": "Bổ sung giấy mềm khi cần.",
+          "speech_vi": "Bổ sung giấy mềm khi cần.",
+          "manual": "Đã kiểm vật liệu và cách bọc không ép, gãy lá, thân hoặc gai. Số lớp do người duyệt xác định; ảnh không đếm được lớp bị che.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 4",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ lớp bọc ngoài vào khung hình; kiểm phần bên trong trước khi che kín.",
+          "criteria": [
+            {
+              "id": "ESB-04-C1",
+              "visible_pass": "Thấy lớp bọc giấy quanh cây.",
+              "visible_fail": "Không thấy lớp bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESB-05",
+          "title": "Đặt vào hộp",
+          "instruction": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "speech_vi": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "manual": "Đã kiểm trực tiếp độ cố định, độ chắc và mức ép. Không cần lắc cây để AI kiểm.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 5",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa hộp còn mở, toàn bộ cây và vùng chèn vào khung hình từ trên xuống.",
+          "criteria": [
+            {
+              "id": "ESB-05-C1",
+              "visible_pass": "Cây đã bọc nằm trong hộp; thấy bố trí vật liệu bên trong.",
+              "visible_fail": "Cây chưa ở trong hộp hoặc lớp bọc đã tuột, cây nằm ngoài lớp bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ESB-06",
+          "title": "Đóng hộp",
+          "instruction": "Đóng và niêm kín hộp.",
+          "speech_vi": "Đóng và niêm kín hộp.",
+          "manual": "Đã kiểm các mặt hộp, chất lượng niêm kín, dữ liệu đơn và yêu cầu nhận gửi; nhãn không bảo đảm kiện luôn thẳng đứng.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 6",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa mặt đang kiểm vào khung hình. Kiểm từng mặt còn lại trực tiếp; một ảnh không chứng minh toàn bộ hộp.",
+          "criteria": [
+            {
+              "id": "ESB-06-C1",
+              "visible_pass": "Mặt đang thấy đã đóng; không có khe mở rõ hoặc bộ phận cây nhô qua đường đóng.",
+              "visible_fail": "Mặt đang thấy còn mở, bật nắp hoặc có bộ phận cây bị kẹp nhô qua đường đóng."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "limits": null,
+      "version": "2026.10-trial.1",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": "SUC-BARE-SD"
+    },
+    {
+      "id": "CACTUS-POTTED-ES",
+      "plant": "cactus",
+      "shipping_form": "POTTED",
+      "title": "Xương rồng — nguyên chậu",
+      "source_ids": [
+        "S02"
+      ],
+      "scope": "Nhóm mọng nước của nguồn; giống cụ thể phải được shop thẩm định.",
+      "steps": [
+        {
+          "id": "ECP-01",
+          "title": "Xác nhận chậu",
+          "instruction": "Ưu tiên chậu nhựa khi phù hợp.",
+          "speech_vi": "Ưu tiên chậu nhựa khi phù hợp.",
+          "manual": "Shop đã xác nhận loại chậu và quyết định giữ hoặc thay chậu; không tự thay chỉ theo ảnh.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 1",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECP-02",
+          "title": "Kiểm tra độ khô",
+          "instruction": "Kiểm tra đất đủ khô trước khi gói.",
+          "speech_vi": "Kiểm tra đất đủ khô trước khi gói.",
+          "manual": "Người phụ trách đã kiểm trực tiếp độ khô theo phương pháp của shop. Nếu chưa có cách xác định, dừng.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 2",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECP-03",
+          "title": "Giữ đất trong chậu",
+          "instruction": "Phủ mặt đất bằng màng nhựa.",
+          "speech_vi": "Phủ mặt đất bằng màng nhựa.",
+          "manual": "Đã kiểm trực tiếp hiệu quả giữ đất và ảnh hưởng của lớp phủ tới cây.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 3",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ miệng chậu và vùng tiếp giáp thân vào khung hình trước khi bọc cây.",
+          "criteria": [
+            {
+              "id": "ECP-03-C1",
+              "visible_pass": "Thấy màng phủ trên vùng đất cần giữ, không thấy khoảng đất hở ở vùng cần phủ.",
+              "visible_fail": "Không có màng hoặc còn vùng đất hở rõ trong vùng cần phủ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECP-04",
+          "title": "Kiểm lớp bảo vệ",
+          "instruction": "Bọc giấy mềm; xương rồng thêm bảo vệ ngoài bằng giấy báo hoặc carton.",
+          "speech_vi": "Bọc giấy mềm; xương rồng thêm bảo vệ ngoài bằng giấy báo hoặc carton.",
+          "manual": "Đã kiểm vật liệu và cách bọc không ép, gãy lá, thân hoặc gai. Số lớp do người duyệt xác định; ảnh không đếm được lớp bị che.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship cactus",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ lớp bọc ngoài vào khung hình; kiểm phần bên trong trước khi che kín.",
+          "criteria": [
+            {
+              "id": "ECP-04-C1",
+              "visible_pass": "Thấy lớp bọc giấy quanh cây và lớp bảo vệ ngoài.",
+              "visible_fail": "Không thấy lớp bọc hoặc thiếu lớp bảo vệ ngoài nhìn thấy được."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECP-05",
+          "title": "Đặt vào hộp",
+          "instruction": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "speech_vi": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "manual": "Đã kiểm trực tiếp độ cố định, độ chắc và mức ép. Không cần lắc cây để AI kiểm.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 5",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa hộp còn mở, toàn bộ cây và vùng chèn vào khung hình từ trên xuống.",
+          "criteria": [
+            {
+              "id": "ECP-05-C1",
+              "visible_pass": "Cây đã bọc nằm trong hộp; thấy bố trí vật liệu bên trong.",
+              "visible_fail": "Cây chưa ở trong hộp hoặc lớp bọc đã tuột, cây nằm ngoài lớp bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECP-06",
+          "title": "Đóng hộp",
+          "instruction": "Đóng và niêm kín hộp.",
+          "speech_vi": "Đóng và niêm kín hộp.",
+          "manual": "Đã kiểm các mặt hộp, chất lượng niêm kín, dữ liệu đơn và yêu cầu nhận gửi; nhãn không bảo đảm kiện luôn thẳng đứng.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship succulents in pots / 6",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa mặt đang kiểm vào khung hình. Kiểm từng mặt còn lại trực tiếp; một ảnh không chứng minh toàn bộ hộp.",
+          "criteria": [
+            {
+              "id": "ECP-06-C1",
+              "visible_pass": "Mặt đang thấy đã đóng; không có khe mở rõ hoặc bộ phận cây nhô qua đường đóng.",
+              "visible_fail": "Mặt đang thấy còn mở, bật nắp hoặc có bộ phận cây bị kẹp nhô qua đường đóng."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "limits": null,
+      "version": "2026.10-trial.1",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": "CAC-CW-PARTIAL"
+    },
+    {
+      "id": "CACTUS-BARE_ROOT-ES",
+      "plant": "cactus",
+      "shipping_form": "BARE_ROOT",
+      "title": "Xương rồng — rễ trần",
+      "source_ids": [
+        "S02"
+      ],
+      "scope": "Nhóm mọng nước của nguồn; giống cụ thể phải được shop thẩm định.",
+      "steps": [
+        {
+          "id": "ECB-01",
+          "title": "Chuẩn bị trước ngày gửi",
+          "instruction": "Nguồn đề xuất tưới trước gửi 4–5 ngày.",
+          "speech_vi": "Nguồn đề xuất tưới trước gửi 4–5 ngày.",
+          "manual": "Shop đã thẩm định lịch chuẩn bị cho đúng loài và ngày gửi. Đây không phải lịch tưới mặc định cho mọi cây.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 1",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECB-02",
+          "title": "Chuẩn bị rễ trần",
+          "instruction": "Lấy cây khỏi đất; rễ còn ẩm cần chờ thêm.",
+          "speech_vi": "Lấy cây khỏi đất; rễ còn ẩm cần chờ thêm.",
+          "manual": "Người có kinh nghiệm xác nhận loài phù hợp rễ trần, tình trạng rễ và điều kiện đủ khô; không suy độ khô từ ảnh.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 2",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECB-03",
+          "title": "Bọc cây rễ trần",
+          "instruction": "Bọc cây rễ trần bằng giấy mềm.",
+          "speech_vi": "Bọc cây rễ trần bằng giấy mềm.",
+          "manual": "Đã kiểm tình trạng rễ và cách bọc không làm hư cây.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 3",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ cây và lớp bọc vào khung hình trước khi đặt hộp.",
+          "criteria": [
+            {
+              "id": "ECB-03-C1",
+              "visible_pass": "Thấy giấy bọc cây, không còn chậu trong gói rễ trần.",
+              "visible_fail": "Không có lớp giấy bọc hoặc còn nguyên chậu trong nhánh rễ trần."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECB-04",
+          "title": "Kiểm lớp bảo vệ",
+          "instruction": "Bọc giấy mềm; xương rồng thêm bảo vệ ngoài bằng giấy báo hoặc carton.",
+          "speech_vi": "Bọc giấy mềm; xương rồng thêm bảo vệ ngoài bằng giấy báo hoặc carton.",
+          "manual": "Đã kiểm vật liệu và cách bọc không ép, gãy lá, thân hoặc gai. Số lớp do người duyệt xác định; ảnh không đếm được lớp bị che.",
+          "source_id": "S02",
+          "source_locator": "How to pack and ship cactus",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ lớp bọc ngoài vào khung hình; kiểm phần bên trong trước khi che kín.",
+          "criteria": [
+            {
+              "id": "ECB-04-C1",
+              "visible_pass": "Thấy lớp bọc giấy quanh cây và lớp bảo vệ ngoài.",
+              "visible_fail": "Không thấy lớp bọc hoặc thiếu lớp bảo vệ ngoài nhìn thấy được."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECB-05",
+          "title": "Đặt vào hộp",
+          "instruction": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "speech_vi": "Đặt cây đã bọc vào hộp; chèn khi cần.",
+          "manual": "Đã kiểm trực tiếp độ cố định, độ chắc và mức ép. Không cần lắc cây để AI kiểm.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 5",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa hộp còn mở, toàn bộ cây và vùng chèn vào khung hình từ trên xuống.",
+          "criteria": [
+            {
+              "id": "ECB-05-C1",
+              "visible_pass": "Cây đã bọc nằm trong hộp; thấy bố trí vật liệu bên trong.",
+              "visible_fail": "Cây chưa ở trong hộp hoặc lớp bọc đã tuột, cây nằm ngoài lớp bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "ECB-06",
+          "title": "Đóng hộp",
+          "instruction": "Đóng và niêm kín hộp.",
+          "speech_vi": "Đóng và niêm kín hộp.",
+          "manual": "Đã kiểm các mặt hộp, chất lượng niêm kín, dữ liệu đơn và yêu cầu nhận gửi; nhãn không bảo đảm kiện luôn thẳng đứng.",
+          "source_id": "S02",
+          "source_locator": "How to pack bare-root succulents for shipping / 6",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa mặt đang kiểm vào khung hình. Kiểm từng mặt còn lại trực tiếp; một ảnh không chứng minh toàn bộ hộp.",
+          "criteria": [
+            {
+              "id": "ECB-06-C1",
+              "visible_pass": "Mặt đang thấy đã đóng; không có khe mở rõ hoặc bộ phận cây nhô qua đường đóng.",
+              "visible_fail": "Mặt đang thấy còn mở, bật nắp hoặc có bộ phận cây bị kẹp nhô qua đường đóng."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "limits": null,
+      "version": "2026.10-trial.1",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": "CAC-CW-PARTIAL"
+    },
+    {
+      "id": "POTHOS-POTTED-IZ",
+      "plant": "pothos",
+      "shipping_form": "POTTED",
+      "title": "Trầu bà nhỏ — nguyên chậu",
+      "source_ids": [
+        "S12"
+      ],
+      "scope": "Small pothos trong hướng dẫn cây nhỏ; không tự áp dụng cho Monstera/Philodendron hoặc cây lớn.",
+      "steps": [
+        {
+          "id": "IZP-01",
+          "title": "Chuẩn bị cây nhỏ",
+          "instruction": "Tưới nhẹ trước 24–48 giờ; để ráo, kiểm cây.",
+          "speech_vi": "Tưới nhẹ trước 24–48 giờ; để ráo, kiểm cây.",
+          "manual": "Người phụ trách xác nhận loài, sức khỏe, lịch tưới và thoát nước; không dùng lịch này cho sen đá hoặc xương rồng.",
+          "source_id": "S12",
+          "source_locator": "Option A / Step 1",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZP-02",
+          "title": "Giữ đất",
+          "instruction": "Che lỗ thoát; phủ đất, giữ màng bằng thun; bọc túi.",
+          "speech_vi": "Che lỗ thoát; phủ đất, giữ màng bằng thun; bọc túi.",
+          "manual": "Đã kiểm lỗ thoát trước khi che, độ giữ đất và lực buộc; vật liệu không gây tổn thương thân.",
+          "source_id": "S12",
+          "source_locator": "Option A / Step 2",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa miệng chậu, màng, túi và chỗ giữ vào khung hình trước khi bọc ngoài.",
+          "criteria": [
+            {
+              "id": "IZP-02-C1",
+              "visible_pass": "Thấy lớp phủ mặt đất và túi ngoài chậu cùng chỗ giữ.",
+              "visible_fail": "Thiếu lớp phủ đất hoặc túi ngoài ở vùng nhìn rõ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZP-03",
+          "title": "Bọc chậu",
+          "instruction": "Bọc chậu bằng màng khí 2–3 vòng, cố định băng dính.",
+          "speech_vi": "Bọc chậu bằng màng khí 2–3 vòng, cố định băng dính.",
+          "manual": "Đã tự đếm vòng khi thao tác và kiểm đệm; ảnh lớp ngoài không chứng minh số vòng.",
+          "source_id": "S12",
+          "source_locator": "Option A / Step 3",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ lớp đệm quanh chậu vào khung hình.",
+          "criteria": [
+            {
+              "id": "IZP-03-C1",
+              "visible_pass": "Thấy lớp đệm khí quanh chậu và chỗ giữ.",
+              "visible_fail": "Chậu không có lớp đệm khí ở vùng nhìn rõ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZP-04",
+          "title": "Bảo vệ tán",
+          "instruction": "Bọc tán nhẹ bằng giấy khi phù hợp.",
+          "speech_vi": "Bọc tán nhẹ bằng giấy khi phù hợp.",
+          "manual": "Shop xác nhận có cần giấy; nếu miễn bước vì lá cứng, ghi xác nhận thủ công. Đã kiểm tán không bị ép hoặc gập.",
+          "source_id": "S12",
+          "source_locator": "Option A / Step 4",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ phần giấy bọc tán vào khung hình trước khi đặt hộp.",
+          "criteria": [
+            {
+              "id": "IZP-04-C1",
+              "visible_pass": "Thấy giấy bảo vệ tán nếu bước này được yêu cầu.",
+              "visible_fail": "Không có giấy bảo vệ tán trong trường hợp người phụ trách yêu cầu bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZP-05",
+          "title": "Xếp hộp",
+          "instruction": "Lót giấy, đặt cây và chèn khoảng trống.",
+          "speech_vi": "Lót giấy, đặt cây và chèn khoảng trống.",
+          "manual": "Đã kiểm độ cố định và khoảng trống trực tiếp. Nhánh nguyên chậu: nguồn nêu đáy 2–3 inch và cách miệng hộp 1 inch; phải đo khi thẩm định, không suy qua ảnh.",
+          "source_id": "S12",
+          "source_locator": "Option A / Step 5",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa hộp còn mở với toàn bộ gói cây và phần chèn vào khung hình.",
+          "criteria": [
+            {
+              "id": "IZP-05-C1",
+              "visible_pass": "Gói cây nằm trong hộp, thấy giấy chèn quanh gói.",
+              "visible_fail": "Gói cây ngoài hộp hoặc không có giấy chèn quanh gói ở vùng nhìn rõ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZP-06",
+          "title": "Kiểm và niêm hộp",
+          "instruction": "Kiểm cố định; dán kiểu H, gắn nhãn.",
+          "speech_vi": "Kiểm cố định; dán kiểu H, gắn nhãn.",
+          "manual": "Đã kiểm trực tiếp độ cố định theo cách được shop duyệt và các mặt dán. Nguồn đề xuất lắc nhẹ nhưng ứng dụng không tự yêu cầu thao tác này khi chưa thẩm định. Đã xác nhận hãng nhận gửi.",
+          "source_id": "S12",
+          "source_locator": "Option A / Step 6",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa một mặt dán kiểu H và nhãn cảnh báo vào khung hình; tự kiểm mặt còn lại. Tránh để lộ địa chỉ.",
+          "criteria": [
+            {
+              "id": "IZP-06-C1",
+              "visible_pass": "Mặt đang thấy có đường dán kiểu H, nắp đóng và nhãn cảnh báo.",
+              "visible_fail": "Mặt nhìn rõ còn hở nắp hoặc thiếu đường dán kiểu H/nhãn cảnh báo."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "limits": {
+        "pot_cm_min": 5.08,
+        "pot_cm_max": 10.16,
+        "height_cm_exclusive_max": 20.32,
+        "packed_kg_exclusive_max": 1.36077711
+      },
+      "version": "2026.10-trial.1",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": "POTHOS-GP-CANDIDATE"
+    },
+    {
+      "id": "POTHOS-BARE_ROOT-IZ",
+      "plant": "pothos",
+      "shipping_form": "BARE_ROOT",
+      "title": "Trầu bà nhỏ — rễ trần",
+      "source_ids": [
+        "S12"
+      ],
+      "scope": "Small pothos trong hướng dẫn cây nhỏ; không tự áp dụng cho Monstera/Philodendron hoặc cây lớn.",
+      "steps": [
+        {
+          "id": "IZB-01",
+          "title": "Chuẩn bị rễ trần",
+          "instruction": "Lấy cây khỏi chậu, loại đất; kiểm rễ.",
+          "speech_vi": "Lấy cây khỏi chậu, loại đất; kiểm rễ.",
+          "manual": "Người có kinh nghiệm xác nhận đúng loài, rễ đủ điều kiện và quyết định xử lý rễ hỏng; AI không chỉ định cắt rễ.",
+          "source_id": "S12",
+          "source_locator": "Option B / Step 1",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZB-02",
+          "title": "Bọc rễ",
+          "instruction": "Bọc rễ bằng rêu vừa ẩm, màng và thun.",
+          "speech_vi": "Bọc rễ bằng rêu vừa ẩm, màng và thun.",
+          "manual": "Đã kiểm độ ẩm rêu và lực buộc theo người phụ trách; không suy từ màu ảnh.",
+          "source_id": "S12",
+          "source_locator": "Option B / Step 2",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa bầu rễ đã bọc và chỗ giữ vào khung hình trước khi bọc tán.",
+          "criteria": [
+            {
+              "id": "IZB-02-C1",
+              "visible_pass": "Thấy gói bọc vùng rễ bằng rêu, màng và chỗ giữ.",
+              "visible_fail": "Rễ vẫn để trần ngoài gói bọc tại vùng nhìn rõ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZB-03",
+          "title": "Bảo vệ tán",
+          "instruction": "Bọc tán nhẹ bằng giấy khi phù hợp.",
+          "speech_vi": "Bọc tán nhẹ bằng giấy khi phù hợp.",
+          "manual": "Shop xác nhận có cần giấy; nếu miễn bước vì lá cứng, ghi xác nhận thủ công. Đã kiểm tán không bị ép hoặc gập.",
+          "source_id": "S12",
+          "source_locator": "Option B / Step 3",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ phần giấy bọc tán vào khung hình trước khi đặt hộp.",
+          "criteria": [
+            {
+              "id": "IZB-03-C1",
+              "visible_pass": "Thấy giấy bảo vệ tán nếu bước này được yêu cầu.",
+              "visible_fail": "Không có giấy bảo vệ tán trong trường hợp người phụ trách yêu cầu bọc."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZB-04",
+          "title": "Xếp hộp",
+          "instruction": "Lót giấy, đặt cây và chèn khoảng trống.",
+          "speech_vi": "Lót giấy, đặt cây và chèn khoảng trống.",
+          "manual": "Đã kiểm độ cố định và khoảng trống trực tiếp. Nhánh nguyên chậu: nguồn nêu đáy 2–3 inch và cách miệng hộp 1 inch; phải đo khi thẩm định, không suy qua ảnh.",
+          "source_id": "S12",
+          "source_locator": "Option B / Step 4",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa hộp còn mở với toàn bộ gói cây và phần chèn vào khung hình.",
+          "criteria": [
+            {
+              "id": "IZB-04-C1",
+              "visible_pass": "Gói cây nằm trong hộp, thấy giấy chèn quanh gói.",
+              "visible_fail": "Gói cây ngoài hộp hoặc không có giấy chèn quanh gói ở vùng nhìn rõ."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "IZB-05",
+          "title": "Kiểm và niêm hộp",
+          "instruction": "Kiểm cố định; dán kiểu H, gắn nhãn.",
+          "speech_vi": "Kiểm cố định; dán kiểu H, gắn nhãn.",
+          "manual": "Đã kiểm trực tiếp độ cố định theo cách được shop duyệt và các mặt dán. Nguồn đề xuất lắc nhẹ nhưng ứng dụng không tự yêu cầu thao tác này khi chưa thẩm định. Đã xác nhận hãng nhận gửi.",
+          "source_id": "S12",
+          "source_locator": "Option B / Step 5",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa một mặt dán kiểu H và nhãn cảnh báo vào khung hình; tự kiểm mặt còn lại. Tránh để lộ địa chỉ.",
+          "criteria": [
+            {
+              "id": "IZB-05-C1",
+              "visible_pass": "Mặt đang thấy có đường dán kiểu H, nắp đóng và nhãn cảnh báo.",
+              "visible_fail": "Mặt nhìn rõ còn hở nắp hoặc thiếu đường dán kiểu H/nhãn cảnh báo."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "limits": {
+        "pot_cm_min": 5.08,
+        "pot_cm_max": 10.16,
+        "height_cm_exclusive_max": 20.32,
+        "packed_kg_exclusive_max": 1.36077711
+      },
+      "version": "2026.10-trial.1",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": "POTHOS-GP-CANDIDATE"
+    }
+  ],
+  "note": "Nội dung kỹ thuật tóm tắt có nguồn; tiêu chí thị giác và lời nhắc là thiết kế kiểm thử PlantMove. Chưa có phê duyệt chuyên môn hoặc đánh giá ảnh thật."
+}

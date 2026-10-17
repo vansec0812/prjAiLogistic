@@ -89,3 +89,7 @@ Evidence bổ sung 2026-10-15 (không đóng hàng OPEN): readiness/no-op save c
 Có 53 FR: 35 P0, 18 P1; 15 NFR; UI index tại `ui-spec.md`; TC-01..14 tại `test-strategy.md`.
 
 Trước review task, bổ sung đường dẫn PR/test/report ở backlog; không thay OPEN bằng DONE nếu acceptance chưa có evidence. TC-13/14 kiểm NFR xuyên suốt; không có TC gốc cho một FR không có nghĩa bỏ kiểm thử FR đó.
+
+
+## Giám sát đóng gói và nhận lệnh nói — 17/10/2026
+Theo yêu cầu người dùng: bổ sung luồng độc lập /app/live-packing, 6 SOP dự thảo/35 bước, checkpoint ảnh/manual, Gemini Vision/TTS và nhận lệnh tiếng Việt. Không hoàn tất hồ sơ hoặc trừ kho trong luồng thử; không tự phê duyệt SOP. Secrets chỉ qua cấu hình server, không lưu media mặc định. Nguồn và giới hạn: ../SOP_INTEGRATION.md và ../VOICE_COMMANDS.md. Kiểm: tests/live-packing.test.ts, packing-voice-commands.test.ts, live-sop-evaluation.test.ts, vietnamese-voice.test.ts, vietnamese-tts.test.ts và tests/e2e/live-packing.spec.ts. Provider thật, ảnh có nhãn và micro vật lý vẫn cần xác minh; không đóng release gate hoặc FR gốc chỉ vì có test phần mềm.

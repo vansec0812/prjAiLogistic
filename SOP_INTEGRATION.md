@@ -1,0 +1,44 @@
+# PlantMove — tích hợp SOP có nguồn, bản kiểm thử v2
+
+Thay checklist `packing-pilot-v1` bằng catalog `apps/web/src/data/live-sops.json`. Mã giao diện và backend cùng nạp qua schema ở `src/lib/live-packing.ts`; không còn dùng checklist bốn bước cũ. Bản nghiên cứu trước được lưu riêng tại `docs/sop-research`, không thay bằng một hồ sơ giả đã duyệt.
+
+## Phạm vi
+
+6 nhánh, 35 bước: sen đá nguyên chậu/rễ trần; xương rồng nguyên chậu/rễ trần; trầu bà nhỏ nguyên chậu/rễ trần. Số bước lần lượt 6/6/6/6/6/5. Đây là trình tự ứng viên để thẩm định, chưa là SOP vận hành hoặc hướng dẫn riêng đã kiểm chứng cho mọi loài trong nhóm.
+
+- [Eurosender](https://www.eurosender.com/en/pack-ship/plants/succulents-cactus): chuỗi nguyên chậu/rễ trần và đoạn riêng xương rồng. Các nhánh xương rồng là cách tổ chức thử nghiệm từ các mục cùng nguồn, không tự nhận là SOP riêng đã được nguồn duyệt cho một giống.
+- [Izzy’s Tropicals](https://izzyplants.com/blogs/the-complete-guide-to-shipping-plants/how-to-ship-small-plants-a-complete-step-by-step-guide): hướng dẫn cây nhỏ có nhắc small pothos, Option A/B. Đây là nguồn shop nước ngoài, chưa là tiêu chuẩn Việt Nam hoặc thử nghiệm riêng Epipremnum của shop người dùng. Phạm vi kích thước của nguồn được giữ và đổi đơn vị; không tự áp dụng cho cây lớn.
+
+Mỗi bước có nguồn/mục, lời đọc tiếng Việt, hướng dẫn kiểm tay và loại kiểm tra. Bước visual có criterion_id, mô tả đạt/lỗi, vùng cần chụp và trường hợp không xác minh. Các tiêu chí quan sát do PlantMove đề xuất, chưa được người có chuyên môn thẩm định. Văn bản kỹ thuật là tóm tắt để duyệt; phải đọc nguồn và xác nhận đầy đủ thao tác/vật tư trước vận hành. Không sao chép cả bài nguồn, không lấy ảnh mạng làm ảnh được cấp phép.
+
+Các số có trong catalog được gắn nguồn, là tham chiếu chờ thẩm định. Không dùng chúng làm mặc định mọi loài, tuyến hoặc hãng. Lịch chuẩn bị/độ ẩm phải do shop xác nhận; luồng thử không xác minh ETA, sức chịu vận chuyển hoặc cam kết nhận gửi từng đơn.
+
+## Hành vi
+
+1. Chọn nhóm cây, nguyên chậu/rễ trần, nhập loài và xác nhận phạm vi cho phiên thử. Trầu bà cần số đo/cân trong phạm vi nguồn; thiếu hoặc ngoài phạm vi không bắt đầu. Máy chủ kiểm lại đầu vào.
+2. Xem SOP, nguồn và trạng thái duyệt, đồng ý phiên thử. Đây không phải quyền xuất bản SOP. Catalog hiện mọi nhánh DRAFT, reviewer/approved_at=null; backend chặn thực hiện ở production.
+3. Bước manual-only không có nút gửi ảnh và API từ chối nếu cố gửi. Kiểm độ khô/chuẩn bị rễ/chọn chậu do người phụ trách xác nhận. Không ép AI báo đạt từ ảnh.
+4. Bước visual: người dùng nhấn xong → lời nhắc camera → đếm ngược → lấy một khung hình. Không xem video liên tục, không quay/lưu video, không cần micro. Mỗi bước có vùng cần thấy; kiểm các mặt bị che bằng tay. Không suy số lớp ẩn, độ chắc hoặc độ ẩm.
+5. JSON giữ step_id, observed, status, reason, manual_check_required; bổ sung criterion_results với đủ mã tiêu chí. Server từ chối mã lạ/thiếu/trùng; tổng hợp trạng thái từ tiêu chí. Một kết quả chưa xác minh không tự thành đạt vì phần tổng kết AI ghi passed.
+6. Bước tiếp cần hoàn tất kiểm tay và kiểm ảnh đạt, hoặc người dùng xác nhận thay thế có ghi lý do tối thiểu 10 ký tự. Kết quả AI cũ được giữ trong biên bản. Bỏ qua ghi chưa đạt; kết thúc thử không đồng nghĩa kiện đạt an toàn.
+7. Khi xong có thể tải JSON biên bản không ảnh/video. Không tự lưu media hoặc upload bộ ảnh. Kết quả trong RAM; tải lại sẽ mất nếu chưa tải biên bản. Không nối vào hồ sơ hoàn tất/trừ kho.
+
+## Kiểm thử và đánh giá
+
+`npm run typecheck`, `npm test`, và `npx playwright test --config playwright.live.config.ts`. Bộ trình duyệt dùng camera/voice/provider giả lập để kiểm luồng. Không lấy số test đạt làm tỷ lệ AI đánh giá đúng.
+
+Tại Windows sandbox, Turbopack có thể không tạo được junction của sharp; dùng `npm run build -- --webpack`. Việc build hoặc chạy server có thể cần quyền hệ thống phù hợp khi Windows chặn tạo thư mục/tiến trình.
+
+Đánh giá ảnh thật: xem `evaluation/live-sop/README.md`. Công cụ kiểm hash ảnh, nguồn khai báo, nhãn người duyệt, phiên bản, criterion_id, tách cây/phiên và thống kê ma trận nhầm lẫn, báo đạt nhầm, lỗi bị bỏ sót, không xác minh, phân nhóm. Chưa có dữ liệu: report NOT_RUN, metrics=null. Không tự gọi API hàng loạt hoặc giả nhãn/độ chính xác.
+
+Thử provider thật có opt-in trong `playwright.gemini.config.ts`, ảnh trắng chỉ kiểm giao tiếp/schema. Kết quả lượt thử và các checks thực tế được ghi trong báo cáo bàn giao cùng gói cập nhật; không mặc định provider luôn khả dụng.
+
+## Những việc còn cần con người/dữ liệu
+
+- Shop/người có chuyên môn duyệt từng nhánh: loài, vật tư, thao tác, tiêu chí và ngoại lệ; hãng/dịch vụ xác nhận cho tuyến/đơn cụ thể. Phiếu duyệt được xuất riêng, không ký thay.
+- Ảnh thật có nhãn theo tiêu chí, gồm đúng/lỗi/không xác minh; đánh giá mù trên cây/phiên chưa dùng chỉnh prompt.
+- Thử đóng gói và vận chuyển thực để xác nhận hiệu quả bảo vệ. Chưa có bằng chứng này, không chuyển production_enabled=true hoặc công bố độ chính xác/an toàn.
+
+## Tái tạo catalog
+
+`python scripts/build-live-sop.py` tạo lại JSON từ nội dung đã biên tập trong script, bảo tồn hồ sơ nghiên cứu cũ. Khi sửa kỹ thuật/tiêu chí phải tăng version, cập nhật hồ sơ duyệt và đánh giá lại. Không sửa version đang tham chiếu rồi gọi đó là cùng bản.

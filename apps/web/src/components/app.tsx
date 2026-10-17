@@ -7,10 +7,12 @@ import { SessionContext, type Session, api, Logo, Spinner, Alert, useSession, us
 import type { CaseRecord } from '@plantcare/domain';
 import { AuthPage } from './auth';
 import { KnowledgePage } from './knowledge';
+import { LivePacking } from './live-packing';
 import { Wizard, JobPage, PlanPage, SharedPage } from './packing';
 import { HistoryPage, MaterialsPage, TemplatesPage, NotificationsPage, SupportPage, SettingsPage, GuidesPage, AdminPage } from './secondary';
 
 const menu=[
+  {href:'/app/live-packing',label:'Giám sát đóng gói',icon:Camera},
   {href:'/app',label:'Tổng quan',icon:LayoutDashboard},
   {href:'/app/new',label:'Tạo hồ sơ',icon:Plus},
   {href:'/app/history',label:'Lịch sử',icon:Clock3},
@@ -34,6 +36,7 @@ export function PlantCareApp(){
   return <SessionContext.Provider value={{session,refresh,toast:setMessage}}>{content}{message&&<div className="toast" role="status"><Check size={19}/>{message}<button aria-label="Đóng thông báo" onClick={()=>setMessage('')}><X size={16}/></button></div>}</SessionContext.Provider>;
 }
 function AppRoute({pathname}:{pathname:string}){
+  if(pathname==='/app/live-packing')return <LivePacking/>;
   const p=pathname.split('/').filter(Boolean);
   if(pathname.startsWith('/admin'))return <AdminPage section={p[1]||'rules'}/>;
   if(p[1]==='new')return <NewCase/>;

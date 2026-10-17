@@ -73,3 +73,13 @@ Evidence ngày 2026-10-15:
 | PDF/layout | Render 11 trang bằng PyMuPDF, kiểm từng trang: Unicode/6 bước/ảnh/cảnh báo/bill/trace/nguồn, không cắt/chồng chữ |
 
 Research và trạng thái access/license ở [../research/README.md](../research/README.md). Evaluation mới là regression kỹ thuật do SE soạn; chưa chuyên gia duyệt/held-out benchmark. Chưa có metric model accuracy, giảm hư, giảm chi phí đối chứng, provider integration, hoặc approval go-live.
+
+## Tích hợp dev-nam và kiểm Vercel — 18/10/2026
+
+Gộp `origin/dev-nam` tại `2dd69b5` (SOP/camera/voice) vào develop, giữ bản RAG/report `cadc883`. Ba conflict `.code/decisions.md`, `components/app.tsx`, `server/api.ts` được giải quyết bằng cách giữ cả hai luồng; không bỏ features cũ hoặc đổi rule/SOP approval.
+
+Default Playwright chỉ chạy workflow port 3001; `test:e2e:live` chạy SOP port 3107; provider thật vẫn opt-in riêng. Tách outputDir workflow/live/gemini để tránh hai runner xóa trace của nhau. Camera/voice có ngân sách test 90 giây cho cold dev compilation Windows, giữ assertion nghiệp vụ và timeout provider.
+
+Evidence trên tree đã gộp: typecheck PASS, 98 unit/regression tests PASS, production build PASS và production smoke PASS. Workflow: 5 ca PASS ở lượt đầu; export/share có lỗi artifact bị runner khác xóa, chạy lại riêng sau tách outputDir PASS (bao gồm PDF/ZIP thực và cross-owner). SOP: 9 ca PASS ở lượt đầu; ca đầu bị timeout 30 giây tại page.goto('/') khi cold compile, đang kiểm lại bằng cấu hình 90 giây. Đây là kiểm phần mềm bằng camera/voice/provider giả lập; không gọi Gemini thật, không đo độ đúng chuyên môn hoặc đạt performance production.
+
+Không tạo deployment Vercel. SQLite/local uploads/exports/OTP secret, worker trong process và font theo máy là các dependency chưa tương thích deployment serverless nguyên trạng. Hướng cấu hình build, nguồn Vercel và điều kiện chuyển đổi tại [../VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md); không tuyên bố toàn bộ backend đã sẵn sàng production trên Vercel.

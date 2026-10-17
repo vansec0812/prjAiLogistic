@@ -42,7 +42,11 @@
     "../../packages/**/*.ts",
     ".next/dev/types/**/*.ts",
     ".next-e2e/types/**/*.ts",
-    ".next-e2e/dev/types/**/*.ts"
+    ".next-e2e/dev/types/**/*.ts",
+    ".next-live-e2e/types/**/*.ts",
+    ".next-live-e2e/dev/types/**/*.ts",
+    ".next-gemini-test/types/**/*.ts",
+    ".next-gemini-test/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:production": "node scripts/check-production.mjs",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "test:e2e:live": "playwright test --config playwright.live.config.ts"
   },
   "engines": {
     "node": ">=24.0.0"

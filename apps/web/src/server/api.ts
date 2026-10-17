@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkLivePacking } from './live-packing';
+import { vietnameseTts } from './vietnamese-tts';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { compareSync, hashSync } from 'bcryptjs';
 import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'node:fs';
@@ -137,6 +139,8 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       const job=idempotent(req,user.id,endpoint,value,()=>createJob(user.id,context,'KNOWLEDGE',{question:value.question,consentId:value.consent_id,knowledgeVersion:KNOWLEDGE_VERSION,knowledgeContext:retrieveKnowledge(value.question,value.scope)}));wakeWorker();return success({job_id:job.id},202);
     }
   }
+  if(endpoint==='live-packing/check'&&method==='POST')return success(await checkLivePacking(req));
+  if(endpoint==='live-packing/speech'&&method==='POST')return success(await vietnameseTts(req));
   if(endpoint==='me'){
     if(method==='GET')return success({id:user.id,name:user.name,username:user.username,phone:user.phone.replace(/.(?=.{3})/g,'•'),role:user.role});
     if(method==='PATCH'){const data=parse(z.object({name:z.string().trim().min(2).max(80)}).strict(),await body(req));db().prepare('UPDATE users SET name=? WHERE id=?').run(data.name,user.id);audit(user.id,'PROFILE_UPDATED',user.id);return success(data);}
