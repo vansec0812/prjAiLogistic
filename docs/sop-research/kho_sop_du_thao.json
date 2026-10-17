@@ -1,0 +1,1221 @@
+{
+  "schema_version": "plantmove-sop-research-v1",
+  "research_date": "2026-10-16",
+  "status": "DỰ THẢO CÓ TRUY NGUỒN — CHƯA DUYỆT CHUYÊN MÔN",
+  "production_enabled": false,
+  "approved_sop_count": 0,
+  "context": {
+    "country": "VN",
+    "shipping_forms": [
+      "POTTED",
+      "BARE_ROOT"
+    ],
+    "form_selection": "Theo shop, không tự chọn bằng AI",
+    "eta_policy": "Theo từng đơn; phải có nguồn và thời điểm xác nhận, unknown=null. Không suy số ngày từ địa chỉ đơn thuần."
+  },
+  "sources": [
+    {
+      "source_id": "S01",
+      "title": "How to ship flowers and plants",
+      "publisher": "FedEx",
+      "url": "https://www.fedex.com/en-us/shipping/how-to-ship-flowers-and-plants.html",
+      "category": "Hướng dẫn đơn vị vận chuyển",
+      "scope": "Cây có chậu; dịch vụ FedEx theo trang Hoa Kỳ",
+      "limitations": "Không phải tiêu chuẩn chung Việt Nam; không riêng ba nhóm MVP; không bảo hành kết quả.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S02",
+      "title": "How to ship succulents and cacti efficiently",
+      "publisher": "Eurosender",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "category": "Hướng dẫn nền tảng logistics",
+      "scope": "Nhánh mọng nước nguyên chậu/rễ trần; có đoạn riêng cactus",
+      "limitations": "Không chứng minh loài cụ thể của shop; hướng dẫn đóng gói không đồng nghĩa hãng chấp nhận nhận gửi.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S03",
+      "title": "How We Pack and Ship Succulents",
+      "publisher": "Mountain Crest Gardens",
+      "url": "https://faq.mountaincrestgardens.com/en-US/how-we-pack-and-ship-43614",
+      "category": "Quy trình riêng nhà vườn",
+      "scope": "Cách đóng hàng của MCG",
+      "limitations": "Không định lượng độ khô, không đầy đủ thao tác cho mọi loài. Trang hiển thị cập nhật tương đối, không suy ngày tuyệt đối.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S04",
+      "title": "Size and Shipping",
+      "publisher": "Succulents Depot",
+      "url": "https://www.succulentsdepot.com/pages/size-and-shipping",
+      "category": "Chính sách riêng nhà vườn",
+      "scope": "Quy ước kích thước và lựa chọn hình thức gửi của Depot",
+      "limitations": "Kích thước chậu không tự là kích thước cây; ngoại lệ theo sản phẩm; không dùng làm ngưỡng PlantMove.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S05",
+      "title": "Benefits of Shipping Bare Roots",
+      "publisher": "Succulents Depot",
+      "url": "https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots",
+      "category": "Quy trình riêng nhà vườn",
+      "scope": "Mọng nước gửi rễ trần trong quy trình Depot",
+      "limitations": "Không xác lập lịch tưới, thời gian hong, lực thao tác hoặc mọi xương rồng.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S06",
+      "title": "Our Process",
+      "publisher": "Gabriella Plants",
+      "url": "https://www.gabriellaplants.com/pages/our-process",
+      "category": "Quy trình riêng nhà vườn",
+      "scope": "Chuẩn bị/bao gói/đóng hộp cây shop bán",
+      "limitations": "Không mô tả SOP riêng cho một giống trầu bà; không có lực buộc, lượng chèn hoặc dung sai.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S07",
+      "title": "Pothos Epipremnum aureum 'Pearls and Jade'",
+      "publisher": "Gabriella Plants",
+      "url": "https://www.gabriellaplants.com/products/pearls-and-jade-pothos-quality-house-plant",
+      "category": "Danh mục sản phẩm",
+      "scope": "Chứng minh shop có sản phẩm Epipremnum aureum",
+      "limitations": "Không phải quy trình đóng gói; không lấy đánh giá khách hàng làm bằng chứng kỹ thuật.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S08",
+      "title": "How We Pack and Ship Your Cactus",
+      "publisher": "Cactus Warehouse",
+      "url": "https://cactuswarehouse.com/pages/how-we-pack-and-ship",
+      "category": "Mô tả quy trình riêng nhà vườn",
+      "scope": "Kiểm cây, bảo vệ gai/bầu và giữ vị trí",
+      "limitations": "Chưa đọc nội dung video nhúng; chỉ dùng đoạn chữ. Thiếu chi tiết vật tư, nguyên chậu/rễ trần và bước đóng kiện.",
+      "decision": "reference",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S09",
+      "title": "Chính sách giao hàng của GHTK",
+      "publisher": "GHTK",
+      "url": "https://ghtk.vn/dich-vu-giao-hang/chinh-sach-giao-hang/",
+      "category": "Quy định công bố của nhà vận chuyển",
+      "scope": "Mục đóng gói 2.11 Cây tươi và điều kiện nhận gửi",
+      "limitations": "Có diễn đạt cần làm rõ giữa danh mục nhận gửi và mục cây tươi; không tự diễn giải ngưỡng thời gian thành bảo đảm sinh học.",
+      "decision": "requires_carrier_confirmation",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "S10",
+      "title": "Vận chuyển cây cối – GHTK đồng hành cùng từng mầm xanh",
+      "publisher": "GHTK",
+      "url": "https://ghtk.vn/blog/van-chuyen-cay-coi-ghtk-dong-hanh-cung-tung-mam-xanh/",
+      "category": "Giới thiệu dịch vụ chuyên biệt",
+      "scope": "Có giải pháp phân loại cây/bầu đất",
+      "limitations": "Không là cam kết nhận mọi cây/tuyến/dịch vụ hoặc SLA cụ thể của đơn.",
+      "decision": "reference",
+      "published_at": "2025-05-08",
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Ngày hiển thị trên trang"
+    },
+    {
+      "source_id": "S11",
+      "title": "Hỗ trợ — câu hỏi gửi cây cảnh đi các tỉnh",
+      "publisher": "VNPost",
+      "url": "https://www.vnpost.vn/vi/ho-tro",
+      "category": "Hướng dẫn nhà vận chuyển",
+      "scope": "FAQ về cây cảnh/EMS và bao gói",
+      "limitations": "Không có ngày hiệu lực rõ; cần xác nhận loại cây, tuyến, bao bì, điều kiện khung và thời gian đơn.",
+      "decision": "requires_carrier_confirmation",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "X01",
+      "title": "Hướng dẫn mua hàng",
+      "publisher": "Cây Cảnh Thiện Nhân",
+      "url": "https://caycanhthiennhan.com/huong-dan-mua-hang/",
+      "category": "Trang shop tham khảo",
+      "scope": "Bài có đoạn đóng cây",
+      "limitations": "Tên shop trong thân bài lẫn Cây Xinh; chưa xác minh tác giả/điều kiện gốc; không dùng để sinh thao tác.",
+      "decision": "excluded_pending_provenance",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "X02",
+      "title": "Giao hàng & vận chuyển",
+      "publisher": "Trang Sen Đá Giá Sỉ",
+      "url": "https://sendagiasi.vn/giao-hang-van-chuyen/",
+      "category": "Trang đã loại",
+      "scope": "Tiêu đề/site cây mọng nước",
+      "limitations": "Đoạn mở đầu chính sách lại nói cây giống chanh dây của đơn vị khác. Không dùng cho SOP sen đá.",
+      "decision": "excluded_content_mismatch",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    },
+    {
+      "source_id": "X03",
+      "title": "Trầu bà đế vương xanh",
+      "publisher": "Mộc Thủy Decor",
+      "url": "https://mocthuydecor.com/trau-ba-de-vuong-xanh.html",
+      "category": "Trang đã loại khỏi căn cứ thao tác",
+      "scope": "Trang sản phẩm",
+      "limitations": "Không có trình tự đóng gói đủ chi tiết; tên thương mại không đủ để đồng nhất với Epipremnum aureum.",
+      "decision": "excluded_insufficient_protocol",
+      "published_at": null,
+      "updated_at": null,
+      "accessed_at": "2026-10-16",
+      "read_status": "opened_and_read",
+      "date_note": "Không thấy ngày chính xác"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "F01",
+      "source_id": "S01",
+      "url": "https://www.fedex.com/en-us/shipping/how-to-ship-flowers-and-plants.html",
+      "locator": "How to ship live plants > To ship potted plants > Make sure the soil is contained, L554–557",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#f01"
+    },
+    {
+      "evidence_id": "F02",
+      "source_id": "S01",
+      "url": "https://www.fedex.com/en-us/shipping/how-to-ship-flowers-and-plants.html",
+      "locator": "To ship potted plants > Secure the pot, L571–573",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#f02"
+    },
+    {
+      "evidence_id": "F03",
+      "source_id": "S01",
+      "url": "https://www.fedex.com/en-us/shipping/how-to-ship-flowers-and-plants.html",
+      "locator": "To ship potted plants > Properly seal and label, L587–589",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#f03"
+    },
+    {
+      "evidence_id": "E01",
+      "source_id": "S02",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "locator": "How to pack and ship succulents in pots, item 1, L51–52",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#e01"
+    },
+    {
+      "evidence_id": "E02",
+      "source_id": "S02",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "locator": "How to pack and ship succulents in pots, item 2, L53",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#e02"
+    },
+    {
+      "evidence_id": "E03",
+      "source_id": "S02",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "locator": "How to pack and ship succulents in pots, item 3, L54",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#e03"
+    },
+    {
+      "evidence_id": "E04",
+      "source_id": "S02",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "locator": "How to pack and ship succulents in pots, item 4, L55",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#e04"
+    },
+    {
+      "evidence_id": "E05",
+      "source_id": "S02",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "locator": "How to pack and ship succulents in pots, item 5, L56",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#e05"
+    },
+    {
+      "evidence_id": "E06",
+      "source_id": "S02",
+      "url": "https://www.eurosender.com/en/pack-ship/plants/succulents-cactus",
+      "locator": "How to pack and ship succulents in pots, item 6, L57",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#e06"
+    },
+    {
+      "evidence_id": "M01",
+      "source_id": "S03",
+      "url": "https://faq.mountaincrestgardens.com/en-US/how-we-pack-and-ship-43614",
+      "locator": "PACKING PROCEDURE, L7–8",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#m01"
+    },
+    {
+      "evidence_id": "M02",
+      "source_id": "S03",
+      "url": "https://faq.mountaincrestgardens.com/en-US/how-we-pack-and-ship-43614",
+      "locator": "UNROOTED / BARE ROOT, L13–15",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#m02"
+    },
+    {
+      "evidence_id": "D00",
+      "source_id": "S04",
+      "url": "https://www.succulentsdepot.com/pages/size-and-shipping",
+      "locator": "Packaging & Handling; Shipping with Pots, L159–173",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#d00"
+    },
+    {
+      "evidence_id": "D01",
+      "source_id": "S05",
+      "url": "https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots",
+      "locator": "Shipping Practices, bullet 1, L137–138",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#d01"
+    },
+    {
+      "evidence_id": "D02",
+      "source_id": "S05",
+      "url": "https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots",
+      "locator": "Shipping Practices, bullet 2, L139",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#d02"
+    },
+    {
+      "evidence_id": "D03",
+      "source_id": "S05",
+      "url": "https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots",
+      "locator": "Shipping Practices, bullet 3, L140",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#d03"
+    },
+    {
+      "evidence_id": "G01",
+      "source_id": "S06",
+      "url": "https://www.gabriellaplants.com/pages/our-process",
+      "locator": "Preparing for shipment, L54–56",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#g01"
+    },
+    {
+      "evidence_id": "G02",
+      "source_id": "S06",
+      "url": "https://www.gabriellaplants.com/pages/our-process",
+      "locator": "Wrapping your plants, L61–63",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#g02"
+    },
+    {
+      "evidence_id": "G03",
+      "source_id": "S06",
+      "url": "https://www.gabriellaplants.com/pages/our-process",
+      "locator": "Wrapping your plants, L64",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#g03"
+    },
+    {
+      "evidence_id": "G04",
+      "source_id": "S06",
+      "url": "https://www.gabriellaplants.com/pages/our-process",
+      "locator": "Packing your box, L70–72",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#g04"
+    },
+    {
+      "evidence_id": "G00",
+      "source_id": "S07",
+      "url": "https://www.gabriellaplants.com/products/pearls-and-jade-pothos-quality-house-plant",
+      "locator": "Product title and description, L31, L43–48",
+      "kind": "scope_evidence_only",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#g00"
+    },
+    {
+      "evidence_id": "C01",
+      "source_id": "S08",
+      "url": "https://cactuswarehouse.com/pages/how-we-pack-and-ship",
+      "locator": "What happens to your plant after you order > 1, L98–100",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#c01"
+    },
+    {
+      "evidence_id": "C02",
+      "source_id": "S08",
+      "url": "https://cactuswarehouse.com/pages/how-we-pack-and-ship",
+      "locator": "Step 2, L104–106",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#c02"
+    },
+    {
+      "evidence_id": "C03",
+      "source_id": "S08",
+      "url": "https://cactuswarehouse.com/pages/how-we-pack-and-ship",
+      "locator": "Step 3, L110–111",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#c03"
+    },
+    {
+      "evidence_id": "H01",
+      "source_id": "S09",
+      "url": "https://ghtk.vn/dich-vu-giao-hang/chinh-sach-giao-hang/",
+      "locator": "QUY ĐỊNH ĐÓNG GÓI > 2.11 Cây tươi, L202",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#h01"
+    },
+    {
+      "evidence_id": "H02",
+      "source_id": "S09",
+      "url": "https://ghtk.vn/dich-vu-giao-hang/chinh-sach-giao-hang/",
+      "locator": "2.11 Cây tươi, L204",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#h02"
+    },
+    {
+      "evidence_id": "H03",
+      "source_id": "S09",
+      "url": "https://ghtk.vn/dich-vu-giao-hang/chinh-sach-giao-hang/",
+      "locator": "2.11 Cây tươi, L205",
+      "kind": "ambiguous_short_quote_not_executable",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#h03"
+    },
+    {
+      "evidence_id": "H04",
+      "source_id": "S10",
+      "url": "https://ghtk.vn/blog/van-chuyen-cay-coi-ghtk-dong-hanh-cung-tung-mam-xanh/",
+      "locator": "GHTK – Giao cây chuyên biệt > Phân loại chi tiết, L86–94",
+      "kind": "scope_evidence_only",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#h04"
+    },
+    {
+      "evidence_id": "V01",
+      "source_id": "S11",
+      "url": "https://www.vnpost.vn/vi/ho-tro",
+      "locator": "FAQ Tôi kinh doanh cây cảnh..., L312",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#v01"
+    },
+    {
+      "evidence_id": "V02",
+      "source_id": "S11",
+      "url": "https://www.vnpost.vn/vi/ho-tro",
+      "locator": "Cùng FAQ, L314",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#v02"
+    },
+    {
+      "evidence_id": "V03",
+      "source_id": "S11",
+      "url": "https://www.vnpost.vn/vi/ho-tro",
+      "locator": "Cùng FAQ, L315",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#v03"
+    },
+    {
+      "evidence_id": "V04",
+      "source_id": "S11",
+      "url": "https://www.vnpost.vn/vi/ho-tro",
+      "locator": "Cùng FAQ, L316–318",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#v04"
+    },
+    {
+      "evidence_id": "V05",
+      "source_id": "S11",
+      "url": "https://www.vnpost.vn/vi/ho-tro",
+      "locator": "Cùng FAQ, L319",
+      "kind": "technical_paraphrase",
+      "accessed_at": "2026-10-16",
+      "instruction_md_ref": "01_NGUON_VA_BANG_CHUNG.md#v05"
+    }
+  ],
+  "sops": [
+    {
+      "sop_id": "SUC-POT-ES",
+      "title": "Mọng nước nguyên chậu — nhánh Eurosender",
+      "version": "0.1.0-research",
+      "prepared_on": "2026-10-16",
+      "status": "DỰ THẢO CÓ TRUY NGUỒN — CHƯA DUYỆT CHUYÊN MÔN",
+      "author_role": "AI tổng hợp có truy nguồn; không phải chuyên gia phê duyệt",
+      "reviewer": null,
+      "approved_at": null,
+      "published": false,
+      "production_enabled": false,
+      "group": "SUCCULENT",
+      "shipping_form": "POTTED",
+      "target_country": "VN",
+      "evidence_context": "Hướng dẫn logistics nước ngoài, không chuẩn nội địa; không áp dụng tự động cho mọi sen đá.",
+      "primary_source_id": "S02",
+      "source_order_preserved": true,
+      "completeness": "Có trình tự đóng gói của nguồn; chưa đủ điều kiện phê duyệt áp dụng.",
+      "eligibility": "Chỉ là ứng viên cho vận chuyển nội địa; cần xác nhận loài/shop/nhà vận chuyển và thử thực tế trước áp dụng.",
+      "inputs_required": [
+        "Loài/giống đã xác nhận, không chỉ tên thương mại",
+        "Nguyên chậu hay rễ trần do shop chọn",
+        "Tình trạng cây/bầu/rễ do người dùng kiểm trực tiếp",
+        "Kích thước và khối lượng đo/cân thật; tình trạng/vật liệu chậu nếu có",
+        "Vật tư thực có và thông số có nguồn khi cần đánh giá fit/tải",
+        "Điểm đi/đến, ngày gửi, hãng và gói dịch vụ",
+        "ETA hoặc khoảng thời gian giao, nguồn và thời điểm xác nhận",
+        "Shop/người duyệt chấp nhận quy trình cho đúng loài, hình thức và hành trình"
+      ],
+      "materials": [
+        {
+          "item": "chậu nhựa nếu phù hợp",
+          "evidence_id": "E01"
+        },
+        {
+          "item": "màng nhựa",
+          "evidence_id": "E03"
+        },
+        {
+          "item": "giấy mềm/tissue",
+          "evidence_id": "E04"
+        },
+        {
+          "item": "hộp và đệm theo nhánh nguồn",
+          "evidence_id": "E05"
+        }
+      ],
+      "steps": [
+        {
+          "step_id": "ES-01",
+          "instruction_ref": "E01",
+          "technical_source_id": "S02",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa chậu vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy loại chậu hoặc người dùng xác nhận khi ảnh không rõ."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Shop quyết định có dùng chậu hiện tại hay thay; ảnh không tự cho phép thay chậu."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "ES-02",
+          "instruction_ref": "E02",
+          "technical_source_id": "S02",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa bề mặt đất vào khung hình để ghi nhận, sau đó kiểm trực tiếp.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Chỉ mô tả bề mặt; không cho đạt tiêu chí độ khô từ ảnh."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Người có kinh nghiệm xác định đủ khô; chưa có tiêu chuẩn đo thì dừng."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "ES-03",
+          "instruction_ref": "E03",
+          "technical_source_id": "S02",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa miệng chậu vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy vùng bề mặt đất và lớp phủ theo checklist đã duyệt."
+          ],
+          "needs_adjustment": [
+            "Vùng đất cần phủ còn hở rõ theo tiêu chí đã duyệt."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm hiệu quả giữ đất, ảnh hưởng thân/lá và mức kín do shop duyệt."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "ES-04",
+          "instruction_ref": "E04",
+          "technical_source_id": "S02",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa lớp bảo vệ quanh cây vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy lớp giấy và vị trí cây; phần bị che không được suy đoán."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm vật liệu không ép/gãy lá; không đặt số lớp tự sinh."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "ES-05",
+          "instruction_ref": "E05",
+          "technical_source_id": "S02",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa hộp còn mở và vị trí cây vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy cách bố trí bên trong; không suy ra lực giữ."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm độ cố định, khoảng trống và mức ép trực tiếp."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "ES-06",
+          "instruction_ref": "E06",
+          "technical_source_id": "S02",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa các mặt đóng hộp vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy đường đóng hộp được yêu cầu; không suy độ bền băng dính."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm niêm kín và điều kiện hãng nhận gửi."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        }
+      ],
+      "gaps": [
+        "Chưa có loài cụ thể hoặc chuẩn độ khô.",
+        "Chưa có lượng/độ kín vật liệu, tải trọng hoặc thử nghiệm hành trình VN."
+      ],
+      "stop_conditions": [
+        "Thiếu ETA/nguồn xác nhận hoặc hãng chưa xác nhận nhận gửi.",
+        "Loài/hình thức không thuộc phạm vi đã duyệt.",
+        "Thông số cần thiết chưa đo/cân/xác nhận.",
+        "Có điểm nguồn mâu thuẫn hoặc thao tác chưa đủ căn cứ."
+      ],
+      "numeric_material_thresholds": null,
+      "transport_survival_claim": null
+    },
+    {
+      "sop_id": "SUC-BARE-SD",
+      "title": "Mọng nước rễ trần — quy trình riêng Succulents Depot",
+      "version": "0.1.0-research",
+      "prepared_on": "2026-10-16",
+      "status": "DỰ THẢO CÓ TRUY NGUỒN — CHƯA DUYỆT CHUYÊN MÔN",
+      "author_role": "AI tổng hợp có truy nguồn; không phải chuyên gia phê duyệt",
+      "reviewer": null,
+      "approved_at": null,
+      "published": false,
+      "production_enabled": false,
+      "group": "SUCCULENT",
+      "shipping_form": "BARE_ROOT",
+      "target_country": "VN",
+      "evidence_context": "Quy trình shop nước ngoài; không dùng kích thước chậu S04 để chọn rễ trần cho shop khác.",
+      "primary_source_id": "S05",
+      "source_order_preserved": true,
+      "completeness": "Trình tự bao gói một phần; chưa hoàn chỉnh thành SOP giao hàng.",
+      "eligibility": "Chỉ là ứng viên cho vận chuyển nội địa; cần xác nhận loài/shop/nhà vận chuyển và thử thực tế trước áp dụng.",
+      "inputs_required": [
+        "Loài/giống đã xác nhận, không chỉ tên thương mại",
+        "Nguyên chậu hay rễ trần do shop chọn",
+        "Tình trạng cây/bầu/rễ do người dùng kiểm trực tiếp",
+        "Kích thước và khối lượng đo/cân thật; tình trạng/vật liệu chậu nếu có",
+        "Vật tư thực có và thông số có nguồn khi cần đánh giá fit/tải",
+        "Điểm đi/đến, ngày gửi, hãng và gói dịch vụ",
+        "ETA hoặc khoảng thời gian giao, nguồn và thời điểm xác nhận",
+        "Shop/người duyệt chấp nhận quy trình cho đúng loài, hình thức và hành trình"
+      ],
+      "materials": [
+        {
+          "item": "tissue",
+          "evidence_id": "D02"
+        },
+        {
+          "item": "carton và giấy chèn",
+          "evidence_id": "D03"
+        }
+      ],
+      "steps": [
+        {
+          "step_id": "SD-01",
+          "instruction_ref": "D01",
+          "technical_source_id": "S05",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa cây và phần rễ vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy trạng thái rễ trần; không suy đủ khô hoặc rễ khỏe."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Shop xác nhận loài phù hợp rễ trần, cách loại đất và điều kiện để khô."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "SD-02",
+          "instruction_ref": "D02",
+          "technical_source_id": "S05",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa từng cây đã bọc vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy cách bọc từng cây khi không bị che."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm lực bọc và tổn thương trực tiếp."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "SD-03",
+          "instruction_ref": "D03",
+          "technical_source_id": "S05",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa bên trong hộp còn mở vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy cây đã bọc và vị trí phần chèn."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm độ cố định; thiếu bước niêm kiện trong nguồn phải bổ sung có thẩm định."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        }
+      ],
+      "gaps": [
+        "Không có phép xác định đủ khô, lịch hong hoặc số lớp.",
+        "Nguồn không mô tả đủ niêm kiện/bàn giao; không tự thêm bước."
+      ],
+      "stop_conditions": [
+        "Thiếu ETA/nguồn xác nhận hoặc hãng chưa xác nhận nhận gửi.",
+        "Loài/hình thức không thuộc phạm vi đã duyệt.",
+        "Thông số cần thiết chưa đo/cân/xác nhận.",
+        "Có điểm nguồn mâu thuẫn hoặc thao tác chưa đủ căn cứ."
+      ],
+      "numeric_material_thresholds": null,
+      "transport_survival_claim": null
+    },
+    {
+      "sop_id": "CAC-CW-PARTIAL",
+      "title": "Xương rồng — mô tả thao tác một phần Cactus Warehouse",
+      "version": "0.1.0-research",
+      "prepared_on": "2026-10-16",
+      "status": "DỰ THẢO CÓ TRUY NGUỒN — CHƯA DUYỆT CHUYÊN MÔN",
+      "author_role": "AI tổng hợp có truy nguồn; không phải chuyên gia phê duyệt",
+      "reviewer": null,
+      "approved_at": null,
+      "published": false,
+      "production_enabled": false,
+      "group": "CACTUS",
+      "shipping_form": "UNSPECIFIED_BY_SOURCE",
+      "target_country": "VN",
+      "evidence_context": "Chỉ phần chữ đã đọc; không viện dẫn mốc video chưa xem.",
+      "primary_source_id": "S08",
+      "source_order_preserved": true,
+      "completeness": "KHÔNG ĐỦ ĐỂ THÀNH SOP HOÀN CHỈNH.",
+      "eligibility": "Chỉ là ứng viên cho vận chuyển nội địa; cần xác nhận loài/shop/nhà vận chuyển và thử thực tế trước áp dụng.",
+      "inputs_required": [
+        "Loài/giống đã xác nhận, không chỉ tên thương mại",
+        "Nguyên chậu hay rễ trần do shop chọn",
+        "Tình trạng cây/bầu/rễ do người dùng kiểm trực tiếp",
+        "Kích thước và khối lượng đo/cân thật; tình trạng/vật liệu chậu nếu có",
+        "Vật tư thực có và thông số có nguồn khi cần đánh giá fit/tải",
+        "Điểm đi/đến, ngày gửi, hãng và gói dịch vụ",
+        "ETA hoặc khoảng thời gian giao, nguồn và thời điểm xác nhận",
+        "Shop/người duyệt chấp nhận quy trình cho đúng loài, hình thức và hành trình"
+      ],
+      "materials": [],
+      "steps": [
+        {
+          "step_id": "CW-01",
+          "instruction_ref": "C01",
+          "technical_source_id": "S08",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa toàn cây vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Chỉ ghi nhận tình trạng nhìn thấy."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Người có kinh nghiệm quyết định cây có đủ điều kiện đóng hàng."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "CW-02",
+          "instruction_ref": "C02",
+          "technical_source_id": "S08",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa phần gai và bầu cần kiểm vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Ghi nhận lớp bảo vệ và vùng bầu còn nhìn thấy."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Chưa có vật liệu/cách bảo vệ cụ thể: dừng trước áp dụng."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "CW-03",
+          "instruction_ref": "C03",
+          "technical_source_id": "S08",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa bố trí cây trong hộp vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy vị trí gia cố; không suy ra độ chắc."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Chưa có phép thử: không yêu cầu lắc hộp từ mô tả quảng bá."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        }
+      ],
+      "gaps": [
+        "Thiếu xác nhận nguyên chậu/rễ trần, vật tư và bước đóng/niêm kiện.",
+        "Chưa thẩm định theo loài, gai, kích thước và shop VN."
+      ],
+      "stop_conditions": [
+        "Thiếu ETA/nguồn xác nhận hoặc hãng chưa xác nhận nhận gửi.",
+        "Loài/hình thức không thuộc phạm vi đã duyệt.",
+        "Thông số cần thiết chưa đo/cân/xác nhận.",
+        "Có điểm nguồn mâu thuẫn hoặc thao tác chưa đủ căn cứ."
+      ],
+      "numeric_material_thresholds": null,
+      "transport_survival_claim": null
+    },
+    {
+      "sop_id": "POTHOS-GP-CANDIDATE",
+      "title": "Ứng viên trầu bà Epipremnum aureum — chờ xác nhận áp dụng quy trình Gabriella",
+      "version": "0.1.0-research",
+      "prepared_on": "2026-10-16",
+      "status": "DỰ THẢO CÓ TRUY NGUỒN — CHƯA DUYỆT CHUYÊN MÔN",
+      "author_role": "AI tổng hợp có truy nguồn; không phải chuyên gia phê duyệt",
+      "reviewer": null,
+      "approved_at": null,
+      "published": false,
+      "production_enabled": false,
+      "group": "POTHOS_CANDIDATE",
+      "shipping_form": "POTTED_CANDIDATE_NOT_CONFIRMED",
+      "target_country": "VN",
+      "evidence_context": "Không gộp tên thương mại trầu bà của Philodendron/loài khác với Epipremnum aureum.",
+      "primary_source_id": "S06",
+      "source_order_preserved": true,
+      "completeness": "KHÔNG ĐỦ CĂN CỨ CHỐT SOP RIÊNG CHO TRẦU BÀ.",
+      "eligibility": "Chỉ là ứng viên cho vận chuyển nội địa; cần xác nhận loài/shop/nhà vận chuyển và thử thực tế trước áp dụng.",
+      "inputs_required": [
+        "Loài/giống đã xác nhận, không chỉ tên thương mại",
+        "Nguyên chậu hay rễ trần do shop chọn",
+        "Tình trạng cây/bầu/rễ do người dùng kiểm trực tiếp",
+        "Kích thước và khối lượng đo/cân thật; tình trạng/vật liệu chậu nếu có",
+        "Vật tư thực có và thông số có nguồn khi cần đánh giá fit/tải",
+        "Điểm đi/đến, ngày gửi, hãng và gói dịch vụ",
+        "ETA hoặc khoảng thời gian giao, nguồn và thời điểm xác nhận",
+        "Shop/người duyệt chấp nhận quy trình cho đúng loài, hình thức và hành trình"
+      ],
+      "materials": [
+        {
+          "item": "polyfill và dây thun",
+          "evidence_id": "G02"
+        },
+        {
+          "item": "giấy carton cứng hoặc foam",
+          "evidence_id": "G03"
+        },
+        {
+          "item": "hộp/vật liệu lấp khoảng trống",
+          "evidence_id": "G04"
+        }
+      ],
+      "steps": [
+        {
+          "step_id": "GP-01",
+          "instruction_ref": "G01",
+          "technical_source_id": "S06",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa cây vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Ghi nhận hình ảnh, không xác nhận cây không bệnh."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Kiểm tình trạng cây và xác nhận đúng giống."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "GP-02",
+          "instruction_ref": "G02",
+          "technical_source_id": "S06",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa vùng đất cần giữ vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy vật liệu và vị trí; không suy lực thun."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Shop xác nhận vật liệu/cách giữ phù hợp giống, kiểm lực và phần tiếp xúc."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "GP-03",
+          "instruction_ref": "G03",
+          "technical_source_id": "S06",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa lớp bao quanh cây vào khung hình.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy lớp bao và phần bị che."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Shop chọn vật liệu và kiểm mức ép."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        },
+        {
+          "step_id": "GP-04",
+          "instruction_ref": "G04",
+          "technical_source_id": "S06",
+          "tts_template": "{instruction_vi}. {camera_prompt_vi}",
+          "camera_prompt_vi": "Đưa hộp mở vào khung hình; nhập số cân trực tiếp.",
+          "checkpoint_status": "ĐỀ XUẤT CẦN THẨM ĐỊNH — CHƯA KIỂM CHỨNG THỊ GIÁC",
+          "visible_criteria": [
+            "Thấy bố trí, không suy số cân/tải trọng từ ảnh."
+          ],
+          "needs_adjustment": [
+            "Có bằng chứng rõ vi phạm tiêu chí thị giác đã được người duyệt xác nhận."
+          ],
+          "unverifiable": [
+            "Mờ, thiếu sáng, che khuất hoặc không thấy đúng vùng.",
+            "Đặc tính yêu cầu không quan sát được từ ảnh.",
+            "Phạm vi SOP/tiêu chí chưa được duyệt cho trường hợp này."
+          ],
+          "manual_check": [
+            "Cân thực; kiểm cố định; chưa đủ bước niêm kiện nên chưa được hoàn tất."
+          ],
+          "manual_check_required": true,
+          "can_assert_transport_safety": false,
+          "advance_gate": "Chưa được đưa vào vận hành; sau duyệt: phần nhìn thấy đạt hoặc người kiểm tra ghi nhận thay thế, và kiểm tay hoàn tất. Không tự đạt khi không đủ bằng chứng.",
+          "remedy": "Đổi góc/làm rõ hình rồi kiểm tra lại; lỗi kỹ thuật chưa có cách khắc phục có nguồn thì dừng và hỏi người có kinh nghiệm."
+        }
+      ],
+      "gaps": [
+        "S07 chứng minh sản phẩm, không chứng minh SOP riêng cho giống này.",
+        "Rễ trần trầu bà: CHƯA CÓ NGUỒN PHÙ HỢP — CẦN XÁC MINH.",
+        "Thiếu mức ẩm, lực giữ, lượng vật tư và thử nghiệm trong nước."
+      ],
+      "stop_conditions": [
+        "Thiếu ETA/nguồn xác nhận hoặc hãng chưa xác nhận nhận gửi.",
+        "Loài/hình thức không thuộc phạm vi đã duyệt.",
+        "Thông số cần thiết chưa đo/cân/xác nhận.",
+        "Có điểm nguồn mâu thuẫn hoặc thao tác chưa đủ căn cứ."
+      ],
+      "numeric_material_thresholds": null,
+      "transport_survival_claim": null
+    }
+  ],
+  "carrier_reference_profiles": [
+    {
+      "profile_id": "REF-FEDEX-POT",
+      "source_id": "S01",
+      "evidence_ids": [
+        "F01",
+        "F02",
+        "F03"
+      ],
+      "status": "Tham khảo nước ngoài; không tự áp dụng nội địa.",
+      "auto_merge": false
+    },
+    {
+      "profile_id": "CARRIER-GHTK-REVIEW",
+      "source_id": "S09",
+      "evidence_ids": [
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "supporting_source_ids": [
+        "S10"
+      ],
+      "status": "Chờ hãng làm rõ phạm vi, khung, điều kiện thời gian và phiên bản áp dụng.",
+      "auto_merge": false
+    },
+    {
+      "profile_id": "CARRIER-VNPOST-REVIEW",
+      "source_id": "S11",
+      "evidence_ids": [
+        "V01",
+        "V02",
+        "V03",
+        "V04",
+        "V05"
+      ],
+      "status": "Chờ xác nhận dịch vụ/tuyến/điều kiện cây cụ thể.",
+      "auto_merge": false
+    }
+  ],
+  "global_checkpoint_policy": {
+    "status": "ĐỀ XUẤT CẦN THẨM ĐỊNH",
+    "validated": false,
+    "outputs": [
+      "passed",
+      "needs_adjustment",
+      "unverifiable"
+    ],
+    "passed_scope": "Chỉ tiêu chí nhìn thấy được duyệt, không an toàn vận chuyển hoặc cả bước.",
+    "manual_check_required": true,
+    "automatic_camera_thresholds": null
+  },
+  "approval_gate": {
+    "required": [
+      "Đúng loài và hình thức gửi",
+      "Shop duyệt kỹ thuật và giới hạn áp dụng",
+      "Nhà vận chuyển xác nhận nhận gửi/bao bì/tuyến",
+      "ETA có nguồn và thời điểm",
+      "Thử đóng gói/thử vận chuyển có biên bản",
+      "Kiểm đánh giá camera bằng ảnh thực tế và nhãn người kiểm tra"
+    ],
+    "reviewer": null,
+    "approved_at": null
+  },
+  "technical_text_policy": "Nội dung thao tác và điều kiện chỉ lưu tại bảng bằng chứng Markdown để không tạo hai bản lệch nhau. JSON là chỉ mục nghiên cứu, chưa phải gói runtime."
+}

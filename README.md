@@ -328,3 +328,12 @@ FR/NFR chưa nghiệm thu đầy đủ tiếp tục OPEN trong traceability. B�
 | [.code/test-strategy.md](.code/test-strategy.md) | Test/release evidence |
 
 Đọc `agent.md`/`.code/README.md` trước khi đổi nghiệp vụ. Cập nhật contract/ADR/evidence cùng code; không đóng FR chỉ vì đã có màn hình.
+
+
+## Giám sát đóng gói theo SOP và lệnh nói
+
+Mở `/app/live-packing` sau khi đăng nhập bản local. Chọn SOP, xác nhận phạm vi và mở camera; có thể bấm kiểm tra hoặc bật Điều khiển bằng giọng nói rồi nói “PlantMove, kiểm tra”/“đã xong rồi”. AI chỉ kiểm khung hình theo từng bước, không theo dõi video liên tục; kiểm tay vẫn bắt buộc.
+
+Cấu hình key phía server theo `.env.example`; không commit `.env.local`. Model phải khả dụng với tài khoản; model/quota ví dụ không là cam kết miễn phí. SOP hiện chưa duyệt chuyên môn và chỉ mở thực hiện ở development. Xem [hướng dẫn SOP](SOP_INTEGRATION.md) và [nhận lệnh nói](VOICE_COMMANDS.md).
+
+Kiểm phần giám sát: `npm run typecheck`, `npm test`, `npx playwright test --config playwright.live.config.ts`. Kiểm Gemini thật cần opt-in, có thể tốn quota; không chạy tự động trong bộ giả lập.

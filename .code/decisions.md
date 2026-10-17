@@ -39,3 +39,7 @@ Mỗi decision khi đổi ghi: status, ngày, người xác nhận, context/opti
 ## Bổ sung cho website local — 2026-10-12
 
 ADR-001 tại [implementation.md](implementation.md) ghi lựa chọn reversible Next.js route handlers/SQLite/private filesystem/DB jobs để chạy trên máy hiện có Node 24, không Docker. Đây là quyết định triển khai bản local trong scope người dùng yêu cầu, không phải owner approval đổi baseline production. Những decision chuyên môn/provider/policy trong bảng trên vẫn OPEN.
+
+
+## Giám sát đóng gói và nhận lệnh nói — 17/10/2026
+Theo yêu cầu người dùng: bổ sung luồng độc lập /app/live-packing, 6 SOP dự thảo/35 bước, checkpoint ảnh/manual, Gemini Vision/TTS và nhận lệnh tiếng Việt. Không hoàn tất hồ sơ hoặc trừ kho trong luồng thử; không tự phê duyệt SOP. Secrets chỉ qua cấu hình server, không lưu media mặc định. Nguồn và giới hạn: ../SOP_INTEGRATION.md và ../VOICE_COMMANDS.md. Kiểm: tests/live-packing.test.ts, packing-voice-commands.test.ts, live-sop-evaluation.test.ts, vietnamese-voice.test.ts, vietnamese-tts.test.ts và tests/e2e/live-packing.spec.ts. Provider thật, ảnh có nhãn và micro vật lý vẫn cần xác minh; không đóng release gate hoặc FR gốc chỉ vì có test phần mềm.

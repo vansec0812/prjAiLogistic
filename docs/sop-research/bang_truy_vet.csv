@@ -1,0 +1,17 @@
+﻿sop_id,step_id,evidence_id,source_id,source_url,source_location,production_enabled
+SUC-POT-ES,ES-01,E01,S02,https://www.eurosender.com/en/pack-ship/plants/succulents-cactus,"How to pack and ship succulents in pots, item 1, L51–52",False
+SUC-POT-ES,ES-02,E02,S02,https://www.eurosender.com/en/pack-ship/plants/succulents-cactus,"How to pack and ship succulents in pots, item 2, L53",False
+SUC-POT-ES,ES-03,E03,S02,https://www.eurosender.com/en/pack-ship/plants/succulents-cactus,"How to pack and ship succulents in pots, item 3, L54",False
+SUC-POT-ES,ES-04,E04,S02,https://www.eurosender.com/en/pack-ship/plants/succulents-cactus,"How to pack and ship succulents in pots, item 4, L55",False
+SUC-POT-ES,ES-05,E05,S02,https://www.eurosender.com/en/pack-ship/plants/succulents-cactus,"How to pack and ship succulents in pots, item 5, L56",False
+SUC-POT-ES,ES-06,E06,S02,https://www.eurosender.com/en/pack-ship/plants/succulents-cactus,"How to pack and ship succulents in pots, item 6, L57",False
+SUC-BARE-SD,SD-01,D01,S05,https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots,"Shipping Practices, bullet 1, L137–138",False
+SUC-BARE-SD,SD-02,D02,S05,https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots,"Shipping Practices, bullet 2, L139",False
+SUC-BARE-SD,SD-03,D03,S05,https://www.succulentsdepot.com/pages/benefits-of-shipping-bare-roots,"Shipping Practices, bullet 3, L140",False
+CAC-CW-PARTIAL,CW-01,C01,S08,https://cactuswarehouse.com/pages/how-we-pack-and-ship,"What happens to your plant after you order > 1, L98–100",False
+CAC-CW-PARTIAL,CW-02,C02,S08,https://cactuswarehouse.com/pages/how-we-pack-and-ship,"Step 2, L104–106",False
+CAC-CW-PARTIAL,CW-03,C03,S08,https://cactuswarehouse.com/pages/how-we-pack-and-ship,"Step 3, L110–111",False
+POTHOS-GP-CANDIDATE,GP-01,G01,S06,https://www.gabriellaplants.com/pages/our-process,"Preparing for shipment, L54–56",False
+POTHOS-GP-CANDIDATE,GP-02,G02,S06,https://www.gabriellaplants.com/pages/our-process,"Wrapping your plants, L61–63",False
+POTHOS-GP-CANDIDATE,GP-03,G03,S06,https://www.gabriellaplants.com/pages/our-process,"Wrapping your plants, L64",False
+POTHOS-GP-CANDIDATE,GP-04,G04,S06,https://www.gabriellaplants.com/pages/our-process,"Packing your box, L70–72",False
