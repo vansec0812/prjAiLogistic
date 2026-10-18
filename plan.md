@@ -115,3 +115,7 @@ Các milestone/FR/NFR vẫn cần nghiệm thu đúng acceptance và release gat
 ## 11. Tối ưu flow và RAG — 2026-10-15
 
 Người dùng chọn tri thức/RAG trước. Đã thêm readiness, lưu không đổi input giữ selection, báo cáo chi tiết PDF/Markdown/JSON/ZIP, thư viện ảnh AI gần ảnh chụp có fallback và kho tra cứu có scope. Nguồn và giới hạn tại [research/README.md](research/README.md); evidence thực tại [.code/implementation.md](.code/implementation.md). Không thay ngưỡng fixture bằng số từ bài báo; không có fine-tuning hoặc evaluation provider thật. RAG là tính năng tra cứu read-only bổ sung, không đồng nghĩa nghiệm thu FR chat/alternatives đầy đủ.
+
+## 12. Hướng dẫn camera theo hồ sơ — 18/10/2026
+
+Theo yêu cầu mới, gộp entry hồ sơ/camera, lưu phiên private theo input/SOP/revision; nhận xác nhận tiếng Việt theo bước hiện tại, hướng dẫn lại/trợ giúp/dừng, mở lại camera và giữ consent riêng. Bổ sung 8 nguồn mới vào registry với phân biệt metadata/claim, nhánh nguyên chậu FedEx DRAFT và scope NURSERY. Chi tiết/evidence tại [GUIDED_PACKING.md](GUIDED_PACKING.md) và [.code/implementation.md](.code/implementation.md). Approval chuyên môn, đánh giá ảnh/micro thật và vận hành production tiếp tục OPEN.

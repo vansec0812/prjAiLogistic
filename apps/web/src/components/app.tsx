@@ -7,14 +7,13 @@ import { SessionContext, type Session, api, Logo, Spinner, Alert, useSession, us
 import type { CaseRecord } from '@plantcare/domain';
 import { AuthPage } from './auth';
 import { KnowledgePage } from './knowledge';
-import { LivePacking } from './live-packing';
+import { CaseGuidedPacking } from './live-packing';
 import { Wizard, JobPage, PlanPage, SharedPage } from './packing';
 import { HistoryPage, MaterialsPage, TemplatesPage, NotificationsPage, SupportPage, SettingsPage, GuidesPage, AdminPage } from './secondary';
 
 const menu=[
-  {href:'/app/live-packing',label:'Giám sát đóng gói',icon:Camera},
   {href:'/app',label:'Tổng quan',icon:LayoutDashboard},
-  {href:'/app/new',label:'Tạo hồ sơ',icon:Plus},
+  {href:'/app/new',label:'Hồ sơ & camera',icon:Camera},
   {href:'/app/history',label:'Lịch sử',icon:Clock3},
   {href:'/app/materials',label:'Kho vật tư',icon:Package},
   {href:'/app/templates',label:'Mẫu đóng gói',icon:Bookmark},
@@ -36,12 +35,13 @@ export function PlantCareApp(){
   return <SessionContext.Provider value={{session,refresh,toast:setMessage}}>{content}{message&&<div className="toast" role="status"><Check size={19}/>{message}<button aria-label="Đóng thông báo" onClick={()=>setMessage('')}><X size={16}/></button></div>}</SessionContext.Provider>;
 }
 function AppRoute({pathname}:{pathname:string}){
-  if(pathname==='/app/live-packing')return <LivePacking/>;
+  if(pathname==='/app/live-packing')return <NewCase/>;
   const p=pathname.split('/').filter(Boolean);
   if(pathname.startsWith('/admin'))return <AdminPage section={p[1]||'rules'}/>;
   if(p[1]==='new')return <NewCase/>;
   if(p[1]==='knowledge')return <KnowledgePage/>;
   if(p[1]==='cases'){
+    if(p[3]==='guide')return <CaseGuidedPacking key={p[2]} caseId={p[2]}/>;
     if(p[3]==='compare')return <><PageHeading title="So sánh phương án"/><Alert kind="info">Bản local hiện tạo một phương án cho mỗi snapshot. So sánh nhiều phương án chưa được bật.</Alert><Link className="button primary" href={`/app/cases/${p[2]}/plans`}>Xem phương án hiện có</Link></>;
     if(['plans','steps','checklist','versions','compare'].includes(p[3]))return <PlanPage key={pathname} caseId={p[2]} mode={p[3]}/>;
     return <Wizard key={p[2]} caseId={p[2]} stage={p[3]||'plant'}/>;
@@ -99,9 +99,9 @@ function Dashboard(){
     <section className="dashboard-guides"><div className="panel-heading"><div><span className="eyebrow">GÓC NHÀ VƯỜN</span><h2>Hướng dẫn dành cho bạn</h2></div><ArrowLink href="/guides">Thư viện hướng dẫn</ArrowLink></div><GuideCards/></section>
   </>;
 }
-export function CaseTable({cases}:{cases:CaseRecord[]}){return <div className="table-wrap"><table className="case-table"><thead><tr><th>HỒ SƠ / CÂY</th><th>HÀNH TRÌNH</th><th>TRẠNG THÁI</th><th>CẬP NHẬT</th><th/></tr></thead><tbody>{cases.map((c,i)=><tr key={c.id}><td><Link className="case-name" href={`/app/cases/${c.id}/${c.status==='DRAFT'?'plant':'plans'}`}><span className={`plant-thumb thumb-${i%3}`}><Sprout size={23}/></span><span><strong>{c.name}</strong><small>{c.demo?'Mẫu phát triển · ':''}{c.input.plant.name||'Chưa nhập cây'} · #{c.id.slice(0,6).toUpperCase()}</small></span></Link></td><td><span className="route-cell">{c.input.shipment.origin||'Chưa khai báo'}{c.input.shipment.destination&&<><ArrowRight size={12}/>{c.input.shipment.destination}</>}</span></td><td><Badge status={c.status}/></td><td className="muted nowrap">{date(c.updatedAt)}</td><td><Link className="icon-button" aria-label={'Mở '+c.name} href={`/app/cases/${c.id}/${c.status==='DRAFT'?'plant':'plans'}`}><ArrowUpRight size={18}/></Link></td></tr>)}</tbody></table></div>;}
+export function CaseTable({cases}:{cases:CaseRecord[]}){return <div className="table-wrap"><table className="case-table"><thead><tr><th>HỒ SƠ / CÂY</th><th>HÀNH TRÌNH</th><th>TRẠNG THÁI</th><th>CẬP NHẬT</th><th/></tr></thead><tbody>{cases.map((c,i)=><tr key={c.id}><td><Link className="case-name" href={`/app/cases/${c.id}/${c.status==='DRAFT'?'guide':'plans'}`}><span className={`plant-thumb thumb-${i%3}`}><Sprout size={23}/></span><span><strong>{c.name}</strong><small>{c.demo?'Mẫu phát triển · ':''}{c.input.plant.name||'Chưa nhập cây'} · #{c.id.slice(0,6).toUpperCase()}</small></span></Link></td><td><span className="route-cell">{c.input.shipment.origin||'Chưa khai báo'}{c.input.shipment.destination&&<><ArrowRight size={12}/>{c.input.shipment.destination}</>}</span></td><td><Badge status={c.status}/></td><td className="muted nowrap">{date(c.updatedAt)}</td><td><Link className="icon-button" aria-label={'Mở '+c.name} href={`/app/cases/${c.id}/${c.status==='DRAFT'?'guide':'plans'}`}><ArrowUpRight size={18}/></Link></td></tr>)}</tbody></table></div>;}
 function NewCase(){
   const {session}=useSession(),router=useRouter();const [name,setName]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
-  const create=async(sample=false)=>{setBusy(true);setError('');try{const c=await api<CaseRecord>('cases',{method:'POST',body:JSON.stringify({name:sample?(name.trim()||'Hồ sơ thử nghiệm mới'):name,sample})},session.csrf);router.push(`/app/cases/${c.id}/plant`);}catch(e){setError((e as Error).message);}finally{setBusy(false);}};
-  return <><PageHeading eyebrow="HÀNH TRÌNH MỚI" title="Cây nào chuẩn bị lên đường?" description="Mỗi hồ sơ dành cho một cây và một chậu. Bạn luôn có thể lưu nháp để bổ sung sau."/><div className="new-case-grid"><section className="panel new-case-form"><span className="feature-icon"><Sprout size={28}/></span><h2>Bắt đầu từ một cái tên</h2><p>Đặt tên để dễ tìm lại hồ sơ của bạn.</p><form onSubmit={e=>{e.preventDefault();void create();}}><label className="field"><span>Tên hồ sơ <span className="required">*</span></span><input autoFocus minLength={2} maxLength={120} required placeholder="Ví dụ: Trầu bà gửi Đà Nẵng" value={name} onChange={e=>setName(e.target.value)}/></label>{error&&<Alert kind="error">{error}</Alert>}<button className="button primary wide" disabled={busy}>{busy?'Đang tạo…':'Tạo hồ sơ & tiếp tục'}<ArrowRight size={18}/></button></form>{session.development&&<button className="text-link sample-action" disabled={busy} onClick={()=>create(true)}>Hoặc tạo hồ sơ mẫu để kiểm thử <ArrowUpRight size={16}/></button>}</section><section className="new-case-illustration"><img src="/photos/hero-v2.webp" alt="Cây xanh và hộp đóng gói"/><h3>Chăm chút từng chút xanh.</h3><p>Đo thực tế. Xác nhận vật tư.<br/>Hiểu bối cảnh. Làm từng bước.</p><span><ShieldCheck size={16}/>Hồ sơ của bạn mặc định riêng tư</span></section></div></>;
+  const create=async(sample=false,manual=false)=>{setBusy(true);setError('');try{const c=await api<CaseRecord>('cases',{method:'POST',body:JSON.stringify({name:sample?(name.trim()||'Hồ sơ thử nghiệm mới'):name,sample})},session.csrf);router.push(`/app/cases/${c.id}/${sample||manual?'plant':'guide?camera=1'}`);}catch(e){setError((e as Error).message);}finally{setBusy(false);}};
+  return <><PageHeading eyebrow="HÀNH TRÌNH MỚI" title="Hồ sơ & camera" description="Mỗi hồ sơ dành cho một cây và một chậu. Bạn luôn có thể lưu nháp để bổ sung sau."/><div className="new-case-grid"><section className="panel new-case-form"><span className="feature-icon"><Sprout size={28}/></span><h2>Bắt đầu từ một cái tên</h2><p>Đặt tên để dễ tìm lại hồ sơ của bạn.</p><form onSubmit={e=>{e.preventDefault();void create();}}><label className="field"><span>Tên hồ sơ <span className="required">*</span></span><input autoFocus minLength={2} maxLength={120} required placeholder="Ví dụ: Trầu bà gửi Đà Nẵng" value={name} onChange={e=>setName(e.target.value)}/></label>{error&&<Alert kind="error">{error}</Alert>}<button className="button primary wide" disabled={busy}>{busy?'Đang tạo…':'Tạo hồ sơ & mở camera'}<ArrowRight size={18}/></button></form><button className="button secondary wide" disabled={busy || name.trim().length<2} onClick={()=>void create(false,true)}>Nhập hồ sơ kỹ thuật trước</button>{session.development&&<button className="text-link sample-action" disabled={busy} onClick={()=>create(true)}>Hoặc tạo hồ sơ mẫu để kiểm thử <ArrowUpRight size={16}/></button>}</section><section className="new-case-illustration"><img src="/photos/hero-v2.webp" alt="Cây xanh và hộp đóng gói"/><h3>Chăm chút từng chút xanh.</h3><p>Đo thực tế. Xác nhận vật tư.<br/>Hiểu bối cảnh. Làm từng bước.</p><span><ShieldCheck size={16}/>Hồ sơ của bạn mặc định riêng tư</span></section></div></>;
 }

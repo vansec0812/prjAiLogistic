@@ -2,23 +2,32 @@ import { test, expect, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'ignoreErrors' }); });
+async function openGuide(page: Page) {
+  if(new URL(page.url()).pathname==='/')await page.waitForURL('**/app');
+  const auth=await (await page.request.get('/api/v1/session')).json();
+  const response=await page.request.post('/api/v1/cases',{headers:{Origin:'http://127.0.0.1:3107','x-csrf-token':auth.data.csrf},data:{name:'Phiên camera E2E'}});
+  expect(response.status(),JSON.stringify(await response.json())).toBe(201);const c=(await response.json()).data;
+  const navigation=await page.goto(`/app/cases/${c.id}/guide`);
+  await page.getByLabel('Nhóm cây').selectOption('succulent');return navigation;
+}
 async function beginTrial(page: Page) {
   await page.getByLabel('Loài/giống đã xác nhận').fill('Echeveria shop xác nhận');
   await page.getByLabel('Tôi đại diện shop', {exact:false}).check();
   await page.getByLabel('Tôi đã xem và duyệt checklist', {exact:false}).check();
 }
 async function manualNext(page: Page) {
-  const panel=page.locator('section.live-controls').last();
+  const panel=page.locator('section.live-step');
+  const before=await panel.getByRole('heading',{level:2}).textContent();
   await panel.getByRole('checkbox').check();
   await panel.getByRole('button',{name:'Dùng xác nhận thủ công',exact:true}).click();
   await panel.getByRole('button',{name:'Bước tiếp',exact:true}).click();
+  await expect(panel.getByRole('heading',{level:2})).not.toHaveText(before!);
 }
 async function reachVisual(page: Page) { await manualNext(page); await manualNext(page); }
 
 async function configuredSession(page: Page) {
   const auth = await page.request.post('http://127.0.0.1:3107/api/v1/auth/dev', { headers: { Origin: 'http://127.0.0.1:3107' }, data: {} }); expect(auth.status()).toBe(200);
-  const json = await (await page.request.get('http://127.0.0.1:3107/api/v1/session')).json(); json.data.aiConfigured = true;
-  await page.route('**/api/v1/session', route => route.fulfill({ json }));
+  await page.route('**/api/v1/session',async route=>{const response=await route.fetch(),json=await response.json();json.data.aiConfigured=true;await route.fulfill({response,json});});
 }
 
 test('checklist confirmation prompts in Vietnamese then auto-inspects camera, retries and stops', async ({ page }) => {
@@ -36,7 +45,7 @@ test('checklist confirmation prompts in Vietnamese then auto-inspects camera, re
   await configuredSession(page);
   await page.goto('/');
   await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click();
-  await page.goto('/app/live-packing');
+  await openGuide(page);
   await beginTrial(page);
   await expect.poll(() => spoken.length).toBeGreaterThan(0); await reachVisual(page);
   const speechBefore = spoken.length; await page.getByRole('button', { name: 'Nghe lại', exact: true }).click(); await expect.poll(() => spoken.length).toBeGreaterThan(speechBefore);
@@ -64,7 +73,12 @@ test('checklist confirmation prompts in Vietnamese then auto-inspects camera, re
   await page.getByRole('button', { name: 'Yêu cầu AI kiểm tra lại', exact: true }).click();
   await expect.poll(() => calls, {timeout:10000}).toBe(2);
   await expect(page.getByRole('heading', { name: 'Đạt tiêu chí nhìn thấy' })).toBeVisible();
-  await page.locator('section.live-controls').last().getByRole('checkbox').check();
+  await page.route('**/api/v1/cases/*/guidance/*',async route=>{
+    const d=route.request().postDataJSON();expect(d.step_id).toBe('ESP-03');expect(d.manual_checked).toBe(true);
+    const parts=new URL(route.request().url()).pathname.split('/'),list=(await (await page.request.get(`/api/v1/cases/${parts[4]}/guidance`)).json()).data;
+    const g=list.find((x:{id:string})=>x.id===parts[6]);await route.fulfill({json:{data:{...g,index:3,revision:g.revision+1}}});
+  });
+  await page.locator('section.live-step').getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Bước tiếp', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Kiểm lớp bảo vệ' })).toBeVisible(); expect(calls).toBe(2);
   await page.getByRole('button', { name: 'Tắt camera', exact: true }).click(); expect(await track.evaluate(t => t.readyState)).toBe('ended');
@@ -78,19 +92,19 @@ test('provider unavailable never passes checkpoint; manual fallback remains avai
   await page.context().grantPermissions(['camera']);
   await configuredSession(page);
   await page.route('**/api/v1/live-packing/check', route => route.fulfill({ status: 503, json: { error: { code: 'AI_CHECK_FAILED', message: 'Provider unavailable test' } } }));
-  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await page.goto('/app/live-packing');
+  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await openGuide(page);
   await page.getByLabel('Đọc hướng dẫn và phản hồi', { exact: false }).uncheck(); await beginTrial(page); await reachVisual(page); await page.getByLabel('Đồng ý để AI lấy khung hình', { exact: false }).check();
   await page.getByRole('button', { name: 'Mở camera', exact: true }).click();
   await expect.poll(() => page.locator('video').evaluate(v => (v as HTMLVideoElement).videoWidth)).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Đã làm xong bước này — nhờ AI kiểm tra', exact: true }).click(); await expect(page.getByText('Provider unavailable test')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Đạt tiêu chí nhìn thấy' })).toHaveCount(0); await expect(page.getByRole('button', { name: 'Bước tiếp', exact: true })).toBeDisabled();
-  await page.locator('section.live-controls').last().getByRole('checkbox').check(); await page.getByLabel('Ghi nhận kiểm tay / lý do thay kết luận ảnh').fill('Người kiểm tra đã đối chiếu trực tiếp.'); await page.getByRole('button', { name: 'Dùng xác nhận thủ công' }).click(); await expect(page.getByRole('button', { name: 'Bước tiếp', exact: true })).toBeEnabled();
+  await page.locator('section.live-step').getByRole('checkbox').check(); await page.getByLabel('Ghi nhận kiểm tay / lý do thay kết luận ảnh').fill('Người kiểm tra đã đối chiếu trực tiếp.'); await page.getByRole('button', { name: 'Dùng xác nhận thủ công' }).click(); await expect(page.getByRole('button', { name: 'Bước tiếp', exact: true })).toBeEnabled();
 });
 test('mobile manual fallback, skip remains incomplete, no AI key', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click();
-  await page.goto('/app/live-packing');
+  await openGuide(page);
   await expect(page.getByText('Chưa cấu hình Vision API.', { exact: false })).toBeVisible();
   await page.getByLabel('Đọc hướng dẫn và phản hồi', { exact: false }).uncheck();
   await beginTrial(page); await reachVisual(page);
@@ -99,10 +113,10 @@ test('mobile manual fallback, skip remains incomplete, no AI key', async ({ page
   await expect(page.getByText(/Không mở được camera/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đã làm xong bước này — nhờ AI kiểm tra', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Bước tiếp', exact: true })).toBeDisabled();
-  await page.locator('section.live-controls').last().getByRole('checkbox').check();
+  await page.locator('section.live-step').getByRole('checkbox').check();
   await page.getByLabel('Ghi nhận kiểm tay / lý do thay kết luận ảnh').fill('Người kiểm tra đã đối chiếu trực tiếp.'); await page.getByRole('button', { name: 'Dùng xác nhận thủ công' }).click();
   await page.getByRole('button', { name: 'Bước tiếp', exact: true }).click();
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Bỏ qua — ghi chưa đạt' }).click();
+  for (let i = 0; i < 3; i++) { const request=page.waitForResponse(r=>r.request().method()==='PATCH'&&r.url().includes('/guidance/'));await page.getByRole('button', { name: 'Bỏ qua — ghi chưa đạt' }).click();await request; }
   await expect(page.getByRole('heading', { name: 'Đã kết thúc phiên kiểm thử' })).toBeVisible();
   await expect(page.getByText(/Đã bỏ qua — chưa đạt/)).toHaveCount(3);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -111,7 +125,7 @@ test('mobile manual fallback, skip remains incomplete, no AI key', async ({ page
 test('without Vietnamese voice, never speaks in a foreign language', async ({ page }) => {
   let spoken = 0; await page.exposeFunction('foreignSpeech', () => spoken++);
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: Object.assign(new EventTarget(), { getVoices: () => [{ name: 'English only', lang: 'en-US', default: true }], speak: () => (window as unknown as { foreignSpeech: () => void }).foreignSpeech(), cancel: () => {} }) }); });
-  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await page.goto('/app/live-packing');
+  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await openGuide(page);
   await beginTrial(page);
   await expect(page.getByText(/Chưa phát được giọng Việt/)).toBeVisible();
   await page.getByRole('button', { name: 'Nghe lại', exact: true }).click(); expect(spoken).toBe(0);
@@ -121,7 +135,7 @@ test('cancel, revoke consent or stop camera during positioning never sends an im
   await page.context().grantPermissions(['camera']); let calls = 0;
   await configuredSession(page);
   await page.route('**/api/v1/live-packing/check', async route => { calls++; await route.fulfill({ status: 503, json: { error: { message: 'Unexpected image request' } } }); });
-  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await page.goto('/app/live-packing');
+  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await openGuide(page);
   await page.getByLabel('Đọc hướng dẫn và phản hồi', { exact: false }).uncheck(); await beginTrial(page); await reachVisual(page); await page.getByLabel('Đồng ý để AI lấy khung hình', { exact: false }).check();
   await page.getByRole('button', { name: 'Mở camera', exact: true }).click();
   await expect.poll(() => page.locator('video').evaluate(v => (v as HTMLVideoElement).videoWidth)).toBeGreaterThan(0);
@@ -139,7 +153,7 @@ test('cancel, revoke consent or stop camera during positioning never sends an im
 });
 
 test('bare root branch reads the new SOP and exports unresolved steps without image data', async ({ page }) => {
-  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await page.goto('/app/live-packing');
+  await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await openGuide(page);
   await page.getByLabel('Đọc hướng dẫn và phản hồi', { exact:false }).uncheck();
   await page.getByLabel('Hình thức gửi').selectOption('BARE_ROOT');
   await beginTrial(page);
@@ -149,9 +163,9 @@ test('bare root branch reads the new SOP and exports unresolved steps without im
   await expect(page.getByRole('heading',{name:'Chuẩn bị rễ trần',exact:true})).toBeVisible();
   await manualNext(page);
   await expect(page.getByRole('heading',{name:'Bọc cây rễ trần',exact:true})).toBeVisible();
-  await page.locator('section.live-controls').last().getByRole('checkbox').check();
+  await page.locator('section.live-step').getByRole('checkbox').check();
   await expect(page.getByRole('button',{name:'Dùng xác nhận thủ công',exact:true})).toBeDisabled();
-  for (let i=0;i<4;i++) await page.getByRole('button',{name:'Bỏ qua — ghi chưa đạt',exact:true}).click();
+  for (let i=0;i<4;i++) {const request=page.waitForResponse(r=>r.request().method()==='PATCH'&&r.url().includes('/guidance/'));await page.getByRole('button',{name:'Bỏ qua — ghi chưa đạt',exact:true}).click();await request;}
   const pending=page.waitForEvent('download'); await page.getByRole('button',{name:'Tải biên bản kiểm thử (không ảnh)',exact:true}).click();
   const download=await pending, data=JSON.parse(readFileSync((await download.path())!,'utf8'));
   expect(data.sop_id).toBe('SUCCULENT-BARE_ROOT-ES'); expect(data.approved_professionally).toBe(false); expect(data.transport_safe).toBeNull();
@@ -162,7 +176,7 @@ test('bare root branch reads the new SOP and exports unresolved steps without im
 
 test('pothos source scope rejects missing and out of range measurements', async ({page}) => {
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/'); await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click(); await page.goto('/app/live-packing');
+  await page.goto('/'); await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click(); await openGuide(page);
   await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).uncheck();
   await page.getByLabel('Nhóm cây').selectOption('pothos');
   await page.getByLabel('Loài/giống đã xác nhận').fill('Epipremnum aureum'); await page.getByLabel('Tôi đại diện shop',{exact:false}).check();
@@ -210,7 +224,7 @@ async function command(page: Page, text: string, stale=false) {
 test('voice command pauses for TTS, rejects negation and duplicates, then checks camera without marking completion', async ({page})=>{
   await installCommandBrowser(page);await configuredSession(page);await page.context().grantPermissions(['camera']);
   await page.goto('/');await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click();
-  const response=await page.goto('/app/live-packing');expect(response?.headers()['permissions-policy']).toContain('microphone=(self)');
+  const response=await openGuide(page);expect(response?.headers()['permissions-policy']).toContain('microphone=(self)');
   await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).uncheck();await beginTrial(page);await reachVisual(page);
   await page.getByLabel('Đồng ý để AI lấy khung hình',{exact:false}).check();await page.getByRole('button',{name:'Mở camera',exact:true}).click();
   await expect.poll(()=>page.locator('video').evaluate(v=>(v as HTMLVideoElement).videoWidth)).toBeGreaterThan(0);
@@ -230,13 +244,13 @@ test('voice command pauses for TTS, rejects negation and duplicates, then checks
   await page.screenshot({path:'output/qa/voice-commands.png',fullPage:true});
 });
 
-test('spoken done never completes manual steps; denied microphone disables listening without retry',async({page})=>{
+test('spoken agreement confirms current manual step once; denied microphone stops listening',async({page})=>{
   await installCommandBrowser(page);await configuredSession(page);
-  await page.goto('/');await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click();await page.goto('/app/live-packing');
+  await page.goto('/');await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click();await openGuide(page);
   await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).uncheck();await beginTrial(page);
   let calls=0;await page.route('**/api/v1/live-packing/check',async route=>{calls++;await route.abort();});
   await page.getByLabel('Điều khiển bằng giọng nói',{exact:false}).check();await expect(page.getByText('Nhận lệnh: Đang nghe lệnh',{exact:true})).toBeVisible();
-  await command(page,'Đã xong rồi');await expect(page.getByText(/Đã nhận lệnh. Bước này cần kiểm tra trực tiếp/)).toBeVisible();
+  await command(page,'đồng ý');await command(page,'đồng ý',true);await expect(page.getByRole('heading',{name:'Kiểm tra độ khô',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Bước tiếp',exact:true})).toBeDisabled();expect(calls).toBe(0);
   await expect(page.getByText('Nhận lệnh: Đang nghe lệnh',{exact:true})).toBeVisible();
   await page.evaluate(()=>{const w=window as unknown as {commandSessions:Array<{onerror:((e:{error:string})=>void)|null}>};w.commandSessions.at(-1)?.onerror?.({error:'not-allowed'});});
@@ -247,7 +261,33 @@ test('spoken done never completes manual steps; denied microphone disables liste
 
 test('unsupported speech recognition leaves button workflow available',async({page})=>{
   await page.addInitScript(()=>{for(const name of ['SpeechRecognition','webkitSpeechRecognition'])Object.defineProperty(window,name,{configurable:true,value:undefined});});
-  await page.goto('/');await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click();await page.goto('/app/live-packing');
+  await page.goto('/');await page.getByRole('button',{name:/Khám phá bản thử nghiệm local/}).click();await openGuide(page);
   await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).uncheck();await beginTrial(page);await reachVisual(page);
   await expect(page.getByLabel('Điều khiển bằng giọng nói',{exact:false})).toBeDisabled();await expect(page.getByRole('button',{name:'Đã làm xong bước này — nhờ AI kiểm tra',exact:true})).toBeVisible();
+});
+
+test('unified entry opens camera, contextual agreement persists once, and reload requires fresh media consent',async({page})=>{
+  await installCommandBrowser(page);await configuredSession(page);await page.context().grantPermissions(['camera']);await page.setViewportSize({width:390,height:844});
+  await page.goto('/app/new');await page.getByPlaceholder('Ví dụ: Trầu bà gửi Đà Nẵng').fill('Cây hướng dẫn hợp nhất');await page.getByRole('button',{name:'Tạo hồ sơ & mở camera',exact:true}).click();
+  await expect(page).toHaveURL(/\/app\/cases\/.+\/guide$/);await expect(page.getByRole('heading',{name:'Hồ sơ & camera',exact:true})).toBeVisible();
+  await expect.poll(()=>page.locator('video').evaluate(v=>(v as HTMLVideoElement).srcObject!==null)).toBe(true);
+  await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).uncheck();await page.getByLabel('Loài/giống đã xác nhận').fill('Cây nguyên chậu shop xác nhận');await page.getByLabel('Tôi đại diện shop',{exact:false}).check();await page.getByLabel('Tôi đã xem và duyệt checklist',{exact:false}).check();
+  await expect(page.getByRole('heading',{name:'Kiểm cây và hành trình',exact:true})).toBeVisible();await page.getByLabel('Điều khiển bằng giọng nói',{exact:false}).check();await expect(page.getByText('Nhận lệnh: Đang nghe lệnh',{exact:true})).toBeVisible();
+  await command(page,'không đồng ý');await expect(page.getByRole('heading',{name:'Kiểm cây và hành trình',exact:true})).toBeVisible();
+  await command(page,'dạ vâng');await command(page,'dạ vâng',true);await expect(page.getByRole('heading',{name:'Giữ giá thể trong chậu',exact:true})).toBeVisible();
+  const id=new URL(page.url()).pathname.split('/')[3],list=(await (await page.request.get(`/api/v1/cases/${id}/guidance`)).json()).data;
+  expect(list[0].index).toBe(1);expect(list[0].records['FDX-01'].confirmation.method).toBe('VOICE');expect(list[0].revision).toBe(2);
+  await page.reload();await expect(page.getByRole('heading',{name:'Giữ giá thể trong chậu',exact:true})).toBeVisible();await expect(page.getByLabel('Điều khiển bằng giọng nói',{exact:false})).not.toBeChecked();await expect(page.getByLabel('Đồng ý để AI lấy khung hình',{exact:false})).not.toBeChecked();
+  expect(await page.locator('video').evaluate(v=>(v as HTMLVideoElement).srcObject)).toBeNull();
+  await page.getByRole('button',{name:'Mở camera',exact:true}).click();await expect.poll(()=>page.locator('video').evaluate(v=>(v as HTMLVideoElement).videoWidth)).toBeGreaterThan(0);
+  await page.getByRole('button',{name:'Tắt camera',exact:true}).click();await page.getByRole('button',{name:'Mở camera',exact:true}).click();await expect.poll(()=>page.locator('video').evaluate(v=>(v as HTMLVideoElement).srcObject!==null)).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'output/qa/unified-guide-mobile.png',fullPage:true});
+});
+
+test('agreement after a failed visual checkpoint explains repair and keeps current step',async({page})=>{
+  await installCommandBrowser(page);await configuredSession(page);await page.context().grantPermissions(['camera']);await page.goto('/app/new');await openGuide(page);await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).uncheck();await beginTrial(page);await reachVisual(page);
+  await page.getByRole('button',{name:'Mở camera',exact:true}).click();await page.getByLabel('Đồng ý để AI lấy khung hình',{exact:false}).check();
+  await page.route('**/api/v1/live-packing/check',route=>route.fulfill({json:{data:{step_id:'ESP-03',observed:'Thiếu màng ở vùng nhìn rõ.',status:'needs_adjustment',reason:'Cần sửa lớp giữ đất.',manual_check_required:true,criterion_results:[{criterion_id:'ESP-03-C1',status:'needs_adjustment',observation:'Thiếu lớp phủ.'}]}}}));
+  await page.getByRole('button',{name:'Đã làm xong bước này — nhờ AI kiểm tra',exact:true}).click();await expect(page.getByRole('heading',{name:'Cần điều chỉnh',exact:true})).toBeVisible();
+  await page.getByLabel('Điều khiển bằng giọng nói',{exact:false}).check();await expect(page.getByText('Nhận lệnh: Đang nghe lệnh',{exact:true})).toBeVisible();await command(page,'đồng ý');await expect(page.getByText(/Chưa thể chuyển bước/)).toBeVisible();await expect(page.getByRole('heading',{name:'Giữ đất trong chậu',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Bước tiếp',exact:true})).toBeDisabled();
 });

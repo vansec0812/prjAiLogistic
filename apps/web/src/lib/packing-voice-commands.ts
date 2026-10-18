@@ -1,9 +1,16 @@
-export function isPackingCheckCommand(transcript: string): boolean {
+export type PackingIntent='CHECK'|'CONFIRM'|'REPEAT'|'HELP'|'STOP';
+export function packingIntent(transcript: string): PackingIntent|null {
   const text = transcript.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
     .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   // Whole utterances only: never accept substrings of negations or conversation.
-  return ['plantmove kiem tra', 'plant move kiem tra', 'da xong roi', 'xong roi', 'da xong'].includes(text);
+  if(['plantmove kiem tra','plant move kiem tra','kiem tra','kiem tra lai','kiem tra giup toi','kiem tra buoc nay','toi da lam xong','da xong roi','xong roi','da xong','minh lam xong roi'].includes(text))return 'CHECK';
+  if(['dong y','toi dong y','dong y roi','vang','da','da vang','co','u','uh','dung roi','duoc','duoc roi','ok','oke','okay','toi xac nhan','toi da kiem tra','da kiem tra xong','toi hieu roi','tiep tuc','tiep tuc di','duoc tiep tuc di','chuyen buoc','sang buoc tiep','qua buoc tiep theo'].includes(text))return 'CONFIRM';
+  if(['nhac lai','noi lai','doc lai','huong dan lai'].includes(text))return 'REPEAT';
+  if(['giup toi','can giup do','toi chua hieu','toi khong biet lam','lam the nao'].includes(text))return 'HELP';
+  if(['dung lai','tam dung','dung kiem tra','tat camera'].includes(text))return 'STOP';
+  return null;
 }
+export const isPackingCheckCommand=(text:string)=>packingIntent(text)==='CHECK';
 
 export interface RecognitionResultEvent {
   resultIndex: number;
@@ -29,7 +36,7 @@ export class PackingCommandListener {
   constructor(private readonly options: {
     factory: RecognitionFactory;
     allowed: () => boolean;
-    onCommand: () => void;
+    onCommand: (intent:PackingIntent,transcript:string) => void;
     onState: (state: string) => void;
     onError: (message: string) => void;
   }) {}
@@ -62,10 +69,11 @@ export class PackingCommandListener {
       if (!current() || !this.options.allowed()) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal && isPackingCheckCommand(result[0].transcript)) {
+        const intent=result.isFinal?packingIntent(result[0].transcript):null;
+        if (intent) {
           this.suspend(); // Synchronous lock before callback, speech, or React updates.
-          this.options.onState('Đã nhận lệnh kiểm tra');
-          this.options.onCommand();
+          this.options.onState(intent==='CONFIRM'?'Đã nhận lời xác nhận':'Đã nhận lệnh');
+          this.options.onCommand(intent,result[0].transcript);
           return;
         }
       }

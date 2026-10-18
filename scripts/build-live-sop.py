@@ -3,7 +3,7 @@ import json, shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-research = ROOT.parents[1] / 'outputs' / 'PlantMove_Kho_SOP_NghienCuu'
+research = ROOT.parent / 'outputs' / 'PlantMove_Kho_SOP_NghienCuu'
 archive = ROOT / 'docs' / 'sop-research'
 archive.mkdir(parents=True, exist_ok=True)
 if not research.exists():
@@ -70,10 +70,31 @@ for form in ['POTTED','BARE_ROOT']:
     visual(sid(len(steps)+3),'Kiểm và niêm hộp','Kiểm cố định; dán kiểu H, gắn nhãn.','Đã kiểm trực tiếp độ cố định theo cách được shop duyệt và các mặt dán. Nguồn đề xuất lắc nhẹ nhưng ứng dụng không tự yêu cầu thao tác này khi chưa thẩm định. Đã xác nhận hãng nhận gửi.','S12',loc+' / '+('Step 6' if form=='POTTED' else 'Step 5'),'Đưa một mặt dán kiểu H và nhãn cảnh báo vào khung hình; tự kiểm mặt còn lại. Tránh để lộ địa chỉ.', [('Mặt đang thấy có đường dán kiểu H, nắp đóng và nhãn cảnh báo.','Mặt nhìn rõ còn hở nắp hoặc thiếu đường dán kiểu H/nhãn cảnh báo.')])]
   profiles.append(dict(id=f'POTHOS-{form}-IZ',plant='pothos',shipping_form=form,title='Trầu bà nhỏ — '+('nguyên chậu' if form=='POTTED' else 'rễ trần'),source_ids=['S12'],scope='Small pothos trong hướng dẫn cây nhỏ; không tự áp dụng cho Monstera/Philodendron hoặc cây lớn.',steps=steps,limits=dict(pot_cm_min=5.08,pot_cm_max=10.16,height_cm_exclusive_max=20.32,packed_kg_exclusive_max=1.36077711)))
 
+sources.append(dict(id='FDX-CA',title='FedEx Canada — Packaging Flowers and Plants',url='https://www.fedex.com/content/dam/fedex/ca-canada/MVP/images/2020/Q2/FX_HowToPack_FlowersPlants_CA_EN_699017957.pdf',accessed_at='2026-10-18',locator='PDF pp.2–4; Plants p.3',limitation='Brochure ©2019, Express Canada; đã đọc text, chưa kiểm hình. Không quy định lịch tưới/nhiệt độ chung hoặc xác nhận hãng tại Việt Nam nhận gửi.'))
+profiles.append(dict(id='POTTED-FEDEX-GENERAL',plant='potted',shipping_form='POTTED',title='Cây nguyên chậu — giữ đất, cố định và kiểm hộp',source_ids=['FDX-CA'],scope='Một cây nguyên chậu. Hướng dẫn cơ học tham khảo, không tự xác định nhu cầu sinh học theo loài; không dành cho hoa cắt, khay cây giống hoặc rễ trần.',limits=None,steps=[
+  step('FDX-01','Kiểm cây và hành trình','Xem cây, chậu và điều kiện nhận gửi trước khi bọc. Nếu cây hư hại hoặc chưa rõ cách chuẩn bị theo loài, dừng để hỏi người phụ trách.','Đã kiểm trực tiếp tình trạng chậu/cây, nước đọng và xác nhận hãng, người nhận, hành trình. Nhu cầu nước/nhiệt theo loài cần xác nhận riêng.','FDX-CA','pp.2–4; Plants p.3'),
+  visual('FDX-02','Giữ giá thể trong chậu','Bố trí lớp giữ đất tại miệng chậu trước khi che kín. Tránh để đất tràn vào tán.','Đã kiểm lớp giữ đất không gây tổn thương thân; kiểm nước rò trực tiếp. Không suy độ ẩm giá thể từ ảnh.','FDX-CA','p.3, Plants','Đưa toàn bộ miệng chậu, lớp giữ đất và chỗ tiếp giáp thân vào khung hình.',[('Thấy lớp giữ giá thể tại miệng chậu.','Vùng miệng chậu nhìn rõ chưa có lớp giữ giá thể.')]),
+  visual('FDX-03','Cố định chậu trong hộp','Đặt chậu vào hộp; dùng vách hoặc insert phù hợp giữ chậu. Điểm giữ không tì ép lên lá.','Đã kiểm trực tiếp mức giữ chậu và lực tác động, khoảng trống cho tán; không lắc mạnh để thử.','FDX-CA','p.3, Plants','Giữ hộp mở, cho thấy chậu, điểm giữ và toàn bộ vùng tán.',[('Thấy chậu trong hộp cùng vách hoặc insert giữ chậu.','Chậu còn ngoài hộp hoặc vùng nhìn rõ chưa bố trí vách/insert giữ chậu.')]),
+  step('FDX-04','Kiểm toàn bộ trước khi đóng','Kiểm trực tiếp các điểm chạm, nước rò và các mặt sẽ bị che. Một ảnh không chứng minh độ chắc hoặc mọi phía của kiện.','Đã kiểm trực tiếp toàn bộ các mặt, điểm tiếp xúc, kích thước bao ngoài lớn nhất, kích thước trong hộp và khối lượng thực. Nếu chưa phù hợp, sửa trước khi xác nhận.','FDX-CA','pp.2–4; Plants p.3'),
+  visual('FDX-05','Đóng hộp và bàn giao','Đóng và niêm hộp sau khi kiểm. Nhãn hướng lên không bảo đảm kiện giữ nguyên chiều; kiểm yêu cầu dịch vụ riêng trước khi bàn giao.','Đã kiểm mọi mặt niêm, dữ liệu đơn và hãng nhận gửi. Phiên hướng dẫn không chứng nhận an toàn hoặc tự hoàn tất hồ sơ vận chuyển.','FDX-CA','pp.2/4, general packing guidance','Đưa mặt hộp đã niêm vào khung hình, tránh nhãn địa chỉ.',[('Mặt đang thấy đã đóng; không có phần cây kẹp nhô qua mép đóng.','Mặt đang thấy còn mở hoặc có phần cây bị kẹp qua mép đóng.')])]))
+
+sources.extend([
+ dict(id='AH2025',title='AmericanHort — ANSI Z60.2-2025',url='https://americanhort.org/wp-content/uploads/2026/02/nursery-stock-standards.pdf',accessed_at='2026-10-18',locator='§1.2.2.1 p.5; §§1.2.2.2–.3 pp.6–7',limitation='Quy cách nursery thương mại, không phải bounding dimensions hoặc SOP parcel; chỉ tóm tắt ngắn, quyền toàn văn chưa xác nhận.'),
+ dict(id='VBN2026',title='VBN — Garden plants, October 2026',url='https://beheer.vbn.nl/Zoekscherm/Productspecificatie.aspx?lang=EN&specid=100040&type=full',accessed_at='2026-10-18',locator='Quality; Definitions: Plant weight',limitation='Garden plants group 30000000, không riêng một giống. Không dùng grading nhỏ nhất cho fit. Quyền tái bản cần phép.'),
+ dict(id='USDA66',title='USDA — AH66, Terril A. Nell (2016)',url='https://www.govinfo.gov/content/pkg/GOVPUB-A-PURL-gpo87416/pdf/GOVPUB-A-PURL-gpo87416.pdf',accessed_at='2026-10-18',locator='Flowering Potted Plants pp.722–724; Foliage Plants pp.725–726',limitation='Điều kiện phụ thuộc loài/giống/acclimatization, bảng xe lạnh/vận chuyển tối; không cấp ngưỡng chung cho parcel.')
+])
+general=next(p for p in profiles if p['plant']=='potted')
+general['source_ids']+=['AH2025','VBN2026','USDA66']
+general['reference_notes']=[
+ dict(step_id='FDX-01',source_id='VBN2026',locator='Quality; Definitions: Plant weight',text='Nguồn thương mại lưu ý chậu/bầu không hỏng và cây đứng chắc. Plant weight gồm cây, chậu, giá thể; không phải khối lượng kiện đã thêm hộp/vật tư.'),
+ dict(step_id='FDX-01',source_id='USDA66',locator='pp.722–726; Table 1 foliage heading/footnotes',text='Điều kiện chịu vận chuyển khác theo loài/giống và chuẩn bị trước gửi. Bảng cây lá có scope cây acclimatization trong xe lạnh; ô trống là unknown. Hỏi người phụ trách khi chưa có điều kiện phù hợp, không lấy một nhiệt độ chung cho mọi cây.'),
+ dict(step_id='FDX-04',source_id='AH2025',locator='§1.2.2.1 p.5; §§1.2.2.2–.3 pp.6–7',text='Chiều cao thương mại từ mặt đất và độ rộng trung bình không phải kích thước bao ngoài lớn nhất. Với hộp, cần đo thực toàn cây/chậu và phần nhô ra theo tư thế gửi; không suy kích thước từ ảnh.')
+]
+
 for profile in profiles:
-  profile.update(version='2026.10-trial.1',status='DRAFT',published=False,production_enabled=False,reviewer=None,approved_at=None,validation_status='NOT_EVALUATED',
+  profile.update(version='2026.10-trial.2' if profile['plant']=='potted' else '2026.10-trial.1',status='DRAFT',published=False,production_enabled=False,reviewer=None,approved_at=None,validation_status='NOT_EVALUATED',
                  completeness='Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.',
-                 supersedes_research=('POTHOS-GP-CANDIDATE' if profile['plant']=='pothos' else 'CAC-CW-PARTIAL' if profile['plant']=='cactus' else 'SUC-POT-ES' if profile['shipping_form']=='POTTED' else 'SUC-BARE-SD'))
+                 supersedes_research=('' if profile['plant']=='potted' else 'POTHOS-GP-CANDIDATE' if profile['plant']=='pothos' else 'CAC-CW-PARTIAL' if profile['plant']=='cactus' else 'SUC-POT-ES' if profile['shipping_form']=='POTTED' else 'SUC-BARE-SD'))
 catalog=dict(schema_version='plantmove-live-sop-v2',sources=sources,sops=profiles,
              note='Nội dung kỹ thuật tóm tắt có nguồn; tiêu chí thị giác và lời nhắc là thiết kế kiểm thử PlantMove. Chưa có phê duyệt chuyên môn hoặc đánh giá ảnh thật.')
 target=ROOT/'apps/web/src/data/live-sops.json'

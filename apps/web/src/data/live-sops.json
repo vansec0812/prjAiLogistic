@@ -16,6 +16,38 @@
       "accessed_at": "2026-10-16",
       "locator": "What Counts as a Small Plant; Option A; Option B",
       "limitation": "Cây nhỏ, có nêu small pothos; chưa xác nhận riêng giống hoặc điều kiện Việt Nam. Các mức của nguồn chỉ là phạm vi thẩm định."
+    },
+    {
+      "id": "FDX-CA",
+      "title": "FedEx Canada — Packaging Flowers and Plants",
+      "url": "https://www.fedex.com/content/dam/fedex/ca-canada/MVP/images/2020/Q2/FX_HowToPack_FlowersPlants_CA_EN_699017957.pdf",
+      "accessed_at": "2026-10-18",
+      "locator": "PDF pp.2–4; Plants p.3",
+      "limitation": "Brochure ©2019, Express Canada; đã đọc text, chưa kiểm hình. Không quy định lịch tưới/nhiệt độ chung hoặc xác nhận hãng tại Việt Nam nhận gửi."
+    },
+    {
+      "id": "AH2025",
+      "title": "AmericanHort — ANSI Z60.2-2025",
+      "url": "https://americanhort.org/wp-content/uploads/2026/02/nursery-stock-standards.pdf",
+      "accessed_at": "2026-10-18",
+      "locator": "§1.2.2.1 p.5; §§1.2.2.2–.3 pp.6–7",
+      "limitation": "Quy cách nursery thương mại, không phải bounding dimensions hoặc SOP parcel; chỉ tóm tắt ngắn, quyền toàn văn chưa xác nhận."
+    },
+    {
+      "id": "VBN2026",
+      "title": "VBN — Garden plants, October 2026",
+      "url": "https://beheer.vbn.nl/Zoekscherm/Productspecificatie.aspx?lang=EN&specid=100040&type=full",
+      "accessed_at": "2026-10-18",
+      "locator": "Quality; Definitions: Plant weight",
+      "limitation": "Garden plants group 30000000, không riêng một giống. Không dùng grading nhỏ nhất cho fit. Quyền tái bản cần phép."
+    },
+    {
+      "id": "USDA66",
+      "title": "USDA — AH66, Terril A. Nell (2016)",
+      "url": "https://www.govinfo.gov/content/pkg/GOVPUB-A-PURL-gpo87416/pdf/GOVPUB-A-PURL-gpo87416.pdf",
+      "accessed_at": "2026-10-18",
+      "locator": "Flowering Potted Plants pp.722–724; Foliage Plants pp.725–726",
+      "limitation": "Điều kiện phụ thuộc loài/giống/acclimatization, bảng xe lạnh/vận chuyển tối; không cấp ngưỡng chung cho parcel."
     }
   ],
   "sops": [
@@ -940,6 +972,159 @@
       "validation_status": "NOT_EVALUATED",
       "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
       "supersedes_research": "POTHOS-GP-CANDIDATE"
+    },
+    {
+      "id": "POTTED-FEDEX-GENERAL",
+      "plant": "potted",
+      "shipping_form": "POTTED",
+      "title": "Cây nguyên chậu — giữ đất, cố định và kiểm hộp",
+      "source_ids": [
+        "FDX-CA",
+        "AH2025",
+        "VBN2026",
+        "USDA66"
+      ],
+      "scope": "Một cây nguyên chậu. Hướng dẫn cơ học tham khảo, không tự xác định nhu cầu sinh học theo loài; không dành cho hoa cắt, khay cây giống hoặc rễ trần.",
+      "limits": null,
+      "steps": [
+        {
+          "id": "FDX-01",
+          "title": "Kiểm cây và hành trình",
+          "instruction": "Xem cây, chậu và điều kiện nhận gửi trước khi bọc. Nếu cây hư hại hoặc chưa rõ cách chuẩn bị theo loài, dừng để hỏi người phụ trách.",
+          "speech_vi": "Xem cây, chậu và điều kiện nhận gửi trước khi bọc. Nếu cây hư hại hoặc chưa rõ cách chuẩn bị theo loài, dừng để hỏi người phụ trách.",
+          "manual": "Đã kiểm trực tiếp tình trạng chậu/cây, nước đọng và xác nhận hãng, người nhận, hành trình. Nhu cầu nước/nhiệt theo loài cần xác nhận riêng.",
+          "source_id": "FDX-CA",
+          "source_locator": "pp.2–4; Plants p.3",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "FDX-02",
+          "title": "Giữ giá thể trong chậu",
+          "instruction": "Bố trí lớp giữ đất tại miệng chậu trước khi che kín. Tránh để đất tràn vào tán.",
+          "speech_vi": "Bố trí lớp giữ đất tại miệng chậu trước khi che kín. Tránh để đất tràn vào tán.",
+          "manual": "Đã kiểm lớp giữ đất không gây tổn thương thân; kiểm nước rò trực tiếp. Không suy độ ẩm giá thể từ ảnh.",
+          "source_id": "FDX-CA",
+          "source_locator": "p.3, Plants",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa toàn bộ miệng chậu, lớp giữ đất và chỗ tiếp giáp thân vào khung hình.",
+          "criteria": [
+            {
+              "id": "FDX-02-C1",
+              "visible_pass": "Thấy lớp giữ giá thể tại miệng chậu.",
+              "visible_fail": "Vùng miệng chậu nhìn rõ chưa có lớp giữ giá thể."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "FDX-03",
+          "title": "Cố định chậu trong hộp",
+          "instruction": "Đặt chậu vào hộp; dùng vách hoặc insert phù hợp giữ chậu. Điểm giữ không tì ép lên lá.",
+          "speech_vi": "Đặt chậu vào hộp; dùng vách hoặc insert phù hợp giữ chậu. Điểm giữ không tì ép lên lá.",
+          "manual": "Đã kiểm trực tiếp mức giữ chậu và lực tác động, khoảng trống cho tán; không lắc mạnh để thử.",
+          "source_id": "FDX-CA",
+          "source_locator": "p.3, Plants",
+          "mode": "visual",
+          "camera_prompt_vi": "Giữ hộp mở, cho thấy chậu, điểm giữ và toàn bộ vùng tán.",
+          "criteria": [
+            {
+              "id": "FDX-03-C1",
+              "visible_pass": "Thấy chậu trong hộp cùng vách hoặc insert giữ chậu.",
+              "visible_fail": "Chậu còn ngoài hộp hoặc vùng nhìn rõ chưa bố trí vách/insert giữ chậu."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "FDX-04",
+          "title": "Kiểm toàn bộ trước khi đóng",
+          "instruction": "Kiểm trực tiếp các điểm chạm, nước rò và các mặt sẽ bị che. Một ảnh không chứng minh độ chắc hoặc mọi phía của kiện.",
+          "speech_vi": "Kiểm trực tiếp các điểm chạm, nước rò và các mặt sẽ bị che. Một ảnh không chứng minh độ chắc hoặc mọi phía của kiện.",
+          "manual": "Đã kiểm trực tiếp toàn bộ các mặt, điểm tiếp xúc, kích thước bao ngoài lớn nhất, kích thước trong hộp và khối lượng thực. Nếu chưa phù hợp, sửa trước khi xác nhận.",
+          "source_id": "FDX-CA",
+          "source_locator": "pp.2–4; Plants p.3",
+          "mode": "manual",
+          "camera_prompt_vi": "",
+          "criteria": [],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        },
+        {
+          "id": "FDX-05",
+          "title": "Đóng hộp và bàn giao",
+          "instruction": "Đóng và niêm hộp sau khi kiểm. Nhãn hướng lên không bảo đảm kiện giữ nguyên chiều; kiểm yêu cầu dịch vụ riêng trước khi bàn giao.",
+          "speech_vi": "Đóng và niêm hộp sau khi kiểm. Nhãn hướng lên không bảo đảm kiện giữ nguyên chiều; kiểm yêu cầu dịch vụ riêng trước khi bàn giao.",
+          "manual": "Đã kiểm mọi mặt niêm, dữ liệu đơn và hãng nhận gửi. Phiên hướng dẫn không chứng nhận an toàn hoặc tự hoàn tất hồ sơ vận chuyển.",
+          "source_id": "FDX-CA",
+          "source_locator": "pp.2/4, general packing guidance",
+          "mode": "visual",
+          "camera_prompt_vi": "Đưa mặt hộp đã niêm vào khung hình, tránh nhãn địa chỉ.",
+          "criteria": [
+            {
+              "id": "FDX-05-C1",
+              "visible_pass": "Mặt đang thấy đã đóng; không có phần cây kẹp nhô qua mép đóng.",
+              "visible_fail": "Mặt đang thấy còn mở hoặc có phần cây bị kẹp qua mép đóng."
+            }
+          ],
+          "unverifiable": [
+            "Ảnh mờ, thiếu sáng, sai đối tượng hoặc vùng cần kiểm bị che.",
+            "Không nhìn đủ vùng được yêu cầu; không suy ra phần đã che kín."
+          ],
+          "remedy_vi": "Đối chiếu hướng dẫn của bước. Nếu ảnh thiếu, đổi góc và kiểm tra lại. Nếu chưa rõ cách sửa hoặc cây bị hư hại, dừng và hỏi người phụ trách; AI không tự bổ sung thao tác.",
+          "criterion_origin": "Đề xuất tiêu chí quan sát của PlantMove, chưa được kiểm chứng chuyên môn."
+        }
+      ],
+      "reference_notes": [
+        {
+          "step_id": "FDX-01",
+          "source_id": "VBN2026",
+          "locator": "Quality; Definitions: Plant weight",
+          "text": "Nguồn thương mại lưu ý chậu/bầu không hỏng và cây đứng chắc. Plant weight gồm cây, chậu, giá thể; không phải khối lượng kiện đã thêm hộp/vật tư."
+        },
+        {
+          "step_id": "FDX-01",
+          "source_id": "USDA66",
+          "locator": "pp.722–726; Table 1 foliage heading/footnotes",
+          "text": "Điều kiện chịu vận chuyển khác theo loài/giống và chuẩn bị trước gửi. Bảng cây lá có scope cây acclimatization trong xe lạnh; ô trống là unknown. Hỏi người phụ trách khi chưa có điều kiện phù hợp, không lấy một nhiệt độ chung cho mọi cây."
+        },
+        {
+          "step_id": "FDX-04",
+          "source_id": "AH2025",
+          "locator": "§1.2.2.1 p.5; §§1.2.2.2–.3 pp.6–7",
+          "text": "Chiều cao thương mại từ mặt đất và độ rộng trung bình không phải kích thước bao ngoài lớn nhất. Với hộp, cần đo thực toàn cây/chậu và phần nhô ra theo tư thế gửi; không suy kích thước từ ảnh."
+        }
+      ],
+      "version": "2026.10-trial.2",
+      "status": "DRAFT",
+      "published": false,
+      "production_enabled": false,
+      "reviewer": null,
+      "approved_at": null,
+      "validation_status": "NOT_EVALUATED",
+      "completeness": "Có chuỗi bước theo nguồn để thẩm định; chưa xác nhận áp dụng thực tế.",
+      "supersedes_research": ""
     }
   ],
   "note": "Nội dung kỹ thuật tóm tắt có nguồn; tiêu chí thị giác và lời nhắc là thiết kế kiểm thử PlantMove. Chưa có phê duyệt chuyên môn hoặc đánh giá ảnh thật."

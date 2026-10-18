@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import catalog from '../data/live-sops.json';
 
-export const plantLabels = { succulent: 'Sen đá', cactus: 'Xương rồng', pothos: 'Trầu bà' } as const;
+export const plantLabels = { potted: 'Cây nguyên chậu — hướng dẫn chung', succulent: 'Sen đá', cactus: 'Xương rồng', pothos: 'Trầu bà nhỏ' } as const;
 export type PlantKind = keyof typeof plantLabels;
 export const formLabels = { POTTED: 'Nguyên chậu', BARE_ROOT: 'Rễ trần' } as const;
 export type ShippingForm = keyof typeof formLabels;
@@ -16,10 +16,11 @@ export const stepSchema = z.object({
   if (/\{\w+\}/.test(step.speech_vi + step.instruction)) ctx.addIssue({ code: 'custom', message: 'UNRESOLVED_SPEECH' });
 });
 const sopSchema = z.object({
-  id: z.string(), plant: z.enum(['succulent', 'cactus', 'pothos']), shipping_form: z.enum(['POTTED', 'BARE_ROOT']), title: z.string(),
+  id: z.string(), plant: z.enum(['potted', 'succulent', 'cactus', 'pothos']), shipping_form: z.enum(['POTTED', 'BARE_ROOT']), title: z.string(),
   version: z.string(), status: z.literal('DRAFT'), published: z.literal(false), production_enabled: z.literal(false), reviewer: z.null(), approved_at: z.null(),
   validation_status: z.literal('NOT_EVALUATED'), completeness: z.string(), supersedes_research: z.string(), source_ids: z.array(z.string()), scope: z.string(),
-  steps: z.array(stepSchema).min(1), limits: z.object({ pot_cm_min: z.number(), pot_cm_max: z.number(), height_cm_exclusive_max: z.number(), packed_kg_exclusive_max: z.number() }).nullable()
+  steps: z.array(stepSchema).min(1), limits: z.object({ pot_cm_min: z.number(), pot_cm_max: z.number(), height_cm_exclusive_max: z.number(), packed_kg_exclusive_max: z.number() }).nullable(),
+  reference_notes:z.array(z.object({step_id:z.string(),source_id:z.string(),locator:z.string(),text:z.string()}).strict()).optional()
 }).strict();
 export const sopCatalog = z.object({
   schema_version: z.literal('plantmove-live-sop-v2'), note: z.string(),
@@ -27,6 +28,7 @@ export const sopCatalog = z.object({
   sops: z.array(sopSchema)
 }).strict().parse(catalog);
 for (const sop of sopCatalog.sops) {
+  for(const note of sop.reference_notes||[])if(!sop.source_ids.includes(note.source_id)||!sopCatalog.sources.some(s=>s.id===note.source_id)||!sop.steps.some(s=>s.id===note.step_id))throw new Error('MISSING_REFERENCE_NOTE_SOURCE');
   if (new Set(sop.steps.map(s => s.id)).size !== sop.steps.length) throw new Error('DUPLICATE_STEPS');
   for (const step of sop.steps) {
     if (!sop.source_ids.includes(step.source_id) || !sopCatalog.sources.some(s => s.id === step.source_id)) throw new Error('MISSING_SOURCE');
@@ -80,7 +82,7 @@ Không chứng nhận an toàn. Thiếu sáng/mờ/sai đối tượng/che khu�
 Mỗi criterion_id phải có đúng một kết quả: passed khi thấy đủ tiêu chí; needs_adjustment khi thấy rõ lỗi tương ứng; unverifiable khi không đủ bằng chứng. Trả JSON tiếng Việt đúng schema, step_id=${step.id}, manual_check_required=true.
 SOP THỬ NGHIỆM CHƯA DUYỆT: ${JSON.stringify({ sop_id: sop.id, version: sop.version, plant: sop.plant, shipping_form: sop.shipping_form, species_as_data: context.species, step })}`;
 }
-export type StepRecord = { kind: 'ai' | 'manual' | 'skipped'; result?: CheckpointResult; note?: string };
+export type StepRecord = { kind: 'ai' | 'manual' | 'skipped'; result?: CheckpointResult; note?: string;confirmation?:{method:'VOICE'|'BUTTON';at:string} };
 export function canAdvance(step: LiveStep, record: StepRecord | undefined, checked: boolean): boolean {
   return checked && !!record && record.kind !== 'skipped' && (record.kind === 'manual'
     ? step.mode === 'manual' || (record.note?.trim().length ?? 0) >= 10

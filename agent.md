@@ -92,3 +92,7 @@ Không viết test chỉ lặp implementation hoặc cho chỉnh sửa docs nh�
 ## Handoff và quản lý tiến độ
 
 Commit/PR mô tả trigger, hành vi trước/sau, FR/TC, validation và rủi ro cụ thể. Tick backlog chỉ khi có evidence; ghi path test/report hoặc PR khi repo có. Khi dừng: nêu completed, pending, decisions, commands/checks và điểm tiếp tục. Giữ `.code/traceability.md` bao phủ đủ FR/NFR/UI/TC khi scope đổi.
+
+## Phiên hướng dẫn camera theo hồ sơ
+
+Entry chung `/app/new`, phiên tại `/app/cases/:id/guide`; contract và giới hạn tại [GUIDED_PACKING.md](GUIDED_PACKING.md). Lời đồng ý chỉ xác nhận bước hiện tại sau điều kiện kiểm ảnh/kiểm tay; server pin owner/case/input hash/SOP version/revision, không nhận AI pass từ client. Giữ failed image khi kiểm tay có lý do, xóa pass cũ trước recheck. Resume giữ tiến độ nhưng không tự bật camera/micro/gửi ảnh; tạo mới từ CTA mở camera vẫn xin quyền native. Phiên hướng dẫn không thay completion/kho và không cấp approval production.

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkLivePacking } from './live-packing';
+import { listGuidance, startGuidance, advanceGuidance } from './guidance';
 import { vietnameseTts } from './vietnamese-tts';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { compareSync, hashSync } from 'bcryptjs';
@@ -129,9 +130,9 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   const user=requireUser(req);if(!['GET','HEAD'].includes(method))checkMutation(req,user);
   if(parts[0]==='knowledge'){
     if(endpoint==='knowledge/sources'&&method==='GET')return success({version:KNOWLEDGE_VERSION,sources:knowledgeSources,trainingStatus:'NOT_FINE_TUNED'});
-    if(endpoint==='knowledge/search'&&method==='GET'){const query=(req.nextUrl.searchParams.get('q')||'').slice(0,1000),scope=parse(z.enum(['POTTED_PLANTS','CACTUS','MARITIME']),req.nextUrl.searchParams.get('scope')||'POTTED_PLANTS');return success({version:KNOWLEDGE_VERSION,items:retrieveKnowledge(query,scope),mode:'LOCAL_RETRIEVAL',notice:'Các ghi chú có nguồn, chưa chuyên gia duyệt; không là rule an toàn.'});}
+    if(endpoint==='knowledge/search'&&method==='GET'){const query=(req.nextUrl.searchParams.get('q')||'').slice(0,1000),scope=parse(z.enum(['POTTED_PLANTS','NURSERY','CACTUS','MARITIME']),req.nextUrl.searchParams.get('scope')||'POTTED_PLANTS');return success({version:KNOWLEDGE_VERSION,items:retrieveKnowledge(query,scope),mode:'LOCAL_RETRIEVAL',notice:'Các ghi chú có nguồn, chưa chuyên gia duyệt; không là rule an toàn.'});}
     if(endpoint==='knowledge/answers'&&method==='POST'){
-      const value=parse(z.object({question:z.string().trim().min(3).max(1000),consent_id:z.string(),scope:z.enum(['POTTED_PLANTS','CACTUS','MARITIME']).default('POTTED_PLANTS')}).strict(),await body(req));
+      const value=parse(z.object({question:z.string().trim().min(3).max(1000),consent_id:z.string(),scope:z.enum(['POTTED_PLANTS','NURSERY','CACTUS','MARITIME']).default('POTTED_PLANTS')}).strict(),await body(req));
       const consent=owned<{purpose:string;revoked:boolean}>('consent',value.consent_id,user.id);if(consent.revoked||consent.purpose!=='AI_KNOWLEDGE')throw new ApiError(403,'CONSENT_REQUIRED','Cần đồng ý riêng cho hỏi AI với nguồn.');
       if(!process.env.GEMINI_API_KEY||!process.env.GEMINI_VISION_MODEL)throw new ApiError(503,'AI_UNAVAILABLE','AI chưa được cấu hình. Tra cứu nguồn vẫn dùng được.');
       rateLimit('rag:'+user.id,10,60000);
@@ -165,6 +166,11 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       }
     }
     const c=owned<CaseRecord>('case',parts[1],user.id);if(c.status==='DELETED')throw missing();
+    if(parts[2]==='guidance'){
+      if(parts.length===3&&method==='GET')return success(listGuidance(user.id,c));
+      if(parts.length===3&&method==='POST'){const value=await body(req);return success(idempotent(req,user.id,endpoint,value,()=>startGuidance(user.id,c,value)),201);}
+      if(parts.length===4&&method==='PATCH')return success(advanceGuidance(user.id,c,parts[3],await body(req)));
+    }
     if(parts.length===2){
       if(method==='GET')return success(c);
       if(method==='PATCH'){

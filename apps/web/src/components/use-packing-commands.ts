@@ -1,9 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { PackingCommandListener, type CommandRecognition } from '../lib/packing-voice-commands';
+import { PackingCommandListener, type CommandRecognition, type PackingIntent } from '../lib/packing-voice-commands';
 
 type SpeechWindow = Window & { SpeechRecognition?: new () => CommandRecognition; webkitSpeechRecognition?: new () => CommandRecognition };
-export function usePackingCommands(options: { ready: boolean; paused: boolean; speaking: RefObject<boolean>; onCommand: () => void }) {
+export function usePackingCommands(options: { ready: boolean; paused: boolean; speaking: RefObject<boolean>; onCommand: (intent:PackingIntent,transcript:string) => void }) {
   const [enabled, setEnabled] = useState(false), [supported, setSupported] = useState(false), [state, setState] = useState('Đã tắt nghe lệnh'), [error, setError] = useState('');
   const latest = useRef(options); latest.current = options;
   const listener = useRef<PackingCommandListener | null>(null), alive = useRef(true);
@@ -14,7 +14,7 @@ export function usePackingCommands(options: { ready: boolean; paused: boolean; s
     if (Constructor && window.isSecureContext) listener.current = new PackingCommandListener({
       factory: () => new Constructor(),
       allowed: () => alive.current && latest.current.ready && !latest.current.paused && !latest.current.speaking.current && !document.hidden,
-      onCommand: () => latest.current.onCommand(),
+      onCommand: (intent,transcript) => latest.current.onCommand(intent,transcript),
       onState: value => { if (alive.current) setState(value); },
       onError: value => { if (alive.current) { setError(value); setEnabled(false); } }
     });

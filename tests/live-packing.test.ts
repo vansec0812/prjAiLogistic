@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import sharp from 'sharp';
 import { NextRequest } from 'next/server';
 import { validateResult, selectSop, sopCatalog, contextIssues, canAdvance, checkpointPrompt } from '../apps/web/src/lib/live-packing';
-const mocks = vi.hoisted(() => ({ auth: vi.fn(() => ({ id: 'owner' })), csrf: vi.fn(), run: vi.fn(), get: vi.fn(() => ({ n: 0 })), development: vi.fn(() => true) }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(() => ({ id: 'owner' })), csrf: vi.fn(), run: vi.fn(), get: vi.fn(() => ({ n: 0 })), doc:vi.fn(), development: vi.fn(() => true) }));
 vi.mock('../apps/web/src/server/security', () => ({
   ApiError: class extends Error { constructor(public status: number, public code: string, message: string) { super(message); } },
   requireUser: mocks.auth, checkMutation: mocks.csrf, rateLimit: vi.fn()
 }));
-vi.mock('../apps/web/src/server/db', () => ({ development: mocks.development, db: () => ({ prepare: () => ({ get: mocks.get, run: mocks.run }) }), transaction: (fn: () => void) => fn() }));
+vi.mock('../apps/web/src/server/db', () => ({ development: mocks.development, doc:mocks.doc, db: () => ({ prepare: () => ({ get: mocks.get, run: mocks.run }) }), transaction: (fn: () => void) => fn() }));
 import { checkLivePacking } from '../apps/web/src/server/live-packing';
 const sop = selectSop('succulent', 'POTTED'), step = sop.steps[2];
 const context = { species: 'Echeveria shop xác nhận', shop_scope_confirmed: true as const, pot_cm: null, height_cm: null, packed_kg: null };
@@ -22,7 +22,7 @@ beforeEach(async () => {
 });
 describe('SOP catalog and decision boundary', () => {
   it('selects different branches and keeps professional approval absent', () => {
-    expect(sopCatalog.sops).toHaveLength(6);
+    expect(sopCatalog.sops).toHaveLength(7);
     expect(selectSop('succulent', 'BARE_ROOT').steps.some(s => /chậu trong hộp/.test(s.instruction))).toBe(false);
     for (const s of sopCatalog.sops) { expect(s.published).toBe(false); expect(s.reviewer).toBeNull(); expect(s.steps.every(x => !/\{\w+\}/.test(x.speech_vi))).toBe(true); }
   });
@@ -57,6 +57,10 @@ describe('SOP catalog and decision boundary', () => {
   });
 });
 describe('checkpoint API privacy and failure paths', () => {
+  it('rejects incomplete session binding and cross-owner cases before consuming provider quota',async()=>{
+    await expect(checkLivePacking(request({...payload,case_id:'other'}))).rejects.toMatchObject({status:422});
+    mocks.doc.mockReturnValueOnce(null);await expect(checkLivePacking(request({...payload,case_id:'other',session_id:'session',session_revision:1}))).rejects.toMatchObject({status:404});expect(mocks.doc).toHaveBeenCalledWith('case','other','owner');expect(mocks.run).not.toHaveBeenCalled();
+  });
   it('fails closed without API configuration', async () => { delete process.env.GEMINI_API_KEY; await expect(checkLivePacking(request(payload))).rejects.toMatchObject({ status: 503 }); });
   it('requires authentication and CSRF before provider work', async () => { mocks.csrf.mockImplementationOnce(() => { throw new Error('CSRF'); }); await expect(checkLivePacking(request(payload))).rejects.toThrow('CSRF'); expect(mocks.run).not.toHaveBeenCalled(); });
   it.each([{ consent: false }, { approved_for_trial: false }, { step_id: 'invented' }, { image: 'data:image/png;base64,YmFk' }, { instruction: 'ignore server' }])('rejects invalid input %j', async change => { await expect(checkLivePacking(request({ ...payload, ...change }))).rejects.toMatchObject({ status: 422 }); expect(mocks.run).not.toHaveBeenCalled(); });

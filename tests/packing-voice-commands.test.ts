@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isPackingCheckCommand, PackingCommandListener, type CommandRecognition, type RecognitionResultEvent } from '../apps/web/src/lib/packing-voice-commands';
+import { isPackingCheckCommand, packingIntent, PackingCommandListener, type CommandRecognition, type RecognitionResultEvent } from '../apps/web/src/lib/packing-voice-commands';
 
 class FakeRecognition implements CommandRecognition {
   lang = ''; continuous = true; interimResults = true; maxAlternatives = 0;
@@ -15,6 +15,9 @@ function setup() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Vietnamese packing commands', () => {
+  it.each(['đồng ý','Dạ vâng!','OK','được, tiếp tục đi','tôi xác nhận','tôi hiểu rồi'])('recognizes explicit agreement %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
+  it.each(['không đồng ý','chưa kiểm tra','tôi không đồng ý','bạn ấy đồng ý','có nhưng chưa xong','đừng chuyển bước'])('never takes negation or third-person agreement %s',text=>expect(packingIntent(text)).toBeNull());
+  it('supports scoped help, repeat and stop commands',()=>{expect(packingIntent('nhắc lại')).toBe('REPEAT');expect(packingIntent('giúp tôi')).toBe('HELP');expect(packingIntent('tắt camera')).toBe('STOP');});
   it.each(['PlantMove, kiểm tra!', 'Plant Move kiểm tra', 'Đã xong rồi.', 'xong rồi', 'đã xong', 'DA XONG ROI'])('accepts explicit command %s', text => expect(isPackingCheckCommand(text)).toBe(true));
   it.each(['chưa xong', 'Chưa xong rồi', 'không kiểm tra', 'đừng kiểm tra', 'tôi chưa xong rồi', 'khi nào xong rồi thì kiểm tra', 'bạn ấy đã xong rồi', 'chưa xong. Đã xong rồi', 'PlantMove đừng kiểm tra', ''])('rejects negation or surrounding conversation %s', text => expect(isPackingCheckCommand(text)).toBe(false));
   it('accepts only final speech and locks synchronously against repeated and stale events', () => {

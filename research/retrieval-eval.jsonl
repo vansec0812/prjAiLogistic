@@ -10,3 +10,7 @@
 {"id":"cactus-design","question":"xương rồng khay khóa","scope":"CACTUS","must_include":["RSUTHESIS-01"],"must_exclude":["FEDEX-01"]}
 {"id":"unread-video","question":"7CWFVLRrmZI wPgmmcQDes4","scope":"POTTED_PLANTS","must_include":[],"must_exclude":[],"expect_empty":true}
 {"id":"unknown-model","question":"RandomForest MDPI benchmark","scope":"POTTED_PLANTS","must_include":[],"must_exclude":[],"expect_empty":true}
+{"id":"nursery-height","question":"chiều cao từ mặt đất đáy chậu thương mại","scope":"POTTED_PLANTS","must_include":["AH-M01"],"must_exclude":["FAO-N02"]}
+{"id":"packed-weight","question":"plant weight khối lượng cây chậu giá thể kiện","scope":"POTTED_PLANTS","must_include":["VBN-N04"],"must_exclude":[]}
+{"id":"foliage-context","question":"cây lá acclimatization xe lạnh thời gian","scope":"POTTED_PLANTS","must_include":["UN-L02"],"must_exclude":["FAO-N02"]}
+{"id":"nursery-fao","question":"cây giống vườn ươm gió thời gian chờ","scope":"NURSERY","must_include":["FAO-N02"],"must_exclude":["UN-L02","FEDEX-01"]}

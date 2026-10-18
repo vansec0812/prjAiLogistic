@@ -1,7 +1,7 @@
 import type { EvidenceReference, Group } from '../../domain/src/index';
-export const KNOWLEDGE_VERSION='plantcare-evidence-20261015-v2';
-export interface KnowledgeSource extends EvidenceReference {kind:'CARRIER'|'MANUFACTURER'|'RESEARCH'|'PLATFORM'|'VIDEO';access:'READ'|'ABSTRACT_ONLY'|'BLOCKED';accessedAt:string;trainingRights:'NOT_CONFIRMED';}
-export interface KnowledgeClaim {id:string;sourceId:string;text:string;tags:string[];scope:'POTTED_PLANTS'|'CACTUS'|'CUT_FLOWERS'|'GENERAL_WORKFLOW'|'MARITIME';expertReview:'UNREVIEWED';}
+export const KNOWLEDGE_VERSION='plantcare-evidence-20261018-v3';
+export interface KnowledgeSource extends EvidenceReference {kind:'CARRIER'|'MANUFACTURER'|'RESEARCH'|'PLATFORM'|'VIDEO';access:'READ'|'METADATA_ONLY'|'ABSTRACT_ONLY'|'BLOCKED';accessedAt:string;trainingRights:'NOT_CONFIRMED';}
+export interface KnowledgeClaim {id:string;sourceId:string;text:string;tags:string[];scope:'POTTED_PLANTS'|'NURSERY'|'CACTUS'|'CUT_FLOWERS'|'GENERAL_WORKFLOW'|'MARITIME';expertReview:'UNREVIEWED';locator?:string;}
 const source=(id:string,title:string,url:string,scope:string,limitation:string,kind:KnowledgeSource['kind']='CARRIER'):KnowledgeSource=>({id,title,url,scope,limitation,kind,access:'READ',accessedAt:'2026-10-15',trainingRights:'NOT_CONFIRMED',reviewStatus:'UNREVIEWED'});
 export const sources:KnowledgeSource[]=[
   source('FEDEX','FedEx · Flowers and plants','https://www.fedex.com/en-us/shipping/how-to-ship-flowers-and-plants.html','Hướng dẫn hãng; cây chậu, cây giống và hoa cắt tách riêng','Nguồn US; không coi SLA/giới hạn dịch vụ là quy tắc Việt Nam.'),
@@ -29,6 +29,28 @@ export const claims:KnowledgeClaim[]=[
   {id:'RSUTHESIS-01',sourceId:'RSUTHESIS',text:'Luận văn thiết kế khay khóa chậu và tấm giữ đất cho hộp xương rồng; thiết kế này có phạm vi mẫu riêng, không thay phép kiểm fit/load của hộp đang có.',tags:['xương rồng','khay','khóa','chậu','đất'],scope:'CACTUS',expertReview:'UNREVIEWED'},
   {id:'RSUTHESIS-02',sourceId:'RSUTHESIS',text:'Thử gửi của luận văn mô tả cây ổn định và đất không tràn khi nhận; chưa đủ để suy tỷ lệ giảm hư hoặc bảo đảm mọi tuyến gửi.',tags:['xương rồng','thử gửi','nhận','bằng chứng','hư'],scope:'CACTUS',expertReview:'UNREVIEWED'}
 ];
+const reviewedSource=(id:string,title:string,url:string,scope:string,limitation:string,access:KnowledgeSource['access']='READ',kind:KnowledgeSource['kind']='RESEARCH'):KnowledgeSource=>({...source(id,title,url,scope,limitation,kind),access,accessedAt:'2026-10-18'});
+sources.push(
+  reviewedSource('VNUA','VNUA · Giáo trình hoa, cây cảnh đại cương','https://infolib.vnua.edu.vn/gioi-thieu-tai-lieu-moi/giao-trinh-hoa-cay-canh-dai-cuong-63799','Trang giới thiệu 26/09/2025; Ch.2 phân loại, Ch.3 sinh thái','Chỉ metadata, chưa đọc toàn văn. Ch.7 vận chuyển hoa cắt không áp dụng cây chậu.','METADATA_ONLY'),
+  reviewedSource('VNUF','VNUF · Phạm Văn Duệ, Kỹ thuật trồng hoa cây cảnh (2005)','https://elib.vnuf.edu.vn/handle/123456789/179?locale=vi','Biểu ghi thư viện, phân loại/giá trị cây cảnh','Chưa đọc nội dung sách; không dùng metadata để suy thao tác kỹ thuật.','METADATA_ONLY'),
+  reviewedSource('AH2025','AmericanHort · ANSI Z60.2-2025','https://americanhort.org/wp-content/uploads/2026/02/nursery-stock-standards.pdf','§§1.1.3–1.2.2.3, pp.1–7; Annex B informative','Kích thước thương mại khác envelope đóng hộp. Quyền sao chép/index toàn văn chưa được phép; chỉ tóm tắt ngắn.'),
+  reviewedSource('VBN2026','VBN · Garden plants, October 2026','https://beheer.vbn.nl/Zoekscherm/Productspecificatie.aspx?lang=EN&specid=100040&type=full','Garden plants, group 30000000; Quality/Packing/Definitions','Quy cách thương mại, không riêng Monstera; grading nhỏ nhất không dùng xét fit hộp. Tái bản cần phép.'),
+  reviewedSource('FDXCA','FedEx Canada · Packaging Flowers and Plants','https://www.fedex.com/content/dam/fedex/ca-canada/MVP/images/2020/Q2/FX_HowToPack_FlowersPlants_CA_EN_699017957.pdf','PDF ©2019, pp.2–4; Plants p.3','Đọc text 4 trang, chưa kiểm hình. Express Canada, không mặc định hãng Việt Nam nhận gửi.','READ','CARRIER'),
+  reviewedSource('USDA66','USDA · AH66, Terril A. Nell (2016)','https://www.govinfo.gov/content/pkg/GOVPUB-A-PURL-gpo87416/pdf/GOVPUB-A-PURL-gpo87416.pdf','Flowering Potted Plants pp.722–724; Foliage Plants pp.725–726','Loài/giống, acclimatization, refrigerated vans, vận chuyển tối có scope riêng; ô trống không có nghĩa an toàn.'),
+  reviewedSource('FAON','FAO · Arid zone forestry (1989)','https://www.fao.org/4/t0122e/t0122e05.htm','§§5.11–5.12; cây giống lâm nghiệp vùng khô hạn','Không áp lịch tưới, kệ, nhiệt hoặc kỹ thuật cây giống cho bưu kiện một cây chậu.'),
+  reviewedSource('RFH','Royal FloraHolland · Sustainable packaging','https://www.royalfloraholland.com/en/buying-2/logistics/transport-packaging/all-about-packaging/sustainable-packaging','Landing giới thiệu bao bì/tray tái sử dụng','Chỉ source metadata; chưa đọc test/LCA. Không suy giảm CO2, số vòng dùng hoặc hiệu quả bảo vệ.','METADATA_ONLY','PLATFORM')
+);
+const claim=(id:string,sourceId:string,text:string,locator:string,tags:string[],scope:KnowledgeClaim['scope']='POTTED_PLANTS'):KnowledgeClaim=>({id,sourceId,text,locator,tags,scope,expertReview:'UNREVIEWED'});
+claims.push(
+  claim('AH-M01','AH2025','Chiều cao thương mại cây trồng chậu đo từ mặt đất; độ rộng có thể là trung bình. Không dùng các số này thay kích thước bao ngoài lớn nhất cả cây/chậu để xét hộp.','§1.2.2.1, p.5; §§1.2.2.2–.3, pp.6–7',['đo','chiều cao','mặt đất','đáy chậu','tán','kích thước']),
+  claim('VBN-N01','VBN2026','Kiểm tình trạng chậu/bầu và độ đứng của cây; điểm nhọn hoặc cọc chống cần được xem khi bao gói. Ảnh hàng thực phải được phân biệt với ảnh mô phỏng.','Quality; Packing; Lot Photo',['chậu','bầu','gai','cọc','ảnh','hư hại']),
+  claim('VBN-N04','VBN2026','Plant weight gồm cây, chậu và giá thể. Đây chưa là khối lượng kiện sau khi thêm hộp và toàn bộ vật tư.','Definitions: Plant weight',['cân','khối lượng','cây','chậu','giá thể','kiện']),
+  claim('FDX-CA01','FDXCA','Hướng dẫn cây chậu dùng divider giữ chậu và lớp giữ đất. Kiểm điểm giữ trực tiếp trước khi che kín; ảnh không chứng minh lực giữ.','p.3, Plants',['vách','cố định','giữ đất','chậu','divider']),
+  claim('FDX-CA02','FDXCA','Tránh nước tự do rò từ vật chứa; điều này không có nghĩa mọi giá thể phải khô hoàn toàn. Nhãn hướng không bảo đảm kiện giữ nguyên chiều.','pp.2/4, general packing guidance',['nước','rò','ẩm','nhãn','hướng']),
+  claim('UN-F01','USDA66','Chất lượng cây hoa chậu phụ thuộc giống, điều kiện sản xuất và stress; hư hại có thể xuất hiện sau nhận. Độ nhạy ethylene phụ thuộc cả thời gian và điều kiện tiếp xúc.','p.722; p.724, Table 2 footnote 1',['hoa chậu','giống','ethylene','hư hại','nhận']),
+  claim('UN-L02','USDA66','Bảng cây lá áp dụng cây chậu đã acclimatization trong xe lạnh, vận chuyển tối. Ô thời gian trống là chưa biết khả năng chịu, không suy một ngưỡng nhiệt/thời gian chung.','pp.725–726, Table 1 heading/footnotes 1–2',['cây lá','nhiệt độ','thời gian','xe lạnh','unknown']),
+  claim('FAO-N02','FAON','Trong phạm vi cây giống lâm nghiệp vùng khô hạn, FAO lưu ý container dịch chuyển, mất nước do gió và thời gian chờ. Không đổi hướng dẫn này thành lịch tưới cho cây chậu parcel.','§§5.11–5.12',['cây giống','vườn ươm','gió','chờ','vận chuyển'],'NURSERY')
+);
 const words=(s:string)=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').split(/[^a-z0-9]+/).filter(w=>w.length>1);
 export function retrieveKnowledge(query:string,scope:KnowledgeClaim['scope']='POTTED_PLANTS',limit=5){
   const tokens=new Set(words(query));

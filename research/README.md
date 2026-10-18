@@ -15,3 +15,7 @@ Source runtime tại `packages/knowledge/src/index.ts` gồm 11 metadata nguồn
 Tất cả claims **UNREVIEWED**, quyền training **NOT_CONFIRMED**. Các ghi chú là tham khảo do người thực hiện diễn giải có dẫn nguồn, không là corpus nguyên văn hay tài sản được cấp phép training. Ảnh mới tạo bằng ImageGen, không lấy ảnh/frame từ các nguồn này.
 
 Chạy `npm.cmd test` để kiểm 12 ca retrieval, membership của citation, tách scope và replay template cũ. Report chạy thực lưu ở `output/qa/retrieval-eval.json` (ignored). Kết quả này chỉ kiểm behavior của bộ tra cứu nhỏ; không đo accuracy model hoặc độ an toàn vận chuyển.
+
+## Bổ sung 18/10/2026
+
+[Giáo trình](vietnamese-textbooks-review.md), [tiêu chuẩn/USDA](nursery-standards-review.md), [VBN/FAO/FloraHolland/FedEx](nursery-logistics-review.md). Runtime v3 có 19 metadata nguồn/19 claims ngắn, 16 ca retrieval. Nguồn METADATA_ONLY không tạo claim kỹ thuật; FAO tách NURSERY. Các số baseline ở trên mô tả bản 15/10, xem [flow hiện hành](../GUIDED_PACKING.md). Không fine-tuning, copy/index toàn văn hoặc nhập ngưỡng nhiệt chung.
