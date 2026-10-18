@@ -21,7 +21,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
   }, []);
   useEffect(() => {
     alive.current = true;
-    const refresh = () => { const selected = vietnameseVoice(window.speechSynthesis?.getVoices() || []); setVoiceName(selected?.name || ''); if (!selected && !cloudAllowed.current) setNotice('Trình duyệt chưa có giọng Việt. Bấm Bật âm thanh và nghe thử để dùng giọng Việt AI.'); };
+    const refresh = () => { const selected = vietnameseVoice(window.speechSynthesis?.getVoices() || []); setVoiceName(selected?.name || ''); if (!selected && !cloudAllowed.current) setNotice('Trình duyệt chưa có giọng Việt. Bấm Bật âm thanh và đọc bước hiện tại để dùng giọng Việt AI.'); };
     refresh(); window.speechSynthesis?.addEventListener('voiceschanged', refresh);
     return () => { alive.current = false; window.speechSynthesis?.removeEventListener('voiceschanged', refresh); cancel(); void context.current?.close(); context.current = null; buffers.current.clear(); };
   }, [cancel]);
@@ -61,7 +61,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
       if (outcome === 'ok') { setAudioState('Đã đọc xong'); setNotice(''); return; }
     }
     if (!current()) return;
-    if (!cloudAllowed.current || !context.current) { setNotice('Chưa phát được giọng Việt. Bấm Bật âm thanh và nghe thử; đồng thời kiểm tra loa và âm lượng của trang.'); setAudioState('Cần bật âm thanh'); return; }
+    if (!cloudAllowed.current || !context.current) { setNotice('Chưa phát được giọng Việt. Bấm Bật âm thanh và đọc bước hiện tại; đồng thời kiểm tra loa và âm lượng của trang.'); setAudioState('Cần bật âm thanh'); return; }
     try {
       setAudioState('Đang tạo giọng Việt AI…');
       let audio = buffers.current.get(text);
@@ -85,7 +85,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
     } catch (error) {
       if (!current()) return;
       setAudioState('Chưa phát được âm thanh');
-      setNotice(error instanceof Error && error.message === 'AUDIO_BLOCKED' ? 'Âm thanh bị trình duyệt chặn. Bấm Bật âm thanh và nghe thử lại.' : error instanceof Error && !['INVALID_AUDIO'].includes(error.message) ? error.message : 'Không giải mã được giọng Việt. Bấm nghe thử lại.');
+      setNotice(error instanceof Error && error.message === 'AUDIO_BLOCKED' ? 'Âm thanh bị trình duyệt chặn. Bấm Bật âm thanh và đọc bước hiện tại lại.' : error instanceof Error && !['INVALID_AUDIO'].includes(error.message) ? error.message : 'Không giải mã được giọng Việt. Bấm nghe thử lại.');
     }
     } finally {
       if (token === serial.current) { speaking.current = false; if (alive.current) setIsSpeaking(false); }

@@ -91,3 +91,7 @@ Trước review task, bổ sung đường dẫn PR/test/report ở backlog; khô
 
 ## Giám sát đóng gói và nhận lệnh nói — 17/10/2026
 Theo yêu cầu người dùng: bổ sung luồng độc lập /app/live-packing, 6 SOP dự thảo/35 bước, checkpoint ảnh/manual, Gemini Vision/TTS và nhận lệnh tiếng Việt. Không hoàn tất hồ sơ hoặc trừ kho trong luồng thử; không tự phê duyệt SOP. Secrets chỉ qua cấu hình server, không lưu media mặc định. Nguồn và giới hạn: ../SOP_INTEGRATION.md và ../VOICE_COMMANDS.md. Kiểm: tests/live-packing.test.ts, packing-voice-commands.test.ts, live-sop-evaluation.test.ts, vietnamese-voice.test.ts, vietnamese-tts.test.ts và tests/e2e/live-packing.spec.ts. Provider thật, ảnh có nhãn và micro vật lý vẫn cần xác minh; không đóng release gate hoặc FR gốc chỉ vì có test phần mềm.
+
+## Luồng Bắt đầu — 18/10/2026
+
+Yêu cầu: camera → đọc mẫu SOP → nghe lệnh xong → nhắc vị trí → kiểm khung hình → đọc kết quả → tự chuyển khi đủ kiểm ảnh và kiểm tay. Code: apps/web/src/components/live-packing.tsx, apps/web/src/lib/packing-narration.ts, guided-packing.ts và packing-voice-commands.ts. Kiểm logic: tests/packing-narration.test.ts (nguyên văn từng SOP, giới hạn và chỉ số bước), tests/guided-packing.test.ts (đúng bước, trạng thái ảnh, xác nhận tay, phủ định lệnh), tests/vietnamese-tts.test.ts (giữ nguyên nội dung gửi TTS). Các kiểm này không thay kiểm micro/camera vật lý, độ chính xác Gemini hoặc nghiệm thu SOP; không đóng FR/NFR gốc.

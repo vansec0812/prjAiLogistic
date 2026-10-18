@@ -4,6 +4,12 @@ export function isPackingCheckCommand(transcript: string): boolean {
   // Whole utterances only: never accept substrings of negations or conversation.
   return ['plantmove kiem tra', 'plant move kiem tra', 'da xong roi', 'xong roi', 'da xong'].includes(text);
 }
+export type PackingCommand = 'check' | 'confirm_manual';
+export function packingCommand(transcript: string): PackingCommand | null {
+  if (isPackingCheckCommand(transcript)) return 'check';
+  const text = transcript.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  return ['toi da kiem tra truc tiep', 'da kiem tra truc tiep', 'da xong va da kiem tra truc tiep'].includes(text) ? 'confirm_manual' : null;
+}
 
 export interface RecognitionResultEvent {
   resultIndex: number;
@@ -29,7 +35,7 @@ export class PackingCommandListener {
   constructor(private readonly options: {
     factory: RecognitionFactory;
     allowed: () => boolean;
-    onCommand: () => void;
+    onCommand: (command: PackingCommand) => void;
     onState: (state: string) => void;
     onError: (message: string) => void;
   }) {}
@@ -62,10 +68,11 @@ export class PackingCommandListener {
       if (!current() || !this.options.allowed()) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal && isPackingCheckCommand(result[0].transcript)) {
+        const command = result.isFinal ? packingCommand(result[0].transcript) : null;
+        if (command) {
           this.suspend(); // Synchronous lock before callback, speech, or React updates.
-          this.options.onState('Đã nhận lệnh kiểm tra');
-          this.options.onCommand();
+          this.options.onState(command === 'check' ? 'Đã nhận lệnh kiểm tra' : 'Đã nhận xác nhận kiểm tay');
+          this.options.onCommand(command);
           return;
         }
       }

@@ -80,7 +80,7 @@ Không chứng nhận an toàn. Thiếu sáng/mờ/sai đối tượng/che khu�
 Mỗi criterion_id phải có đúng một kết quả: passed khi thấy đủ tiêu chí; needs_adjustment khi thấy rõ lỗi tương ứng; unverifiable khi không đủ bằng chứng. Trả JSON tiếng Việt đúng schema, step_id=${step.id}, manual_check_required=true.
 SOP THỬ NGHIỆM CHƯA DUYỆT: ${JSON.stringify({ sop_id: sop.id, version: sop.version, plant: sop.plant, shipping_form: sop.shipping_form, species_as_data: context.species, step })}`;
 }
-export type StepRecord = { kind: 'ai' | 'manual' | 'skipped'; result?: CheckpointResult; note?: string };
+export type StepRecord = { kind: 'ai' | 'manual' | 'skipped'; result?: CheckpointResult; note?: string; manual_confirmed?: boolean; manual_method?: 'voice' | 'checkbox' };
 export function canAdvance(step: LiveStep, record: StepRecord | undefined, checked: boolean): boolean {
   return checked && !!record && record.kind !== 'skipped' && (record.kind === 'manual'
     ? step.mode === 'manual' || (record.note?.trim().length ?? 0) >= 10

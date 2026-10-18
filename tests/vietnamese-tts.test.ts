@@ -17,5 +17,8 @@ describe('Vietnamese cloud speech boundary', () => {
     const fetcher = vi.fn(async () => Response.json({ candidates: [{ content: { parts: [{ inlineData: { data: wave.toString('base64') } }] } }] })); vi.stubGlobal('fetch', fetcher);
     const data = { text: 'Xin chào, kiểm tra bộ nhớ tạm', consent: true };
     expect((await vietnameseTts(req(data))).mime_type).toBe('audio/wav'); await vietnameseTts(req(data)); expect(fetcher).toHaveBeenCalledTimes(1);
+    const sent = JSON.parse(String((fetcher.mock.calls as unknown as [string, RequestInit][])[0][1].body));
+    expect(sent.contents[0].parts[0].text).toBe(data.text);
+    expect(sent.contents[0].parts[0].speechMetadata.style).toContain('Read exactly');
   });
 });

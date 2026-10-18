@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, useSession, Alert, PageHeading } from './common';
 import { useVietnameseSpeech } from './use-vietnamese-speech';
 import { usePackingCommands } from './use-packing-commands';
+import { packingNarration } from '../lib/packing-narration';
+import { guidedDecision } from '../lib/guided-packing';
+import type { PackingCommand } from '../lib/packing-voice-commands';
 import { canAdvance, contextIssues, formLabels, plantLabels, selectSop, sopCatalog, validateResult, type PlantKind, type ShippingForm, type CheckpointResult, type StepRecord, type SopContext } from '../lib/live-packing';
 const labels = { passed: 'Đạt tiêu chí nhìn thấy', needs_adjustment: 'Cần điều chỉnh', unverifiable: 'Không thể xác minh' };
 export function LivePacking() {
@@ -10,23 +13,57 @@ export function LivePacking() {
   const [plant, setPlant] = useState<PlantKind>('succulent'), [index, setIndex] = useState(0), [approved, setApproved] = useState(false), [consent, setConsent] = useState(false);
   const [form, setForm] = useState<ShippingForm>('POTTED'), [species, setSpecies] = useState(''), [scopeConfirmed, setScopeConfirmed] = useState(false);
   const [potCm, setPotCm] = useState(''), [heightCm, setHeightCm] = useState(''), [packedKg, setPackedKg] = useState(''), [manualNote, setManualNote] = useState('');
-  const [records, setRecords] = useState<Record<string, StepRecord>>({}), [manual, setManual] = useState(false), [phase, setPhase] = useState<'idle' | 'positioning' | 'checking'>('idle'), [countdown, setCountdown] = useState<number | null>(null);
+  const [records, setRecords] = useState<Record<string, StepRecord>>({}), [manual, setManual] = useState(false), [phase, setPhase] = useState<'idle' | 'positioning' | 'checking' | 'feedback'>('idle'), [countdown, setCountdown] = useState<number | null>(null);
+  const [guided, setGuided] = useState(false), [awaitingManual, setAwaitingManual] = useState(false);
+  const guidedRef = useRef(false), manualRef = useRef(false), manualMethod = useRef<'voice' | 'checkbox'>('checkbox');
   const [message, setMessage] = useState(''), [camera, setCamera] = useState(false), [voice, setVoice] = useState(true), [finished, setFinished] = useState(false);
   const { speak: say, cancel: cancelSpeech, activate, voiceName, audioState, usingCloud, speaking, isSpeaking, notice: voiceNotice } = useVietnameseSpeech(voice, session.csrf);
   const video = useRef<HTMLVideoElement>(null), stream = useRef<MediaStream | null>(null), controller = useRef<AbortController | null>(null), mounted = useRef(true), starting = useRef(false), generation = useRef(0);
   const run = useRef(0), locked = useRef(false), waitCancel = useRef<(() => void) | null>(null);
   const sop = selectSop(plant, form), steps = sop.steps, step = steps[index] || steps[0], record = records[step.id], busy = phase !== 'idle';
+  const narration = packingNarration(sop, index < steps.length ? index : 0);
+  const currentNarration = useRef(narration); currentNarration.current = narration;
+  const activatingAudio = useRef(false);
   const numberOrNull = (s: string) => s.trim() ? Number(s.replace(',', '.')) : null;
   const context = { species, shop_scope_confirmed: scopeConfirmed, pot_cm: numberOrNull(potCm), height_cm: numberOrNull(heightCm), packed_kg: numberOrNull(packedKg) };
   const issues = contextIssues(sop, context), positionPrompt = 'Đưa sản phẩm trước camera để tôi kiểm tra bước vừa làm. ' + step.camera_prompt_vi;
-  const voiceCommands = usePackingCommands({ ready: approved && !finished && session.development, paused: busy || isSpeaking, speaking, onCommand: () => { void handleVoiceCommand(); } });
+  const voiceCommands = usePackingCommands({ ready: approved && !finished && session.development, paused: busy || isSpeaking, speaking, onCommand: command => { void handleVoiceCommand(command); } });
   const suspendCommands = voiceCommands.suspend;
   const speak = useCallback((text: string) => { suspendCommands(); return say(text); }, [say, suspendCommands]);
-  async function handleVoiceCommand() {
+  async function activateAndReadStep() {
+    if (busy || activatingAudio.current) return;
+    activatingAudio.current = true;
+    const token = generation.current;
+    try {
+      setVoice(true);
+      await activate();
+      if (mounted.current && token === generation.current && !document.hidden) await speak(currentNarration.current);
+    } finally { activatingAudio.current = false; }
+  }
+  async function beginGuided() {
+    if (locked.current || activatingAudio.current || !camera || !approved || !consent || issues.length) return;
+    guidedRef.current = true; setGuided(true); setMessage(''); setVoice(true);
+    if (voiceCommands.supported) voiceCommands.enable();
+    await activateAndReadStep();
+  }
+  function confirmPhysical(method: 'voice' | 'checkbox') {
+    manualRef.current = true; manualMethod.current = method; setManual(true);
+    if (!guidedRef.current || locked.current) return;
+    if (guidedDecision(step, record?.result, true) === 'advance') {
+      setRecords(r => ({ ...r, [step.id]: { kind: step.mode === 'manual' ? 'manual' : 'ai', result: r[step.id]?.result, manual_confirmed: true, manual_method: method, note: method === 'voice' ? 'Người dùng nói đã kiểm tra trực tiếp.' : 'Người dùng xác nhận kiểm tay.' } }));
+      move();
+    }
+  }
+  async function handleVoiceCommand(command: PackingCommand = 'check') {
     try {
       if (locked.current || !approved || finished) return;
+      if (command === 'confirm_manual') {
+        confirmPhysical('voice');
+        if (guidedRef.current && step.mode === 'visual' && record?.result?.status !== 'passed' && camera && consent && session.aiConfigured) await confirmStep(true);
+        return;
+      }
       if (step.mode === 'manual') {
-        const text = 'Đã nhận lệnh. Bước này cần kiểm tra trực tiếp. ' + step.manual;
+        const text = 'Đã nhận lệnh. Bước này cần kiểm tra trực tiếp. ' + step.manual + (guidedRef.current ? ' Sau khi tự kiểm, nói tôi đã kiểm tra trực tiếp để sang bước tiếp theo.' : '');
         setMessage(text); await speak(text); return;
       }
       if (!camera || !consent || !session.aiConfigured) {
@@ -36,12 +73,12 @@ export function LivePacking() {
       await confirmStep(true);
     } finally { voiceCommands.resume(); }
   }
-  function resetSelection() { cancelCheck(); stop(); setApproved(false); setRecords({}); setIndex(0); setManual(false); setManualNote(''); setFinished(false); setScopeConfirmed(false); }
+  function resetSelection() { cancelCheck(); stop(); setApproved(false); setRecords({}); setIndex(0); manualRef.current = false; setManual(false); setManualNote(''); setFinished(false); setScopeConfirmed(false); setAwaitingManual(false); }
   function cancelCheck() { run.current++; locked.current = false; controller.current?.abort(); waitCancel.current?.(); waitCancel.current = null; cancelSpeech(); if (mounted.current) { setPhase('idle'); setCountdown(null); } }
-  function stop() { voiceCommands.disable(); generation.current++; cancelCheck(); stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; if (video.current) video.current.srcObject = null; if (mounted.current) setCamera(false); }
+  function stop() { guidedRef.current = false; manualRef.current = false; if (mounted.current) { setGuided(false); setManual(false); setAwaitingManual(false); } voiceCommands.disable(); generation.current++; cancelCheck(); stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; if (video.current) video.current.srcObject = null; if (mounted.current) setCamera(false); }
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; stop(); }; }, []);
   useEffect(() => { const hide = () => { if (document.hidden) stop(); }; document.addEventListener('visibilitychange', hide); return () => document.removeEventListener('visibilitychange', hide); }, []);
-  useEffect(() => { if (approved && !finished && !locked.current) void speak(step.speech_vi + ' ' + step.manual); return cancelSpeech; }, [index, approved, finished, voice, voiceName, speak, cancelSpeech, step]);
+  useEffect(() => { if (guided && approved && !finished && !locked.current && !activatingAudio.current) void speak(narration); return cancelSpeech; }, [index, approved, finished, voice, voiceName, speak, cancelSpeech, narration, guided]);
   async function start() {
     if (starting.current || locked.current) return; starting.current = true; const token = ++generation.current;
     try {
@@ -61,7 +98,8 @@ export function LivePacking() {
     locked.current = true; const token = ++run.current;
     voiceCommands.suspend();
     const active = () => mounted.current && token === run.current && locked.current;
-    setPhase('positioning'); setCountdown(null); setMessage(''); setManual(false);
+    setPhase('positioning'); setCountdown(null); setMessage(''); setAwaitingManual(false);
+    if (!guidedRef.current) { manualRef.current = false; setManual(false); }
     setRecords(r => { const next = { ...r }; delete next[step.id]; return next; });
     try {
       await speak((fromVoice ? 'Đã nhận lệnh. ' : '') + positionPrompt); if (!active()) return;
@@ -78,15 +116,24 @@ export function LivePacking() {
       if (!active()) return; setPhase('checking'); controller.current = new AbortController();
       const raw = await api<CheckpointResult>('live-packing/check', { method: 'POST', signal: controller.current.signal, body: JSON.stringify({ sop_id: sop.id, shipping_form: form, context: context as SopContext, step_id: step.id, sop_version: sop.version, approved_for_trial: true, consent: true, image }) }, session.csrf);
       if (!active()) return; const result = validateResult(raw, step);
-      setRecords(r => ({ ...r, [step.id]: { kind: 'ai', result } }));
-      void speak(labels[result.status] + '. Tôi quan sát thấy: ' + result.observed + '. ' + result.reason + '. ' + step.manual);
+      setRecords(r => ({ ...r, [step.id]: { kind: 'ai', result, manual_confirmed: manualRef.current, manual_method: manualRef.current ? manualMethod.current : undefined } }));
+      setPhase('feedback');
+      const decision = guidedDecision(step, result, manualRef.current);
+      const nextPrompt = guidedRef.current ? decision === 'advance' ? ' Kiểm tra bước này đã hoàn tất. Tôi sẽ hướng dẫn bước tiếp theo.'
+        : decision === 'await_manual' ? ' Phần nhìn thấy đã đạt. Mục bạn cần tự kiểm tra và xác nhận là: ' + step.manual + ' Sau khi kiểm tra thật, nói tôi đã kiểm tra trực tiếp để sang bước tiếp theo.'
+        : ' Chưa chuyển bước. Hãy kiểm tra, điều chỉnh hoặc đổi góc rồi nói đã xong để tôi kiểm tra lại.' : '';
+      await speak(labels[result.status] + '. Tôi quan sát thấy: ' + result.observed + '. ' + result.reason + nextPrompt);
+      if (!active()) return;
+      if (guidedRef.current && decision === 'advance') {
+        locked.current = false; setPhase('idle'); move();
+      } else if (guidedRef.current && decision === 'await_manual') setAwaitingManual(true);
     } catch (error) {
       if (!active()) return;
       const text = error instanceof Error && ['CAMERA_NOT_READY', 'FRAME_UNAVAILABLE'].includes(error.message) ? 'Camera chưa có hình rõ để kiểm tra. Mở lại camera, giữ sản phẩm trong khung hình và xác nhận lại.' : error instanceof Error ? error.message : 'Không kiểm tra được lúc này. Hãy thử lại hoặc xác nhận thủ công.';
       setMessage(text); void speak('Chưa kiểm tra được bước này. Hãy thử lại hoặc xác nhận thủ công.');
     } finally { if (active()) { locked.current = false; setPhase('idle'); setCountdown(null); } }
   }
-  function move() { cancelSpeech(); setManual(false); setManualNote(''); if (index === steps.length - 1) { setFinished(true); stop(); } else setIndex(i => i + 1); }
+  function move() { cancelSpeech(); setAwaitingManual(false); manualRef.current = false; setManual(false); setManualNote(''); if (index === steps.length - 1) { setFinished(true); stop(); } else setIndex(i => i + 1); }
   const canNext = canAdvance(step, record, manual);
   function exportSession() {
     const data = { schema_version: 'plantmove-trial-session-v2', sop_id: sop.id, sop_version: sop.version, shipping_form: form, species, generated_at: new Date().toISOString(), approved_professionally: false, transport_safe: null, records };
@@ -96,6 +143,16 @@ export function LivePacking() {
   return <div className="live-packing"><PageHeading title="AI giám sát đóng gói" description="Làm theo hướng dẫn → xác nhận xong bước → đưa sản phẩm trước camera để AI kiểm tra và nói kết quả"/>
     <Alert>KIỂM THỬ — SOP {sop.id}, phiên bản {sop.version}, chưa duyệt chuyên môn và chưa đo độ chính xác trên ảnh thật. Không chứng nhận an toàn vận chuyển. Camera hiển thị trực tiếp; AI chỉ nhận khung hình sau khi bạn xác nhận bước, không theo dõi mọi diễn biến video.</Alert>
     {!session.development && <Alert kind="error">SOP chưa được duyệt; chức năng thực hiện chỉ mở trong môi trường kiểm thử local.</Alert>}
+    {!finished && <section className="panel live-camera">
+      <h2>Camera đóng gói</h2>
+      <p>{camera ? 'Camera đang mở. Chọn và xác nhận SOP bên dưới để kiểm từng bước.' : 'Bạn có thể mở camera xem thử ngay. Chỉ gửi ảnh cho AI sau khi xác nhận SOP, đồng ý gửi ảnh và yêu cầu kiểm tra.'}</p>
+      <video ref={video} muted playsInline autoPlay style={camera ? undefined : { aspectRatio: '16 / 9', maxHeight: 180 }} aria-label="Camera đóng gói trực tiếp"/>
+      <div className="button-row"><button className="button primary" disabled={busy} onClick={() => void start()}>Mở camera</button><button className="button primary" disabled={busy || !camera || !approved || !consent || issues.length > 0 || guided} onClick={() => void beginGuided()}>Bắt đầu</button><button className="button secondary" onClick={stop}>Tắt camera</button></div>
+      <p>Bắt đầu: đọc bước hiện tại → chờ “đã xong” → nhắc đưa cây trước camera → kiểm tra → tự sang bước khi ảnh đạt và phần kiểm tay đã được bạn xác nhận. Nút này bật giọng đọc và nhận lệnh bằng micro nếu trình duyệt hỗ trợ; âm thanh nhận dạng có thể được gửi tới dịch vụ của trình duyệt.</p>
+      {!approved && <p>Để bật Bắt đầu, chọn và xác nhận SOP bên dưới, đồng ý gửi ảnh rồi mở camera.</p>}
+      {guided && <p role="status">Đang hướng dẫn tự động — bước {index + 1}/{steps.length}. {awaitingManual ? 'Chờ bạn xác nhận đã kiểm tra trực tiếp.' : busy ? 'Đang kiểm tra hoặc đọc phản hồi.' : 'Làm theo hướng dẫn rồi nói đã xong.'}</p>}
+    </section>}
+    {message && <Alert kind="error">{message}</Alert>}
     <section className="panel live-controls"><details className="live-setup" open={!approved}><summary>Thiết lập cây và SOP — {sop.title}</summary><label>Nhóm cây <select value={plant} disabled={busy || approved} onChange={e => { resetSelection(); setPlant(e.target.value as PlantKind); }}>{Object.entries(plantLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
       <label>Hình thức gửi <select value={form} disabled={busy || approved} onChange={e => { resetSelection(); setForm(e.target.value as ShippingForm); }}>{Object.entries(formLabels).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select></label>
       <label>Loài/giống đã xác nhận <input value={species} disabled={approved} maxLength={100} onChange={e => setSpecies(e.target.value)}/></label>
@@ -109,10 +166,11 @@ export function LivePacking() {
       {issues.length > 0 && <Alert kind="info">{issues.join(' ')}</Alert>}
       <details><summary>Xem checklist văn bản cho phiên thử</summary>{steps.map(s => <p key={s.id}><strong>{s.title}</strong>: {s.speech_vi} Kiểm tra tay: {s.manual} ({s.mode === 'manual' ? 'Kiểm trực tiếp' : 'Kiểm ảnh và kiểm tay'}; {s.source_id} — {s.source_locator})</p>)}</details>
       </details><label><input type="checkbox" disabled={!approved && (issues.length > 0 || !session.development)} checked={approved} onChange={e => { cancelCheck(); setApproved(e.target.checked); setRecords({}); setIndex(0); setManual(false); setManualNote(''); setFinished(false); if (!e.target.checked) stop(); }}/> Tôi đã xem và duyệt checklist này để kiểm thử, không phải phê duyệt chuyên môn.</label>
-      <label><input type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); if (!e.target.checked) { voiceCommands.disable(); cancelCheck(); } }}/> Đồng ý để AI lấy khung hình từ camera sau khi tôi xác nhận bước và gửi đến Google Gemini để phân tích. Tránh người, nhãn địa chỉ hoặc dữ liệu riêng tư. Ứng dụng không lưu ảnh/video; nhà cung cấp xử lý theo chính sách của họ.</label>
+      <label><input type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); if (!e.target.checked) { guidedRef.current = false; setGuided(false); voiceCommands.disable(); cancelCheck(); } }}/> Đồng ý để AI lấy khung hình từ camera sau khi tôi xác nhận bước và gửi đến Google Gemini để phân tích. Tránh người, nhãn địa chỉ hoặc dữ liệu riêng tư. Ứng dụng không lưu ảnh/video; nhà cung cấp xử lý theo chính sách của họ.</label>
       <label><input type="checkbox" checked={voice} onChange={e => setVoice(e.target.checked)}/> Đọc hướng dẫn và phản hồi bằng tiếng Việt. Chức năng đọc không cần micro.</label>
       <p>Bật âm thanh dùng giọng Việt AI, không phụ thuộc giọng cài sẵn trên máy. Nội dung hướng dẫn và phản hồi cần đọc sẽ gửi tới Gemini để tạo âm thanh; có dùng hạn mức API.</p>
-      <button className="button secondary" disabled={busy} onClick={async () => { setVoice(true); await activate(); await speak('Xin chào. Đây là giọng nói tiếng Việt của PlantMove. Hãy đưa sản phẩm trước camera để tôi kiểm tra.'); }}>Bật âm thanh và nghe thử</button>
+      <button className="button secondary" disabled={busy || finished} onClick={() => void activateAndReadStep()}>Bật âm thanh và đọc bước hiện tại</button>
+      <p>Giọng đọc lấy nguyên nội dung từ mẫu SOP đang chọn, kèm số bước và lời nhắc cố định. Nghe mẫu không đánh dấu hoàn tất hoặc chuyển bước.</p>
       {voice && <p role="status">Âm thanh: {audioState}</p>}
       {voice && (usingCloud || voiceName) && <p>Giọng tiếng Việt: {usingCloud ? 'AI' : voiceName}</p>}{voiceNotice && <Alert kind="info">{voiceNotice}</Alert>}
       <label><input type="checkbox" checked={voiceCommands.enabled} disabled={!approved || finished || !voiceCommands.supported} onChange={e => e.target.checked ? voiceCommands.enable() : voiceCommands.disable()}/> Điều khiển bằng giọng nói — đồng ý dùng micro để nhận lệnh.</label>
@@ -121,21 +179,23 @@ export function LivePacking() {
       <p role="status">Nhận lệnh: {voiceCommands.state}</p>
       {voiceCommands.error && <Alert kind="info">{voiceCommands.error}</Alert>}
     </section>
-    {!session.aiConfigured && <Alert kind="info">Chưa cấu hình Vision API. Camera và checklist thủ công vẫn dùng được.</Alert>}{message && <Alert kind="error">{message}</Alert>}
+    {!session.aiConfigured && <Alert kind="info">Chưa cấu hình Vision API. Camera và checklist thủ công vẫn dùng được.</Alert>}
     {finished ? <section className="panel live-controls"><h2>Đã kết thúc phiên kiểm thử</h2>{steps.map(s => <p key={s.id}>{s.title}: {records[s.id]?.kind === 'skipped' ? 'Đã bỏ qua — chưa đạt' : records[s.id]?.kind === 'manual' ? 'Người dùng xác nhận thủ công' : records[s.id]?.result ? labels[records[s.id].result!.status] + ' + xác nhận tay' : 'Chưa kiểm tra'}</p>)}<p>Phiên này không hoàn tất hồ sơ vận chuyển, không trừ tồn kho. Kết quả chỉ ở bộ nhớ trình duyệt, tải lại trang sẽ mất.</p><button className="button secondary" onClick={exportSession}>Tải biên bản kiểm thử (không ảnh)</button><button className="button secondary" onClick={() => { resetSelection(); }}>Thử phiên mới</button></section> : approved && <>
-      <section className="panel live-camera"><video ref={video} muted playsInline autoPlay style={camera ? undefined : { aspectRatio: '16 / 9', maxHeight: 180 }} aria-label="Camera đóng gói trực tiếp"/><div className="button-row"><button className="button secondary" disabled={busy} onClick={() => void start()}>Mở camera</button><button className="button secondary" onClick={stop}>Tắt camera</button></div></section>
-      <section className="panel live-controls"><p>Bước {index + 1}/{steps.length} — {step.mode === 'manual' ? 'Kiểm tra trực tiếp, không gửi ảnh' : 'Kiểm ảnh và kiểm tay'}</p><h2>{step.title}</h2><p>{step.instruction}</p><button className="button secondary" disabled={busy} onClick={() => void speak(step.speech_vi + ' ' + step.manual)}>Nghe lại</button>
+
+      <section className="panel live-controls"><p>Bước {index + 1}/{steps.length} — {step.mode === 'manual' ? 'Kiểm tra trực tiếp, không gửi ảnh' : 'Kiểm ảnh và kiểm tay'}</p><h2>{step.title}</h2><p>{step.instruction}</p><button className="button secondary" disabled={busy} onClick={() => { if (voice) void speak(narration); else void activateAndReadStep(); }}>Nghe lại</button>
+        <details><summary>Nội dung giọng đọc theo mẫu</summary><p>{narration}</p></details>
         <p>Nguồn: {step.source_id} — {step.source_locator}</p>
         {step.mode === 'manual' ? <Alert kind="info">Bước này do người phụ trách kiểm trực tiếp. AI không xác minh độ khô, sức khỏe hoặc quyết định kỹ thuật bằng ảnh.</Alert> : <><p>{step.camera_prompt_vi} Làm xong, nhấn xác nhận. AI sẽ nhắc vị trí, đếm ngược rồi lấy một khung hình.</p>
         <details><summary>AI sẽ kiểm tra điều gì?</summary>{step.criteria.map(c => <div key={c.id}><p>Đạt phần nhìn thấy: {c.visible_pass}</p><p>Lỗi nhìn thấy: {c.visible_fail}</p></div>)}<p>Thiếu vùng nhìn, che khuất hoặc ảnh mờ: không thể xác minh. Tiêu chí này đang kiểm thử, chưa được thẩm định.</p></details>
         <button className="button primary" disabled={busy || !camera || !consent || !session.aiConfigured} onClick={() => void confirmStep()}>{phase === 'positioning' ? 'Đưa sản phẩm trước camera…' : phase === 'checking' ? 'AI đang kiểm tra…' : record ? 'Yêu cầu AI kiểm tra lại' : 'Đã làm xong bước này — nhờ AI kiểm tra'}</button></>}
-        {busy && <div role="status"><p>{phase === 'positioning' ? positionPrompt : 'AI đang xem khung hình vừa lấy từ camera. Vui lòng chờ phản hồi.'}</p>{countdown !== null && <strong>Tự kiểm tra sau {countdown} giây</strong>}<button className="button secondary" onClick={cancelCheck}>Hủy kiểm tra</button></div>}
+        {busy && <div role="status"><p>{phase === 'positioning' ? positionPrompt : phase === 'feedback' ? 'Đang đọc phản hồi kiểm tra.' : 'AI đang xem khung hình vừa lấy từ camera. Vui lòng chờ phản hồi.'}</p>{countdown !== null && <strong>Tự kiểm tra sau {countdown} giây</strong>}<button className="button secondary" onClick={cancelCheck}>Hủy kiểm tra</button></div>}
         {record?.result && <div aria-live="polite"><h3>{labels[record.result.status]}</h3><p>Quan sát: {record.result.observed}</p><p>{record.result.reason}</p>{record.result.criterion_results.map(c => <p key={c.criterion_id}>{c.criterion_id}: {labels[c.status]} — {c.observation}</p>)}<p>{step.remedy_vi}</p><p>Bắt buộc kiểm tra thủ công: có</p></div>}
-        <label><input type="checkbox" checked={manual} disabled={busy} onChange={e => setManual(e.target.checked)}/>{step.manual}</label>
+        <label><input type="checkbox" checked={manual} disabled={busy} onChange={e => { if (e.target.checked) confirmPhysical('checkbox'); else { manualRef.current = false; setManual(false); } }}/>{step.manual}</label>
+        {guided && <p>Kiểm tay: sau khi thực sự kiểm tra, nói “tôi đã kiểm tra trực tiếp” hoặc tích ô trên. Đây là xác nhận của bạn, không phải AI suy ra từ ảnh.</p>}
         <label>Ghi nhận kiểm tay / lý do thay kết luận ảnh <textarea value={manualNote} disabled={busy} maxLength={500} onChange={e => setManualNote(e.target.value)}/></label>
         <button className="button secondary" disabled={busy || !manual || (step.mode === 'visual' && manualNote.trim().length < 10)} onClick={() => { setRecords(r => ({ ...r, [step.id]: { kind: 'manual', note: manualNote.trim(), result: r[step.id]?.result } })); setMessage('Đã ghi nhận xác nhận của bạn; đây không phải kết luận AI.'); }}>Dùng xác nhận thủ công</button>
         {step.mode === 'visual' && <p>Xác nhận thủ công thay kiểm ảnh cần ghi lý do ít nhất 10 ký tự; kết quả AI trước đó vẫn giữ trong biên bản.</p>}
-        <div className="button-row"><button className="button secondary" disabled={busy || index === 0} onClick={() => { cancelSpeech(); setIndex(i => i - 1); setManual(false); setManualNote(''); }}>Bước trước</button><button className="button secondary" disabled={busy} onClick={() => { setRecords(r => ({ ...r, [step.id]: { kind: 'skipped', note: manualNote.trim(), result: r[step.id]?.result } })); move(); }}>Bỏ qua — ghi chưa đạt</button><button className="button primary" disabled={busy || !canNext} onClick={() => { if (record) setRecords(r => ({ ...r, [step.id]: { ...record, note: manualNote.trim() || record.note } })); move(); }}>{index === steps.length - 1 ? 'Kết thúc thử nghiệm' : 'Bước tiếp'}</button></div>
+        <div className="button-row"><button className="button secondary" disabled={busy || index === 0} onClick={() => { cancelSpeech(); setIndex(i => i - 1); manualRef.current = false; setManual(false); setAwaitingManual(false); setManualNote(''); }}>Bước trước</button><button className="button secondary" disabled={busy} onClick={() => { setRecords(r => ({ ...r, [step.id]: { kind: 'skipped', note: manualNote.trim(), result: r[step.id]?.result } })); move(); }}>Bỏ qua — ghi chưa đạt</button><button className="button primary" disabled={busy || !canNext} onClick={() => { if (record) setRecords(r => ({ ...r, [step.id]: { ...record, note: manualNote.trim() || record.note } })); move(); }}>{index === steps.length - 1 ? 'Kết thúc thử nghiệm' : 'Bước tiếp'}</button></div>
       </section></>}
   </div>;
 }

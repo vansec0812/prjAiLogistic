@@ -33,3 +33,12 @@ Trình duyệt có thể dùng dịch vụ nhận dạng từ xa; không bảo �
 Logic lệnh/khóa/tiếng vọng/lỗi được kiểm bằng tests/packing-voice-commands.test.ts. Tích hợp camera + TTS + nhận dạng được kiểm bằng trình duyệt với các thành phần giả lập ở tests/e2e/live-packing.spec.ts. Các kiểm này không đo độ chính xác nhận giọng Việt bằng micro thật; cần thử trên điện thoại dự thi trong môi trường đóng gói có tiếng ồn, loa và mạng thực tế.
 
 Không gọi API trả phí để thử tính năng nhận lệnh trong lần thay đổi này. Gemini Vision/TTS giữ model và hạn mức cũ; lỗi khả dụng provider không được tính là thành công nhận ảnh. Không cần thêm API key cho SpeechRecognition của trình duyệt.
+
+## Cập nhật luồng Bắt đầu — 18/10/2026
+Sau phản hồi người dùng, thêm chế độ hướng dẫn tự động: chọn/xác nhận SOP và consent ảnh, Mở camera → Bắt đầu. Bắt đầu bật giọng đọc, nhận lệnh qua micro nếu được hỗ trợ và đọc bước hiện tại. Khi chưa hỗ trợ hoặc từ chối micro vẫn có nút kiểm tra và kiểm tay.
+
+“Đã xong” gọi checkpoint ảnh, chưa là xác nhận đặc tính không thấy. Ảnh passed + kiểm tay đã được người dùng xác nhận: đọc xong phản hồi rồi tự chuyển và đọc hướng dẫn bước sau. Ảnh needs_adjustment/unverifiable hoặc provider lỗi: giữ nguyên bước. Nếu ảnh đạt nhưng chưa xác nhận kiểm tay: đọc yêu cầu kiểm tay và chờ “tôi đã kiểm tra trực tiếp” hoặc checkbox. Có thể xác nhận kiểm tay trước khi nói đã xong để sau ảnh đạt chuyển ngay. Câu đầy đủ “đã xong và đã kiểm tra trực tiếp” vừa ghi xác nhận của người dùng vừa yêu cầu kiểm ảnh.
+
+Bước manual-only không gọi Vision, sau xác nhận rõ “tôi đã kiểm tra trực tiếp” thì chế độ Bắt đầu tự sang bước; không ghi đó là kết quả AI. Export giữ manual_confirmed/manual_method. Không tự thêm trường xác nhận từ chữ “đã xong”. Dừng camera, ẩn tab, thu hồi consent hoặc hủy SOP sẽ dừng chế độ; cần bấm Bắt đầu lại. Nghe lại/mẫu vẫn hoạt động riêng, không chuyển bước.
+
+Thay đổi này thay mô tả trước đây về việc luôn phải bấm Bước tiếp. Không thay phê duyệt SOP, không lưu video và không chứng nhận kiện an toàn vận chuyển. Kiểm logic tự chuyển: tests/guided-packing.test.ts; chưa quan sát lại tab thật do quyền đọc tab bị từ chối ở lượt trước.

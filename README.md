@@ -332,7 +332,7 @@ FR/NFR chưa nghiệm thu đầy đủ tiếp tục OPEN trong traceability. B�
 
 ## Giám sát đóng gói theo SOP và lệnh nói
 
-Mở `/app/live-packing` sau khi đăng nhập bản local. Chọn SOP, xác nhận phạm vi và mở camera; có thể bấm kiểm tra hoặc bật Điều khiển bằng giọng nói rồi nói “PlantMove, kiểm tra”/“đã xong rồi”. AI chỉ kiểm khung hình theo từng bước, không theo dõi video liên tục; kiểm tay vẫn bắt buộc.
+Mở `/app/live-packing` sau khi đăng nhập bản local. Camera có thể xem trước ngay. Chọn SOP, xác nhận phạm vi, đồng ý gửi ảnh rồi nhấn **Bắt đầu** để nghe hướng dẫn cố định của bước hiện tại. Nói “PlantMove, kiểm tra”/“đã xong rồi” để hệ thống nhắc vị trí, đếm ngược và kiểm một khung hình. Khi ảnh đạt và người dùng đã xác nhận kiểm tay, hệ thống tự sang bước và đọc hướng dẫn tiếp theo. Với bước kiểm trực tiếp, nói “tôi đã kiểm tra trực tiếp” hoặc tích ô xác nhận; “đã xong” chỉ yêu cầu kiểm tra. Các nút kiểm tra, nghe lại và điều hướng vẫn dùng được. AI không theo dõi video liên tục.
 
 Cấu hình key phía server theo `.env.example`; không commit `.env.local`. Model phải khả dụng với tài khoản; model/quota ví dụ không là cam kết miễn phí. SOP hiện chưa duyệt chuyên môn và chỉ mở thực hiện ở development. Xem [hướng dẫn SOP](SOP_INTEGRATION.md) và [nhận lệnh nói](VOICE_COMMANDS.md).
 

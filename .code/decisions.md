@@ -43,3 +43,7 @@ ADR-001 tại [implementation.md](implementation.md) ghi lựa chọn reversible
 
 ## Giám sát đóng gói và nhận lệnh nói — 17/10/2026
 Theo yêu cầu người dùng: bổ sung luồng độc lập /app/live-packing, 6 SOP dự thảo/35 bước, checkpoint ảnh/manual, Gemini Vision/TTS và nhận lệnh tiếng Việt. Không hoàn tất hồ sơ hoặc trừ kho trong luồng thử; không tự phê duyệt SOP. Secrets chỉ qua cấu hình server, không lưu media mặc định. Nguồn và giới hạn: ../SOP_INTEGRATION.md và ../VOICE_COMMANDS.md. Kiểm: tests/live-packing.test.ts, packing-voice-commands.test.ts, live-sop-evaluation.test.ts, vietnamese-voice.test.ts, vietnamese-tts.test.ts và tests/e2e/live-packing.spec.ts. Provider thật, ảnh có nhãn và micro vật lý vẫn cần xác minh; không đóng release gate hoặc FR gốc chỉ vì có test phần mềm.
+
+## Camera, lời đọc cố định và tự chuyển bước — 18/10/2026
+
+Theo yêu cầu người dùng: cho xem camera trước thiết lập SOP; nút Bắt đầu bật hướng dẫn theo mẫu và nhận lệnh nếu trình duyệt hỗ trợ. Lời đọc lấy nguyên speech_vi của SOP, kèm số bước và nhắc thao tác cố định, không dùng LLM viết lại. Lệnh đã xong chỉ yêu cầu kiểm tra. Tự chuyển sau khi đọc kết quả nếu ảnh đúng bước đạt và người dùng xác nhận kiểm tay; bước manual chỉ dùng xác nhận trực tiếp. Lệnh tôi đã kiểm tra trực tiếp và checkbox lưu nguồn xác nhận vào biên bản. Lỗi/không xác minh được giữ nguyên bước. Tắt camera, ẩn trang hoặc rút đồng ý gửi ảnh dừng luồng. Đây là thay đổi tương tác kiểm thử, không phê duyệt SOP hay xác nhận độ chính xác Vision. Có thể quay lại thao tác bằng nút. Chi tiết: ../VOICE_COMMANDS.md.
