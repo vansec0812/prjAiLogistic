@@ -5,8 +5,8 @@ Luồng hiện hành từ 18/10/2026, thay luồng mở camera ngay sau tạo h�
 ## Cách sử dụng
 
 1. **Tạo hồ sơ** tại /app/new, nhập tên. Mở /app/cases/:id/plant với thông số cây/chậu như trước.
-2. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**. Camera có preview/chụp/đóng và dừng tracks sau chụp, rời màn hình hoặc ẩn tab. Ảnh được chuẩn hóa/private upload rồi tự tạo job nhận diện Gemini. Chi tiết nhà cung cấp trong mục thu gọn.
-3. AI tự điền tên/nhóm cây, vật liệu chậu, độ dễ hư khi có gợi ý. Chỉ đọc số từ nhãn/thước/cân nhìn rõ, không suy cm/kg từ pixel. Không ghi đè dữ liệu đã xác nhận, số đã nhập hoặc thay đổi trong lúc job chạy. Kiểm/sửa sáu số đo/cân rồi tích **Tôi xác nhận thông số cây và chậu đã chính xác**. Chưa tích thì Xem hướng dẫn/Lưu & tiếp tục/các bước sau bị khóa; sửa thông số tự bỏ tích và cần xác nhận lại. Lưu nháp vẫn dùng được. AI lỗi/chưa cấu hình vẫn nhập tay.
+2. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**. Camera có preview/chụp/đóng và dừng tracks sau chụp, rời màn hình hoặc ẩn tab. Ảnh được chuẩn hóa/private upload rồi tự tạo job nhận diện Gemini.
+3. AI tự điền tên/nhóm cây, vật liệu chậu, độ dễ hư khi có gợi ý. Luôn đánh giá đủ chiều cao tổng, dài/rộng tán, đường kính/cao chậu và tổng khối lượng. Ưu tiên nhãn/thước/cân rõ; ảnh cây/chậu rõ có thể dùng số ước tính VISUAL_ESTIMATE, được báo là ước tính và cần người dùng đo/cân kiểm tra. Ảnh không đủ cơ sở giữ null/UNKNOWN thay vì bịa số. Không ghi đè dữ liệu đã xác nhận, số đã nhập hoặc thay đổi trong lúc job chạy. Kiểm/sửa sáu số đo/cân rồi tích **Tôi xác nhận thông số cây và chậu đã chính xác**. Chưa tích thì Xem hướng dẫn/Lưu & tiếp tục/các bước sau bị khóa; sửa thông số tự bỏ tích và cần xác nhận lại. Lưu nháp vẫn dùng được. AI lỗi/chưa cấu hình vẫn nhập tay.
 4. **Xem hướng dẫn đóng gói** lưu hồ sơ, mở /instructions với 5 ảnh/bước nguyên chậu. FOLIAGE dùng ảnh AI mẫu gần ảnh chụp, nhóm khác dùng sơ đồ; không là ảnh kiện thật. Nguồn/phạm vi thu gọn. Vật tư/hành trình vẫn dùng cho phương án vận chuyển đầy đủ nhưng không bắt buộc trước màn hướng dẫn.
 5. **Bắt đầu với AI** tạo phiên REFERENCE pin owner/case/input hash/SOP/version/revision, mở /guide?session=:id. Camera, quyền kiểm ảnh và micro bật riêng. Đọc đúng speech_vi/kiểm tay/remedy theo SOP; giọng thiết bị tiếng Việt hoặc Gemini sau thao tác bật giọng AI.
 6. Làm xong nói **“Đã xong bước này”**, **“Tiếp tục bước tiếp theo”**, hoặc bấm nút. Manual ghi self-report. Visual cần ảnh đạt hoặc kiểm tay có lý do ≥10 ký tự. Chưa có ảnh kiểm: nhắc vị trí/đếm ngược 3 giây → lấy ảnh → chuyển đúng một bước sau kết quả đạt và server commit. Ảnh lỗi/không rõ giữ bước.
@@ -21,7 +21,7 @@ Base /api/v1, mọi resource theo owner, mutation cần Origin/CSRF, private/no-
 
 | Endpoint | Payload / kết quả |
 | --- | --- |
-| POST /cases/:id/plant-analysis | upload_ids, consent_id AI_ANALYSIS; job VISION, vision-v1 thêm plant_details optional |
+| POST /cases/:id/plant-analysis | upload_ids, consent_id AI_ANALYSIS; job VISION trả vision-v2, đủ sáu readings; client vẫn đọc vision-v1 cũ |
 | GET /cases/:id/guidance | Phiên của owner, có stale flag |
 | POST /cases/:id/guidance | case_version, sop_id/version, mode:REFERENCE, reference_ack:true, context khớp cây đã xác nhận; Idempotency-Key |
 | PATCH /cases/:id/guidance/:session | expected_revision, step_id, action CONFIRM/MANUAL/SKIP/REPORT_ISSUE/RESOLVE_ISSUE, method BUTTON/VOICE, note; advance cần manual_checked:true |
@@ -29,7 +29,7 @@ Base /api/v1, mọi resource theo owner, mutation cần Origin/CSRF, private/no-
 
 TRIAL cũ tương thích approved_for_trial:true nhưng chỉ local. Production REFERENCE cần PLANTCARE_REFERENCE_GUIDE_ENABLED=true; không đổi production_enabled/approval catalog. Terminal case không mở/advance hướng dẫn.
 
-Vision plant_details.readings có field, positive value, cm/kg, origin VISIBLE_LABEL_OR_SCALE và evidence; chỉ fill field trống/đúng unit, không tự confirm. Output cũ không có details vẫn đọc được. Prompt vision-autofill-v3.
+Vision v2 bắt buộc plant_details với đúng sáu readings không trùng field; value positive hoặc null, cm/kg, origin VISIBLE_LABEL_OR_SCALE/VISUAL_ESTIMATE/UNKNOWN và evidence. UNKNOWN phải null; các nguồn còn lại phải có số. Chỉ fill field trống/đúng unit, không tự confirm; tên UNKNOWN không tự điền. Output vision-v1 cũ vẫn đọc được. Prompt vision-autofill-v4. Đã bỏ mục Cách xử lý ảnh trên màn nhập theo yêu cầu người dùng.
 
 Checkpoint recheck owner/case/context/SOP/version/bước/revision trước provider và trong transaction. Xóa pass trước recheck/REPORT_ISSUE; không nhận client AI result trong PATCH. Lệnh lặp/sự kiện mic cũ bị khóa, chỉ chuyển sau commit. Override giữ kết quả AI cũ; skip kết thúc REVIEW_REQUIRED, đủ xác nhận là FINISHED. Không sửa plan/case completion/kho.
 

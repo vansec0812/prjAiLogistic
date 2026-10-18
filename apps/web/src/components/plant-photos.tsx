@@ -42,7 +42,11 @@ export function PlantPhotos({caseId,plant,onResult}:{caseId:string;plant:PlantIn
       if(!alive.current||token!==serial.current)return;
       const value=await api<{status:string;result:unknown;error?:string}>('jobs/'+job.job_id,{signal:controller.current?.signal});
       if(!alive.current||token!==serial.current)return;
-      if(value.status==='SUCCEEDED'){const result=visionSchema.parse(value.result);latest.current.onResult(result,snapshot);setNotice(result.plant_candidates.length||result.plant_details?'Đã tự điền thông tin nhận diện. Kiểm tra số đo rồi xác nhận.':'Ảnh chưa đủ rõ để tự điền. Bạn có thể chụp lại hoặc nhập tay.');return;}
+      if(value.status==='SUCCEEDED'){
+        const result=visionSchema.parse(value.result);latest.current.onResult(result,snapshot);
+        const readings=result.plant_details?.readings||[],hasEstimates=readings.some(r=>r.origin==='VISUAL_ESTIMATE');
+        setNotice(!result.plant_candidates.some(c=>c.group!=='UNKNOWN')&&!readings.some(r=>r.value!==null)?'Chưa nhìn rõ cây và chậu. Chụp lại toàn cây hoặc nhập tay.':hasEstimates?'AI đã điền thông tin và ước tính thông số. Kiểm tra lại trước khi xác nhận.':'Đã tự điền thông tin nhận diện. Kiểm tra số đo rồi xác nhận.');return;
+      }
       if(['FAILED','CANCELLED'].includes(value.status))throw new Error('Chưa nhận diện được ảnh. Chụp rõ toàn cây và chậu rồi thử lại, hoặc nhập tay.');
       await new Promise(resolve=>setTimeout(resolve,800));
     }throw new Error('AI phản hồi chậm. Bạn có thể thử nhận diện lại hoặc nhập tay.');
@@ -53,12 +57,11 @@ export function PlantPhotos({caseId,plant,onResult}:{caseId:string;plant:PlantIn
     catch(e){if(alive.current&&token===serial.current)setError((e as Error).message);}finally{if(alive.current&&token===serial.current)setBusy(false);}
   }
   async function retry(){if(busy||!photos.length)return;const token=++serial.current;controller.current=new AbortController();setBusy(true);setError('');try{await recognize(photos.map(p=>p.id),structuredClone(latest.current.plant),token);}catch(e){if(alive.current)setError((e as Error).message);}finally{if(alive.current)setBusy(false);}}
-  return <section className="panel form-panel photo-panel"><div className="form-panel-heading"><span className="section-icon"><ScanLine size={21}/></span><div><h2>Ảnh cây & chậu</h2><p>Chọn ảnh để AI tự điền. Chụp kèm nhãn số đo nếu có.</p></div></div>
+  return <section className="panel form-panel photo-panel"><div className="form-panel-heading"><span className="section-icon"><ScanLine size={21}/></span><div><h2>Ảnh cây & chậu</h2><p>Chụp rõ toàn cây và chậu để AI điền đủ thông số.</p></div></div>
     <div className="photo-upload-row"><label className="upload-zone"><Upload size={25}/><strong>Tải ảnh & nhận diện</strong><input aria-label="Tải ảnh cây" type="file" hidden accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={e=>{void upload(e.target.files);e.target.value='';}}/></label><button className="upload-zone camera-zone" type="button" disabled={busy||opening} onClick={()=>void openCamera()}><Camera size={25}/><strong>{opening?'Đang mở camera…':'Chụp & nhận diện'}</strong></button>
     {photos.map(p=><div className="upload-preview" key={p.id}><img src={'/api/v1/uploads/'+p.id} alt="Ảnh cây đã tải"/><button className="icon-button" aria-label="Xóa ảnh cây" disabled={busy} onClick={async()=>{try{await api('uploads/'+p.id,{method:'DELETE'},session.csrf);await reload();}catch(e){setError((e as Error).message);}}}><X size={15}/></button></div>)}</div>
     {camera&&<div className="plant-camera"><video ref={video} autoPlay muted playsInline aria-label="Camera chụp cây"/><div className="button-row"><button className="button primary" disabled={busy} onClick={()=>void capture()}>Chụp ảnh này</button><button className="button secondary" onClick={stopCamera}>Đóng camera</button></div></div>}
     {busy&&<p role="status" className="recognition-status">Đang quét ảnh và tự điền…</p>}{notice&&<Alert kind="info">{notice}</Alert>}{error&&<Alert kind="error">{error}</Alert>}
     {!!photos.length&&<button className="button secondary small" disabled={busy||!session.aiConfigured} onClick={()=>void retry()}>Nhận diện lại</button>}
-    <details className="privacy-details"><summary>Cách xử lý ảnh</summary><p>Ảnh được gửi tới Google Gemini khi bạn chọn nhận diện. Bạn có thể xóa ảnh và sửa mọi gợi ý. AI không đo kích thước chỉ từ hình dáng; số đọc từ nhãn vẫn cần bạn kiểm tra.</p></details>
   </section>;
 }

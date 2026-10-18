@@ -147,7 +147,7 @@ SMS adapter nhận POST JSON `{phone, code, purpose, request_id}` với purpose 
 
 1. Đăng nhập; development có nút dùng tài khoản mẫu, production dùng tài khoản đã OTP.
 2. **Tạo hồ sơ**, đặt tên → màn thông số cây/chậu.
-3. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**: AI tự fill tên/nhóm/vật liệu chậu/độ dễ hư khi có thông tin. Số chỉ đọc từ nhãn/thước/cân nhìn rõ; giữ số đã nhập và dữ liệu đã xác nhận. Không Gemini vẫn nhập tay.
+3. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**: AI tự fill tên/nhóm/vật liệu chậu/độ dễ hư khi có thông tin. AI đánh giá đủ sáu trường kích thước/khối lượng; đọc nhãn/thước/cân khi có, còn lại có thể điền ước tính nháp từ ảnh rõ. Ghi rõ ước tính, cần đo/cân kiểm tra trước khi tích xác nhận; ảnh thiếu cơ sở giữ unknown. Giữ số đã nhập và dữ liệu đã xác nhận. Không Gemini vẫn nhập tay.
 4. Kiểm/sửa số đo, cân thực tế rồi xác nhận → **Xem hướng dẫn đóng gói**.
 5. Xem 5 ảnh/bước → **Bắt đầu với AI**. Bật camera, quyền kiểm ảnh và micro riêng. Nói **“Đã xong bước này”**, **“Tiếp tục bước tiếp theo”** để xác nhận; visual cần ảnh đạt hoặc kiểm tay có lý do.
 6. AI báo lỗi ảnh khi kiểm, giữ bước để sửa. “Tôi gặp lỗi”, “Tôi đã xử lý lỗi”, “Nhắc lại”, “Dừng lại” hỗ trợ thao tác. Tiến độ/lỗi được lưu, reload tắt media/consent.
@@ -229,7 +229,7 @@ Private API cần cookie HttpOnly và owner check. Mutation cần Origin hợp l
 | Lệnh PowerShell | Nội dung |
 | --- | --- |
 | `npm.cmd run typecheck` | Sinh Next.js route types bằng `next typegen`, rồi TypeScript strict; chạy được ngay sau clone/cài dependencies |
-| `npm.cmd run test` | 153 unit/API/regression: engine, quyền, guidance, nhận diện, voice, WAV, deploy, RAG/export |
+| `npm.cmd run test` | 156 unit/API/regression: engine, quyền, guidance, nhận diện, voice, WAV, deploy, RAG/export |
 | `npm.cmd run build` | Production compilation/TypeScript |
 | `npm.cmd run check` | Typecheck + unit + build; không gồm E2E |
 | `npx.cmd playwright install chromium` | Browser test trước E2E lần đầu |

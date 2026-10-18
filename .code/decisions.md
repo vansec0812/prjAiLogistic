@@ -74,3 +74,7 @@ Chọn mở plant trước, bổ sung private image upload/automatic Vision sche
 REFERENCE là chế độ coaching theo nguồn với feature flag backend explicit, có thể chạy production; không sửa published/production_enabled hoặc làm bypass plan eligibility/inventory. TRIAL cũ tiếp tục fail closed production. Không suy user's yêu cầu deploy thành approval chuyên môn.
 
 Frontend Next.js beforeFiles external rewrite cùng origin để giữ CSRF/cookies; fail build thiếu upstream và fail local API trên Vercel. Docker Node24/Linux/font/user node, stable OTP secret, volume /data, startup/5 giây dispatcher, một replica. Không migrate DB/serverless hoặc provision/billing ngoài scope. Rollback image/code cùng feature flag off; giữ volume/history, không xóa phiên hoặc đổi draft approvals. Cấu hình/release checks cụ thể tại ../VERCEL_DEPLOYMENT.md.
+
+## ADR-005: AI điền đủ trường dưới dạng gợi ý có nguồn — 18/10/2026
+
+Yêu cầu mới: AI quét đủ tên/nhóm cây và sáu trường số; bỏ mục Cách xử lý ảnh. Chọn Vision v2 bắt buộc trả đúng một entry cho mỗi trường, đọc nhãn/thước/cân khi rõ, cho ước tính nháp VISUAL_ESTIMATE khi ảnh cây/chậu đủ rõ. Báo ước tính, không tự coi là đo/cân thực tế; checkbox USER confirmation và kiểm tra thực tế vẫn bắt buộc. Thiếu cơ sở null/UNKNOWN, không điền số mẫu cố định hoặc gán 0. Ước tính khối lượng không là cân qua ảnh. Giữ manual/confirmed/late edits, không thêm ngưỡng an toàn hoặc đổi Rule Engine. Prompt vision-autofill-v4, hỗ trợ đọc job vision-v1 cũ. Đây là thay đổi tương tác theo yêu cầu, không chứng minh độ chính xác số đo từ ảnh.

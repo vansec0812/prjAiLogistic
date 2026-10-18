@@ -140,3 +140,10 @@ Provider smoke là ít lượt opt-in, chỉ dùng ảnh trắng/ảnh AI mẫu 
 Theo yêu cầu người dùng, dùng một checkbox rõ nghĩa “Tôi xác nhận thông số cây và chậu đã chính xác” tại form cây/chậu. Chưa tích thì khóa Xem hướng dẫn, Lưu & tiếp tục và tab bước sau; handler cũng chặn tiếp tục. Sửa thông số bỏ confirmed và khóa lại. Lưu nháp vẫn cho phép chưa xác nhận. Không đổi schema hoặc guard server/readiness đã có.
 
 Typecheck PASS; E2E create/autofill/results/guide PASS với regression cho chưa tích, tích, bỏ tích và sửa số sau xác nhận; kiểm cả hai nút và tab vật tư. Provider giả lập, không gọi Gemini trả phí trong thay đổi này. Ánh xạ FR-10..17/TC-02, không đóng nghiệm thu FR/NFR gốc.
+## AI điền đầy đủ thông số cây/chậu — 18/10/2026
+
+Theo yêu cầu mới: Vision v2 đánh giá đủ tên/nhóm cây và sáu trường height/length/width/potDiameter/potHeight/weight. Schema bắt buộc đúng sáu entries không trùng, đúng cm/kg và cặp source/value: số đọc từ nhãn/thước/cân, ước tính nháp từ ảnh rõ hoặc null/UNKNOWN. Prompt vision-autofill-v4, vẫn UNCONFIRMED/measurements:null; client đọc được job v1 lịch sử, giữ số manual/confirmed và bỏ candidate UNKNOWN khi tự điền tên. Không dùng số mẫu cố định hoặc gọi ước tính là đo/cân thực tế. Checkbox và kiểm thực tế vẫn bắt buộc.
+
+Đã bỏ toàn bộ mục Cách xử lý ảnh và đoạn người dùng chỉ định. Copy còn lại nhắc ngắn số AI có thể là ước tính; form vẫn giữ đủ trường và cho sửa. Không đổi Rule Engine, giá trị an toàn hoặc publication SOP.
+
+Kiểm thực chạy: 156 unit/API tests/14 files PASS, typecheck PASS, production webpack build PASS; E2E create/autofill và camera capture 2/2 PASS (provider giả) kiểm đủ tên/nhóm/sáu ô, giữ chiều cao đã nhập, nhãn ước tính, checkbox khóa submit và không còn mục xử lý ảnh. Gemini opt-in thật PASS với 2 ảnh: ảnh trắng 6 UNKNOWN/null, không có candidate nhóm xác định; ảnh cây AI mẫu trả tên/nhóm FOLIAGE và đủ 6 số dương, có VISUAL_ESTIMATE. Đây là kiểm giao tiếp/độ đầy đủ, không đo độ chính xác số/khối lượng từ ảnh hoặc an toàn vận chuyển. Không dùng ảnh riêng của người dùng; giữ file env người dùng ngoài commit.

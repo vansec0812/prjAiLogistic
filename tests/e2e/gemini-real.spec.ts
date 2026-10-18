@@ -1,20 +1,25 @@
 import { test, expect } from '@playwright/test';
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
-import { visionSchema } from '../../apps/web/src/lib/plant-recognition';
+import { fullPlantScanSchema } from '../../apps/web/src/lib/plant-recognition';
 import { selectSop, validateResult } from '../../apps/web/src/lib/live-packing';
 
-test('real recognition returns compatible autofill data without inventing blank-image measurements',async({request})=>{
-  test.skip(process.env.RUN_REAL_GEMINI!=='1','Opt in: one real recognition call.');test.setTimeout(120000);
+test('real recognition evaluates all fields and fills estimates only for a visible plant',async({request})=>{
+  test.skip(process.env.RUN_REAL_GEMINI!=='1','Opt in: two recognition calls, blank and AI plant illustration.');test.setTimeout(120000);
   const origin='http://127.0.0.1:3109';expect((await request.post('/api/v1/auth/dev',{headers:{Origin:origin},data:{}})).status()).toBe(200);
   const session=(await (await request.get('/api/v1/session')).json()).data,headers={Origin:origin,'x-csrf-token':session.csrf};expect(session.aiConfigured).toBe(true);
-  const c=(await (await request.post('/api/v1/cases',{headers,data:{name:'Real recognition smoke'}})).json()).data,bytes=await sharp({create:{width:320,height:240,channels:3,background:'white'}}).jpeg().toBuffer();
-  const upload=await request.post('/api/v1/uploads',{headers,multipart:{case_id:c.id,purpose:'PLANT',file:{name:'blank.jpg',mimeType:'image/jpeg',buffer:bytes}}});expect(upload.status()).toBe(201);const saved=(await upload.json()).data;
+  const samples=[{name:'blank',bytes:await sharp({create:{width:320,height:240,channels:3,background:'white'}}).jpeg().toBuffer()},{name:'plant',bytes:await sharp(readFileSync('apps/web/public/photos/step-3-v2.webp')).resize(960).jpeg().toBuffer()}];
+  for(const {name,bytes} of samples){
+  const c=(await (await request.post('/api/v1/cases',{headers,data:{name:'Real recognition '+name}})).json()).data;
+  const upload=await request.post('/api/v1/uploads',{headers,multipart:{case_id:c.id,purpose:'PLANT',file:{name:name+'.jpg',mimeType:'image/jpeg',buffer:bytes}}});expect(upload.status()).toBe(201);const saved=(await upload.json()).data;
   const consent=(await (await request.post('/api/v1/consents',{headers,data:{purpose:'AI_ANALYSIS',accepted:true}})).json()).data;
   const start=await request.post(`/api/v1/cases/${c.id}/plant-analysis`,{headers,data:{upload_ids:[saved.id],consent_id:consent.id}});expect(start.status()).toBe(202);const {job_id:id}=(await start.json()).data;
   let job:any;for(let i=0;i<100;i++){job=(await (await request.get('/api/v1/jobs/'+id)).json()).data;if(['SUCCEEDED','FAILED','CANCELLED'].includes(job.status))break;await new Promise(r=>setTimeout(r,800));}
-  expect(job.status).toBe('SUCCEEDED');const parsed=visionSchema.parse(job.result);expect(parsed.plant_details?.readings||[]).toEqual([]);expect(job.result.status).toBe('UNCONFIRMED');
-  console.log(JSON.stringify({recognitionJobStatus:job.status,schema:parsed.schema_version,visibleReadings:parsed.plant_details?.readings.length||0}));
+  expect(job.status,job.error).toBe('SUCCEEDED');const parsed=fullPlantScanSchema.parse(job.result),readings=parsed.plant_details.readings;expect(readings).toHaveLength(6);expect(job.result.status).toBe('UNCONFIRMED');expect(job.result.measurements).toBeNull();
+  if(name==='blank'){expect(readings.every(r=>r.value===null&&r.origin==='UNKNOWN')).toBe(true);expect(parsed.plant_candidates.every(c=>c.group==='UNKNOWN')).toBe(true);}
+  else{expect(parsed.plant_candidates[0].name.length).toBeGreaterThan(0);expect(parsed.plant_candidates[0].group).toBe('FOLIAGE');expect(readings.every(r=>r.value!==null&&r.value>0)).toBe(true);expect(readings.some(r=>r.origin==='VISUAL_ESTIMATE')).toBe(true);}
+  console.log(JSON.stringify({sample:name,recognitionJobStatus:job.status,schema:parsed.schema_version,filledReadings:readings.filter(r=>r.value!==null).length,accuracyEvaluated:false}));
+  }
 });
 test('real authenticated checkpoint rejects blank image as unverifiable', async ({ request }) => {
   test.skip(process.env.RUN_REAL_GEMINI !== '1', 'Opt-in suite: uniform frame guard uses no provider call.');
