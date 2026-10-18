@@ -6,7 +6,7 @@ test('real Vietnamese audio plays through Web Audio without an installed Vietnam
   const auth = await page.request.post(origin + '/api/v1/auth/dev', { headers: { Origin: origin }, data: {} }); expect(auth.status()).toBe(200);
   await page.goto('/app/live-packing');
   const waiting = page.waitForResponse(r => r.url().endsWith('/api/v1/live-packing/speech'), { timeout: 60000 });
-  await page.getByRole('button', { name: 'Bật âm thanh và nghe thử', exact: true }).click();
+  await page.getByRole('button', { name: 'Bật âm thanh và đọc bước hiện tại', exact: true }).click();
   const response = await waiting; expect(response.status()).toBe(200);
   const audio = (await response.json()).data;
   const bytes = Buffer.from(audio.audio_base64, 'base64'); expect(bytes.subarray(0, 4).toString()).toBe('RIFF'); expect(bytes.length).toBeGreaterThan(10000);

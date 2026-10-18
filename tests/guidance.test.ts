@@ -43,6 +43,6 @@ describe('case-bound instructor confirmations',()=>{
     let g=begin();for(const step of sop.steps)g=advanceGuidance('a',c,g.id,confirm(g.revision,step.id,{action:'SKIP',method:'BUTTON'}));expect(g.status).toBe('REVIEW_REQUIRED');expect(()=>advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[4].id))).toThrow();
   });
   it('interprets agreement in the current step without converting a failed image into pass',()=>{
-    expect(confirmationDecision('manual',undefined)).toBe('CONFIRM');expect(confirmationDecision('visual',undefined)).toBe('CHECK');expect(confirmationDecision('visual',{kind:'skipped'})).toBe('REPAIR');expect(confirmationDecision('visual',{kind:'manual',note:'short'})).toBe('REPAIR');
+    expect(confirmationDecision(sop.steps[0],undefined)).toBe('CONFIRM');expect(confirmationDecision(sop.steps[1],undefined)).toBe('CHECK');expect(confirmationDecision(sop.steps[1],{kind:'skipped'})).toBe('REPAIR');expect(confirmationDecision(sop.steps[1],{kind:'manual',note:'short'})).toBe('REPAIR');
   });
 });

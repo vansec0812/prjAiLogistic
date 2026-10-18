@@ -47,6 +47,7 @@ test('checklist confirmation prompts in Vietnamese then auto-inspects camera, re
   await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click();
   await openGuide(page);
   await beginTrial(page);
+  await page.getByRole('button', { name: 'Nghe lại', exact: true }).click();
   await expect.poll(() => spoken.length).toBeGreaterThan(0); await reachVisual(page);
   const speechBefore = spoken.length; await page.getByRole('button', { name: 'Nghe lại', exact: true }).click(); await expect.poll(() => spoken.length).toBeGreaterThan(speechBefore);
   await page.getByRole('button', { name: 'Mở camera', exact: true }).click();
@@ -127,6 +128,7 @@ test('without Vietnamese voice, never speaks in a foreign language', async ({ pa
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: Object.assign(new EventTarget(), { getVoices: () => [{ name: 'English only', lang: 'en-US', default: true }], speak: () => (window as unknown as { foreignSpeech: () => void }).foreignSpeech(), cancel: () => {} }) }); });
   await page.goto('/'); await page.getByRole('button', { name: /Khám phá bản thử nghiệm local/ }).click(); await openGuide(page);
   await beginTrial(page);
+  await page.getByRole('button', { name: 'Nghe lại', exact: true }).click();
   await expect(page.getByText(/Chưa phát được giọng Việt/)).toBeVisible();
   await page.getByRole('button', { name: 'Nghe lại', exact: true }).click(); expect(spoken).toBe(0);
 });
@@ -234,6 +236,7 @@ test('voice command pauses for TTS, rejects negation and duplicates, then checks
   await command(page,'chưa xong');await command(page,'tôi chưa xong rồi');expect(calls).toBe(0);
   await page.evaluate(()=>{(window as unknown as {holdSpeech:boolean}).holdSpeech=true;});
   await page.getByLabel('Đọc hướng dẫn và phản hồi',{exact:false}).check();
+  await page.getByRole('button',{name:'Nghe lại',exact:true}).click();
   await expect(page.getByText('Nhận lệnh: Tạm ngừng nghe lệnh',{exact:true})).toBeVisible();await command(page,'đã xong rồi',true);expect(calls).toBe(0);
   await page.evaluate(()=>{const w=window as unknown as {holdSpeech:boolean;finishSpeech:(()=>void)|null};w.holdSpeech=false;w.finishSpeech?.();});
   await expect(page.getByText('Nhận lệnh: Đang nghe lệnh',{exact:true})).toBeVisible();

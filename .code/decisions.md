@@ -52,3 +52,15 @@ Mọi corpus/template/rule/ảnh chưa chuyên gia duyệt; nguồn không cho q
 
 ## Giám sát đóng gói và nhận lệnh nói — 17/10/2026
 Theo yêu cầu người dùng: bổ sung luồng độc lập /app/live-packing, 6 SOP dự thảo/35 bước, checkpoint ảnh/manual, Gemini Vision/TTS và nhận lệnh tiếng Việt. Không hoàn tất hồ sơ hoặc trừ kho trong luồng thử; không tự phê duyệt SOP. Secrets chỉ qua cấu hình server, không lưu media mặc định. Nguồn và giới hạn: ../SOP_INTEGRATION.md và ../VOICE_COMMANDS.md. Kiểm: tests/live-packing.test.ts, packing-voice-commands.test.ts, live-sop-evaluation.test.ts, vietnamese-voice.test.ts, vietnamese-tts.test.ts và tests/e2e/live-packing.spec.ts. Provider thật, ảnh có nhãn và micro vật lý vẫn cần xác minh; không đóng release gate hoặc FR gốc chỉ vì có test phần mềm.
+
+## Camera, lời đọc cố định và tự chuyển bước — 18/10/2026
+
+Theo yêu cầu người dùng: cho xem camera trước thiết lập SOP; nút Bắt đầu bật hướng dẫn theo mẫu và nhận lệnh nếu trình duyệt hỗ trợ. Lời đọc lấy nguyên speech_vi của SOP, kèm số bước và nhắc thao tác cố định, không dùng LLM viết lại. Lệnh đã xong chỉ yêu cầu kiểm tra. Tự chuyển sau khi đọc kết quả nếu ảnh đúng bước đạt và người dùng xác nhận kiểm tay; bước manual chỉ dùng xác nhận trực tiếp. Lệnh tôi đã kiểm tra trực tiếp và checkbox lưu nguồn xác nhận vào biên bản. Lỗi/không xác minh được giữ nguyên bước. Tắt camera, ẩn trang hoặc rút đồng ý gửi ảnh dừng luồng. Đây là thay đổi tương tác kiểm thử, không phê duyệt SOP hay xác nhận độ chính xác Vision. Có thể quay lại thao tác bằng nút. Chi tiết: ../VOICE_COMMANDS.md.
+
+## ADR-003: Hướng dẫn camera theo hồ sơ và nguồn bổ sung — 18/10/2026
+
+Yêu cầu mới hợp nhất entry tạo hồ sơ/giám sát và nhận lời đồng ý theo bước. Chọn lưu guidance document private theo case/input hash/SOP version/revision trong DB local sẵn có. Giữ immutable plan/completion/kho riêng, không dùng session trial để suy hồ sơ đóng gói đạt. Manual step là self-report; visual cần server-validated image pass hoặc explicit manual override có lý do. Lời xác nhận chỉ commit bước hiện tại, không tạo approval safety.
+
+Gộp thêm origin/dev-nam b920625 (fixed narration/guard và tests), giữ RAG/ảnh/báo cáo của main cùng flow mới. Controller trong RAM của nhánh đó được thay bằng phiên lưu trên server; nguyên văn speech_vi và guard đúng step_id được giữ qua packingNarration/guidedDecision. Lệnh tôi đã kiểm tra trực tiếp vẫn hỗ trợ cùng các câu đồng ý mới. Micro tiếp tục opt-in riêng. Không tự bật mic từ CTA mở camera hoặc lấy lại consent sau refresh. Nghe mẫu đọc bước đang chọn, không đánh dấu hoàn tất.
+
+Nguồn mới được đọc theo scope, ghi rights/locator và phân biệt metadata. Bổ sung nhánh nguyên chậu FedEx cùng chú giải AmericanHort/VBN/USDA; không đổi sáu SOP version cũ hoặc đưa bảng nhiệt vào Rule Engine. RAG tiếp tục read-only/UNREVIEWED; chưa fine-tune hay copy/index toàn văn. Không đổi approval hoặc giới hạn Vercel. Đây là quyết định triển khai tương tác local, chưa nghiệm thu chuyên môn/production.

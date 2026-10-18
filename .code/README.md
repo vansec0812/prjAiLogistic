@@ -19,3 +19,5 @@ Thư mục `.code` dùng để điều hành triển khai từ SRS ở mức sen
 Đọc theo thứ tự: `../agent.md` -> `../plan.md` -> `source-index.md` -> `decisions.md` -> hồ sơ của task -> row truy vết. Chỉ dẫn hành vi thuộc `agent.md`, lộ trình thuộc `plan.md`; tránh sao chép làm lệch nguồn.
 
 Nhãn **SRS** là yêu cầu từ PDF; **Đề xuất** là thiết kế/ước lượng của kế hoạch; **OPEN** là chưa có quyết định/bằng chứng. Không suy ra việc được ghi trong tài liệu đồng nghĩa đã triển khai, kiểm thử hoặc được phê duyệt.
+
+Flow hồ sơ & camera hiện hành: [GUIDED_PACKING.md](../GUIDED_PACKING.md). Gồm API phiên private, xác nhận voice theo checkpoint, resume/consent và tri thức bổ sung 18/10/2026. Evidence chạy thực ở implementation.md.

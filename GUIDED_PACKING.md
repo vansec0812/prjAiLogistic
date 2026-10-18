@@ -6,7 +6,7 @@
 2. Xem hình camera ngay trong hồ sơ. **Mở camera** cũng bật lại camera đã tắt/ngắt. Nếu trình duyệt chặn, cấp lại quyền camera cho HTTPS/localhost rồi bấm lại. Ứng dụng không tự vượt quyền thiết bị.
 3. Chọn SOP, nhập loài shop xác nhận, đọc nguồn và xác nhận phạm vi thử. Nhánh mặc định là một cây nguyên chậu tham khảo FedEx, không tự suy lịch tưới/nhiệt độ. Sáu nhánh loài/hình thức cũ được giữ riêng, gồm giới hạn cây nhỏ của nguồn trầu bà.
 4. Đồng ý checklist để tạo **phiên hướng dẫn lưu vào hồ sơ**. Đây là thử nghiệm local; SOP chưa được chuyên gia duyệt. Camera xem tại chỗ hoạt động riêng với quyền thực hiện SOP.
-5. AI đọc thao tác, điều cần kiểm tay và bước tiếp theo. Có thể bật micro riêng để nhận lệnh. Muốn AI xem ảnh, cần đồng ý gửi khung hình tới Gemini. Mỗi lần yêu cầu chỉ lấy một ảnh sau nhắc vị trí/đếm ngược; không theo dõi toàn video.
+5. AI đọc nguyên speech_vi theo mẫu, số bước, điều cần kiểm tay và bước tiếp theo; nút bật âm thanh đọc bước đang chọn. Có thể bật micro riêng để nhận lệnh. Muốn AI xem ảnh, cần đồng ý gửi khung hình tới Gemini. Mỗi lần yêu cầu chỉ lấy một ảnh sau nhắc vị trí/đếm ngược; không theo dõi toàn video.
 6. Kiểm trực tiếp xong, nói **đồng ý / dạ vâng / OK / tôi xác nhận / tiếp tục**. Bước manual ghi xác nhận của người dùng; bước visual cần kết quả ảnh đạt, hoặc đã chọn kiểm tay với lý do tối thiểu 10 ký tự. AI xác nhận và đọc bước mới sau khi máy chủ lưu thành công.
 7. Khi ảnh chưa đạt/không thể xác minh, lời đồng ý không chuyển bước. AI nhắc kết quả và cách kiểm lại. Nói **kiểm tra lại**, **nhắc lại**, **giúp tôi**; **dừng lại / tắt camera** dừng camera và micro. Nút kiểm tay/kiểm ảnh luôn là lựa chọn thay thế khi nhận giọng không hỗ trợ.
 8. Tải lại mở đúng phiên/bước đã lưu. Camera, micro và đồng ý gửi ảnh đều tắt; phải bật lại. Bước đang thao tác chưa xác nhận không được coi đã xong. Đổi đầu vào/SOP làm phiên cũ stale; tạo phiên mới và giữ lịch sử. Nút đổi thiết lập tạo phiên riêng, không ghi đè phiên cũ.
@@ -32,7 +32,7 @@ Phiên `ACTIVE` chuyển `FINISHED` khi đủ bước xác nhận, hoặc `REVIE
 
 Version `plantcare-evidence-20261018-v3`: 19 nguồn đăng ký, 19 ghi chú có thể tra cứu; chỉ ghi chú của nguồn READ trong đúng scope được retrieval. Hai giáo trình và landing FloraHolland là metadata; không cấp claim kỹ thuật. FAO nằm scope NURSERY riêng; USDA có giới hạn theo loài/giống/xe lạnh/acclimatization. Không nhập bảng nhiệt hoặc kích thước thương mại thành ngưỡng sinh học/fit chung.
 
-Nhánh mới `POTTED-FEDEX-GENERAL`, version `2026.10-trial.2`, thêm 5 bước; 6 nhánh cũ giữ version/nội dung. Tổng 7 nhánh/40 bước. Đây là tóm tắt tham khảo và tiêu chí thị giác do SE đề xuất **DRAFT/UNREVIEWED**, không là phê duyệt của hãng/chuyên gia. Không fine-tune trọng số hoặc index toàn văn/ảnh chưa có quyền.
+Giữ lời đọc cố định/guard từ dev-nam `b920625`, tích hợp vào controller theo phiên; xác nhận lưu trên server thay vì chỉ RAM. Nhánh mới `POTTED-FEDEX-GENERAL`, version `2026.10-trial.2`, thêm 5 bước; 6 nhánh cũ giữ version/nội dung. Tổng 7 nhánh/40 bước. Đây là tóm tắt tham khảo và tiêu chí thị giác do SE đề xuất **DRAFT/UNREVIEWED**, không là phê duyệt của hãng/chuyên gia. Không fine-tune trọng số hoặc index toàn văn/ảnh chưa có quyền.
 
 Review nguồn, vị trí và quyền: [tiêu chuẩn/USDA](research/nursery-standards-review.md), [logistics](research/nursery-logistics-review.md), [giáo trình Việt Nam](research/vietnamese-textbooks-review.md). Chưa kiểm hình trong brochure FedEx Canada; đã đọc text. AmericanHort có xung đột ngày trên bìa/landing được ghi lại; không tự hợp nhất.
 

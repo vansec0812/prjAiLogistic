@@ -4,13 +4,16 @@ export function packingIntent(transcript: string): PackingIntent|null {
     .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   // Whole utterances only: never accept substrings of negations or conversation.
   if(['plantmove kiem tra','plant move kiem tra','kiem tra','kiem tra lai','kiem tra giup toi','kiem tra buoc nay','toi da lam xong','da xong roi','xong roi','da xong','minh lam xong roi'].includes(text))return 'CHECK';
-  if(['dong y','toi dong y','dong y roi','vang','da','da vang','co','u','uh','dung roi','duoc','duoc roi','ok','oke','okay','toi xac nhan','toi da kiem tra','da kiem tra xong','toi hieu roi','tiep tuc','tiep tuc di','duoc tiep tuc di','chuyen buoc','sang buoc tiep','qua buoc tiep theo'].includes(text))return 'CONFIRM';
+  if(['dong y','toi dong y','dong y roi','vang','da','da vang','co','u','uh','dung roi','duoc','duoc roi','ok','oke','okay','toi xac nhan','toi da kiem tra','da kiem tra xong','toi da kiem tra truc tiep','da kiem tra truc tiep','da xong va da kiem tra truc tiep','toi hieu roi','tiep tuc','tiep tuc di','duoc tiep tuc di','chuyen buoc','sang buoc tiep','qua buoc tiep theo'].includes(text))return 'CONFIRM';
   if(['nhac lai','noi lai','doc lai','huong dan lai'].includes(text))return 'REPEAT';
   if(['giup toi','can giup do','toi chua hieu','toi khong biet lam','lam the nao'].includes(text))return 'HELP';
   if(['dung lai','tam dung','dung kiem tra','tat camera'].includes(text))return 'STOP';
   return null;
 }
 export const isPackingCheckCommand=(text:string)=>packingIntent(text)==='CHECK';
+export type PackingCommand='check'|'confirm_manual';
+/** Compatibility for existing consumers; the instructor uses the full intent. */
+export function packingCommand(text:string):PackingCommand|null{const intent=packingIntent(text);return intent==='CHECK'?'check':intent==='CONFIRM'?'confirm_manual':null;}
 
 export interface RecognitionResultEvent {
   resultIndex: number;

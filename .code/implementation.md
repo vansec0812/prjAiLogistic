@@ -83,3 +83,25 @@ Default Playwright chỉ chạy workflow port 3001; `test:e2e:live` chạy SOP p
 Evidence trên tree đã gộp: typecheck PASS, 98 unit/regression tests PASS, production build PASS và production smoke PASS. Workflow: 5 ca PASS ở lượt đầu; export/share có lỗi artifact bị runner khác xóa, chạy lại riêng sau tách outputDir PASS (bao gồm PDF/ZIP thực và cross-owner). SOP: 9 ca PASS ở lượt đầu; ca đầu bị timeout 30 giây tại page.goto('/') khi cold compile, đang kiểm lại bằng cấu hình 90 giây. Đây là kiểm phần mềm bằng camera/voice/provider giả lập; không gọi Gemini thật, không đo độ đúng chuyên môn hoặc đạt performance production.
 
 Không tạo deployment Vercel. SQLite/local uploads/exports/OTP secret, worker trong process và font theo máy là các dependency chưa tương thích deployment serverless nguyên trạng. Hướng cấu hình build, nguồn Vercel và điều kiện chuyển đổi tại [../VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md); không tuyên bố toàn bộ backend đã sẵn sàng production trên Vercel.
+
+## Hồ sơ & camera, nguồn mới và xác nhận tiếng Việt — 18/10/2026
+
+Entry `/app/new` tạo case và mở `/app/cases/:id/guide`; camera preview bật/bật lại độc lập, CTA mới xin quyền native nhưng không tự bật micro/gửi ảnh. Một phiên private pin owner/case/inputHash/SOP version/revision, lưu kết quả server validate và xác nhận BUTTON/VOICE. Refresh khôi phục tiến độ với media/consent tắt. Bước manual nhận self-report; visual không chuyển vì lời đồng ý nếu thiếu/failed/unverifiable, trừ kiểm tay explicit có lý do. Không mutate plan/case completion/kho. Giữ failed image khi override, xóa pass cũ trước recheck và từ chối late result.
+
+Tri thức v3: 19 sources/19 claims ngắn, 16 ca retrieval; nguồn metadata-only không tạo claim. Thêm nhánh cây chậu FedEx 5 bước (tổng 7 nhánh/40 bước), chú giải AmericanHort/VBN/USDA trong SOP; FAO scope NURSERY riêng. Sáu SOP cũ giữ nguyên version. Hai giáo trình chỉ metadata, FedEx Canada mới đọc text/chưa kiểm hình; toàn bộ nguồn/rights/candidate UNREVIEWED/NOT_CONFIRMED. Không fine-tune, nhập bảng nhiệt hoặc copy/index toàn văn.
+
+Tích hợp thêm origin/dev-nam b920625 qua merge với feature commit 6233016. Conflict README, VOICE_COMMANDS, live-packing component/hook/schema/parser giữ luồng private theo hồ sơ mới; narration và guidedDecision của dev-nam được dùng với guard đúng checkpoint, thêm compatibility packingCommand. Những ghi chú cũ về controller RAM/nút Bắt đầu được thay bởi flow tại ../GUIDED_PACKING.md. Lời đọc giữ speech_vi theo catalog; nghe mẫu đọc bước hiện tại. Không bỏ RAG/report/ảnh photoreal đã có.
+
+| Check thực chạy | Kết quả |
+| --- | --- |
+| `npm run typecheck` | PASS sau tích hợp b920625 |
+| `npm test` | 130 tests, 11 files PASS; gồm DB owner/stale/revision/replay/override/no inventory và 16 ca lexical retrieval |
+| `npm run test:e2e:live` | 12/12 PASS trên tree đã giải conflict, camera/voice/provider giả lập; 3.5 phút gồm cold compilation |
+| `npm run test:e2e` | 6/6 PASS trước merge bổ sung narration/guard; các route/domain workflow không đổi bởi merge này |
+| `npm run build -- --webpack` | PASS trên tree tích hợp cuối |
+| `npm run test:production` | PASS trên build cuối: dev auth 404, private API 401, storage 404, CSP không unsafe-eval |
+| Preview/layout | HTTP 200 `/app/new` ở loopback; mở panel qua open_in_codex (queued); xem screenshot desktop/mobile 390px, không overflow. Artifacts ignored tại output/qa/unified-guide-mobile.png và voice-commands.png |
+
+Lượt browser đầu phát hiện helper test chưa đợi async commit và mock session dùng CSRF cũ; sửa helper chờ bước mới và session mock giữ token hiện tại. Browser cũng phát hiện nghe lệnh không resume sau chuyển manual step khi TTS tắt; sửa wrapper speech luôn resume có điều kiện khi hoàn tất. Bộ 12 ca cuối gồm regression resume này, lệnh lặp, phủ định, thu hồi consent, stop/unmount, camera mở lại, manual override, JSON không media, entry/resume và failed visual không chuyển. Không nới assertion nghiệp vụ để che lỗi.
+
+Không gọi Gemini thật hoặc bật billing; không đánh giá accuracy ảnh cây/micro vật lý, chưa approval chuyên môn hoặc deploy Vercel. Các release gate gốc tiếp tục OPEN.

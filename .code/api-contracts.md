@@ -99,3 +99,9 @@ Base path `/api/v1`, response `{data,meta.request_id}`; private/no-store, sessio
 Consent enum thêm `AI_KNOWLEDGE`, notice `local-v2`. Job enum thêm KNOWLEDGE, pin `question,knowledgeVersion,knowledgeContext,consentId`; output riêng read-only. Citation/schema lỗi là AI_INVALID_CITATION/AI_INVALID_OUTPUT; missing pinned context AI_CONTEXT_MISSING; provider chưa cấu hình AI_UNAVAILABLE/AI_CONFIG; consent bị thu hồi/wrong purpose chặn trước call. Chưa có OpenAPI/generated client formal cho extension này.
 
 PATCH case cùng name/input/expected version là no-op (version/status/selection giữ nguyên). Đổi tên riêng tăng case version, giữ selection/status nếu inputHash không đổi. Đổi input kỹ thuật vẫn STALE. Date gửi không hợp lệ/quá khứ bị từ chối generate. Đầu vào thiếu vẫn có diagnostic từ server; readiness UI giúp sửa trước.
+
+## Phiên hồ sơ & camera — 18/10/2026
+
+Contract chi tiết tại [GUIDED_PACKING.md](../GUIDED_PACKING.md). GET/POST `cases/:id/guidance`; PATCH `cases/:id/guidance/:session`. POST cần Idempotency-Key và case_version; PATCH pin expected_revision/step_id, action CONFIRM/MANUAL/SKIP, method BUTTON/VOICE và manual_checked=true. Scope chủ hồ sơ + session phải khớp. Input hash/SOP version thay đổi trả 409 GUIDANCE_STALE/SOP_VERSION_MISMATCH; revision/bước đổi trả VERSION_CONFLICT/CHECKPOINT_MISMATCH; ảnh chưa đạt hoặc kiểm tay thiếu lý do trả 422 CHECK_REQUIRED. Terminal case và production chưa duyệt chặn thực hiện.
+
+Checkpoint API thêm case_id/session_id/session_revision (cùng có hoặc cùng vắng để tương thích API thử cũ). Bound call recheck trước provider và transaction lưu, chỉ kết quả server validate mới dùng để chuyển. Không có trường client-supplied AI result ở PATCH. Retry xóa pass cũ; stale response không ghi vào bước mới. Phiên kết thúc không mutate case status/plan/completion/material movements. Knowledge thêm scope NURSERY và access METADATA_ONLY; metadata không tham gia technical retrieval.

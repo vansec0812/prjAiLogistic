@@ -74,3 +74,7 @@ Active-job uniqueness cho cùng owner/case/type/input hash phải enforced DB, k
 Migration expand/contract, backfill có checkpoint; preserve old worker compatibility. Rule/template refs có FK/version immutable và archive thay delete. Account purge cần orchestration xóa DB/storage/provider refs, revoke sessions/shares/signed URL issuance, cancellation và retry cleanup. Metadata audit phải tối giản/ẩn PII theo policy.
 
 Retention đề xuất SRS p.44: orphan uploads 24 h; technical log 30 ngày; audit tối thiểu 180 ngày; active data delete mục tiêu 7 ngày; backup vòng 30 ngày. Các thời hạn này **chưa là policy đã chốt**. Signed URL đã phát hành có thể còn đọc trong TTL <= 5 phút; nếu cần thu hồi tức thì phải dùng proxy đọc/current authorization, xem D-10.
+
+## Guidance session local — 18/10/2026
+
+Document kind guidance với owner_id trong cùng documents table (không schema SQL mới). Body GuidanceSession gồm id/caseId/inputHash/sopId/sopVersion/context/revision/index/status/records/checks/createdAt/updatedAt. Status ACTIVE/FINISHED/REVIEW_REQUIRED chỉ cho phiên thử. Confirmation lưu method BUTTON/VOICE và timestamp, không transcript hoặc media. Bound checkpoint lưu kết quả criterion đã validate. Revision compare + transaction serializes mutations; input/SOP mismatch giữ lịch sử stale. Không ghi vào completions/movements. Case delete làm phiên không còn đọc/mutate qua API case; retention/purge production chưa được hoàn thiện.
