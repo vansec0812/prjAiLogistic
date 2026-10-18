@@ -1,6 +1,6 @@
 # PlantCare — AI Logistic
 
-Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đóng gói **một cây/chậu cho một hành trình**. Người dùng nhập hoặc tải ảnh, đo/cân thực tế, xác nhận vật tư và bối cảnh vận chuyển. Rule Engine tạo phương án có giải thích, ảnh/sơ đồ từng bước và checklist; hồ sơ được lưu trên server để xem lại, xuất PDF hoặc chia sẻ phiên bản chỉ xem.
+Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đóng gói **một cây/chậu cho một hành trình**. Theo PRD MVP đã chốt: nhận diện/xác nhận cây → xác nhận hành trình → so sánh PA1 An toàn nhất và PA2 Tối ưu chi phí → chọn phương án → hướng dẫn từng bước bằng camera/giọng nói hoặc thủ công → hậu kiểm → lưu lịch sử. Rule Engine quyết định phương án; AI chỉ gợi ý và kiểm phần nhìn thấy.
 
 **Trạng thái:** frontend/backend hoạt động; có cấu hình triển khai **Vercel cho giao diện + Docker Node có persistent volume**. Quy tắc/SOP vẫn DRAFT, chưa duyệt chuyên môn; release gates R0/R1 chưa nghiệm thu đầy đủ. Chưa tạo hosting production.
 
@@ -28,17 +28,17 @@ Deploy theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md): backend giữ DB/ảnh
 
 | Nhóm | Đã triển khai trong bản local | Giới hạn hiện tại |
 | --- | --- | --- |
-| Tài khoản | Đăng ký pending, OTP một lần, đăng nhập/đăng xuất, reset mật khẩu thu hồi phiên cũ, sửa tên | OTP dev hiển thị trên UI; SMS thật chưa chọn/kiểm chứng |
-| Hồ sơ | Dashboard, tạo/lưu nháp, wizard cây → vật tư → hành trình → xem lại; optimistic version | Một cây/chậu; chưa có tổ chức hoặc nhiều kiện |
-| Flow AI | Tạo hồ sơ → thông số cây → upload/chụp tự nhận diện và fill → ảnh hướng dẫn → làm cùng AI; voice xác nhận từng bước, báo lỗi, resume | Số đo phải kiểm thực tế; ảnh chỉ kiểm phần nhìn thấy; phiên hướng dẫn không trừ kho/complete case |
+| Tài khoản | Đăng ký pending, OTP đăng nhập/xác minh, password login/reset, hồ sơ cá nhân/shop, khóa OTP 15 phút sau 5 lần sai | OTP dev hiển thị trên UI; SMS thật chưa chọn/kiểm chứng |
+| Hồ sơ | Dashboard, một ảnh/cây → xác nhận → hành trình/kênh/ngày → xác nhận; optimistic version | Một cây/chậu; chưa có tổ chức hoặc nhiều kiện |
+| Flow AI | Vision v3 confidence và nguồn từng trường, NEED_INPUT nhập tay, checkbox bắt buộc; phiên pin phương án, pause/resume/end, tiếng Việt/mute/volume | Camera tùy chọn, số đo cần kiểm thực tế; không dùng ảnh suy độ chắc bên trong |
 | Ảnh | JPEG/PNG/WebP, giải mã/chuẩn hóa, bỏ metadata, private owner proxy | Tối đa 10 MB/ảnh, 30 MP, 12 ảnh/hồ sơ; AI không thay đo/cân |
-| Phương án | Engine kiểm fit/load/vật tư, phần chi phí đã biết, rule trace và snapshot | Một phương án fixture; chưa nhiều alternatives |
-| Đóng gói | Sáu bước có thao tác/điểm kiểm/điểm dừng và ảnh AI (FOLIAGE) hoặc sơ đồ, checklist theo version, nhập số đo/cân kiện thực, completion atomic/idempotent | Rule/template/sơ đồ DRAFT; lượng dùng theo vật tư đã chọn trong phương án |
+| Phương án | Hai BOM/bước từ danh mục quản trị; PA2 bị chặn nếu không đủ điều kiện; chi phí Decimal và unknown/null; trace/version | Seed DRAFT, giá ví dụ; ngoài scope cần chuyên gia; không là chứng nhận thùng thực đủ tải |
+| Đóng gói | Bước/hình/lời đọc đúng PA1/PA2; hậu kiểm Đạt/Chưa đạt/Không chắc, kiểm tay độ cố định, complete atomic/idempotent | Không trừ kho trong MVP danh mục; nghiệp vụ kho/checklist SRS cũ giữ riêng |
 | Kho và mẫu | Kho riêng, không âm stock, chỉ trừ khi hoàn tất; mẫu tạo nháp cần xác nhận lại | Chưa đầy đủ lịch sử adjustment/correction sau hoàn tất |
-| Lịch sử | Phiên bản bất biến, STALE khi input đổi, feedback, tự khai báo bàn giao/nhận | Không tracking nhà vận chuyển thật |
+| Lịch sử | Snapshot/nguồn/config/selection/hậu kiểm bất biến; lọc ngày/nhóm/phương án, clone bỏ xác nhận và ngày cũ | Không tracking nhà vận chuyển thật |
 | PDF và chia sẻ | PDF/Markdown/JSON/ZIP chi tiết có bill, thao tác, ảnh, nguồn và trace từ snapshot; link chỉ xem tối đa 7 ngày, thu hồi ngay | Share không gồm snapshot đầu vào, ảnh gốc hoặc PII tài khoản |
 | Hỗ trợ và nội dung | Ticket mô tả/thread của owner, thông báo job, ba bài hướng dẫn chuẩn bị | Chưa chuyên gia được phân công hoặc CMS đầy đủ |
-| AI/quản trị | Vision adapter tùy chọn, consent riêng/revoke, quota số calls; admin read-only có role gate | Chưa evaluation chuyên môn, budget tiền, chat hoặc admin publishing |
+| AI/quản trị | /admin/mvp quản lý cấu hình cây/vật tư/ngưỡng/bước/hình/lời đọc; phiên bản mới → EXPERT duyệt độc lập → ADMIN reauth/kích hoạt/rollback; audit | Chưa có approval chuyên môn thật, evaluation/pilot hoặc budget tiền |
 
 Dashboard đọc số liệu từ DB. Hồ sơ seed có nhãn mẫu phát triển; tài khoản đăng ký riêng không tự nhận seed. Không công bố chỉ số giảm hư hỏng/accuracy AI khi chưa có đánh giá thực tế.
 
@@ -139,24 +139,24 @@ Trên macOS/Linux: `cp .env.example apps/web/.env.local`. Sửa giá trị rồi
 | `SMS_ADAPTER_TOKEN` | Bearer token server gửi tới SMS adapter, không trả client |
 | `PLANTCARE_PDF_FONT` | TTF hỗ trợ tiếng Việt; tìm Arial Windows/DejaVu Sans Linux nếu trống |
 
-SMS adapter nhận POST JSON `{phone, code, purpose, request_id}` với purpose `REGISTER`/`RESET`. Adapter trả HTTP thành công khi chấp nhận yêu cầu; gửi được SMS không đồng nghĩa số điện thoại verified. Không log OTP/key.
+SMS adapter nhận POST JSON `{phone, code, purpose, request_id}` với purpose `REGISTER`/`LOGIN`/`RESET`. Adapter trả HTTP thành công khi chấp nhận yêu cầu; gửi được SMS không đồng nghĩa số điện thoại verified. Không log OTP/key.
 
 `PLANTCARE_BUILD_DIR` phục vụ test riêng: E2E dùng `.next-e2e`; thông thường dùng `.next`. CLI Next.js thiết lập `NODE_ENV` theo `dev`/`build`/`start`.
 
 ## 5. Dùng thử một hồ sơ
 
-1. Đăng nhập; development có nút dùng tài khoản mẫu, production dùng tài khoản đã OTP.
-2. **Tạo hồ sơ**, đặt tên → màn thông số cây/chậu.
-3. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**: AI tự fill tên/nhóm/vật liệu chậu/độ dễ hư khi có thông tin. AI đánh giá đủ sáu trường kích thước/khối lượng; đọc nhãn/thước/cân khi có, còn lại có thể điền ước tính nháp từ ảnh rõ. Ghi rõ ước tính, cần đo/cân kiểm tra trước khi tích xác nhận; ảnh thiếu cơ sở giữ unknown. Giữ số đã nhập và dữ liệu đã xác nhận. Không Gemini vẫn nhập tay.
-4. Kiểm/sửa số đo, cân thực tế rồi xác nhận → **Xem hướng dẫn đóng gói**.
-5. Xem 5 ảnh/bước → **Bắt đầu với AI**. Bật camera, quyền kiểm ảnh và micro riêng. Nói **“Đã xong bước này”**, **“Tiếp tục bước tiếp theo”** để xác nhận; visual cần ảnh đạt hoặc kiểm tay có lý do.
-6. AI báo lỗi ảnh khi kiểm, giữ bước để sửa. “Tôi gặp lỗi”, “Tôi đã xử lý lỗi”, “Nhắc lại”, “Dừng lại” hỗ trợ thao tác. Tiến độ/lỗi được lưu, reload tắt media/consent.
+1. Đăng ký/xác minh hoặc đăng nhập OTP/mật khẩu. Development có tài khoản mẫu, production cần SMS thật.
+2. Tạo hồ sơ → chọn một ảnh/chụp ảnh, đồng ý lưu và nhận diện; hoặc nhập tay.
+3. AI đánh giá đủ tên/nhóm, sáu số đo/khối lượng, độ dễ hư, vật liệu chậu và confidence từng trường. Ngưỡng mặc định 70%; trường thiếu/thấp phải nhập tay. Kiểm bằng thước/cân rồi tích **Tôi xác nhận thông số cây và chậu đã chính xác**. Sửa/thay ảnh bỏ xác nhận; đang quét khóa tiếp tục.
+4. Nhập nơi đi/nơi đến, kênh Shopee/TikTok Shop/trực tiếp/khác, ngày giờ tương lai. Ước tính hành trình, chỉnh khoảng cách/ETA/nhiệt độ/nguồn, xác nhận. Chưa có weather provider: giả định mùa được ghi rõ, địa danh chưa nhận ra cần nhập tay.
+5. Xem hai phương án và bảng BOM/chi phí. PA2 có thể bị ẩn kèm lý do. Giá thiếu hiển thị chưa có giá; không cộng thành giá 0. Chọn phương án, xem các hình/bước tương ứng.
+6. Chọn **Sử dụng camera AI** hoặc **Hướng dẫn thủ công**. Camera preview tùy chọn; bấm **Bắt đầu** mới chạy hướng dẫn. Bật nhận lệnh/kiểm ảnh riêng nếu dùng. Có tạm dừng/tiếp tục/kết thúc, lặp lại, mute/âm lượng.
+7. Nói “Đã xong bước này”/“Tiếp tục bước tiếp theo”; visual cần ảnh đạt hoặc kiểm tay. “Tôi đã kiểm tra trực tiếp” là xác nhận kiểm tay khi AI không quan sát được; lỗi đang thấy cần xử lý/kiểm lại. Nói “Tôi gặp lỗi”, “Nhắc lại”, “Dừng lại” khi cần.
+8. Hoàn tất bước → **Hậu kiểm kiện**. Chụp/scan tùy chọn hoặc kiểm tay từng tiêu chí. Độ cố định bên trong luôn cần USER kiểm tay. Đủ tiêu chí mới **Lưu hồ sơ đã đóng gói**; lịch sử giữ snapshot/chi phí/phiên bản/hậu kiểm. Không mặc định lưu ảnh hậu kiểm hoặc camera.
 
-Khi cần phương án vận chuyển đầy đủ, chọn **Bổ sung vật tư & hành trình**: xác nhận hộp/tải trọng/vật tư/nguồn nhiệt độ/ngày gửi → xem lại → tạo phương án. FAIL/STALE/thiếu điều kiện chặn chọn/complete. Checklist, số đo/cân kiện, trừ kho atomic/idempotent, PDF/ZIP/share theo version vẫn giữ riêng. Kết thúc phiên AI không tự complete case.
+Quy tắc/giá mẫu chỉ để thử flow. Production cần cấu hình được chuyên gia duyệt; không dùng REFERENCE flag vượt gate MVP. Mẫu kỹ thuật/ảnh chưa chuyên gia duyệt không được tự publish. Ma trận chi tiết: [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md).
 
-Tài khoản riêng: số E.164, ví dụ `+84901234567`; username 4–30 ký tự chữ thường/số/`.`/`_`; mật khẩu 12–128 ký tự. OTP local có nhãn, không gửi SMS thật; hết hạn 5 phút, dùng một lần, tối đa 5 lần thử, gửi lại có cooldown.
-
-Không Gemini vẫn hoàn tất luồng manual. Consent không tick sẵn; nhận diện AI, hỏi AI với nguồn, ảnh AI và chia sẻ chuyên gia là mục đích riêng. Bản ghi consent không có nghĩa mọi tính năng đó đã bật.
+Kho, fit/load/checklist/PDF/ZIP/share theo SRS cũ tiếp tục đọc phiên bản legacy riêng; không đưa ảnh vật tư và tồn kho vào wizard MVP.
 
 ### Tri thức có nguồn và đầu ra mới
 
@@ -167,6 +167,10 @@ Mở **Tri thức có nguồn** trong menu hoặc `/app/knowledge`; chọn phạ
 Trang xem lại chỉ rõ dữ liệu còn thiếu; giá unknown vẫn hợp lệ. Lưu dữ liệu không đổi giữ phương án đã chọn. Report thêm assumptions, bill/thành tiền, thao tác/điểm kiểm/điểm dừng, handover/recipient checks và sources. Ảnh photorealistic là cây mẫu trầu bà cho FOLIAGE, không là ảnh kiện thật. SVG giữ cho nhóm khác và làm fallback. ZIP chứa asset tương đối để xem offline; Markdown riêng dùng đường dẫn asset website.
 
 ## 6. Luồng nghiệp vụ và dữ liệu
+
+Flow MVP dùng bundle bất biến gồm hai alternatives, selection pin alternative/config, guidance pin bước/lời đọc và postcheck pin cùng selection. Dữ liệu thiếu → NEED_INPUT; ngoài phạm vi/chưa duyệt → NEEDS_EXPERT; input đổi → STALE. Mỗi PATCH/control/postcheck kiểm revision phía server. Chi tiết schema mới tại [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md).
+
+Các trạng thái/checklist/stock bên dưới mô tả engine SRS legacy còn được bảo toàn:
 
 | Trạng thái | Cách xử lý |
 | --- | --- |
@@ -196,6 +200,18 @@ Job lưu status/lease/attempt/outbox trong DB, chạy trong process ứng dụng
 Nếu sao lưu local, dừng server trước khi sao chép **toàn bộ storage directory**, giữ DB/private files/OTP secret cùng một snapshot. Chưa có automated backup/retention/restore drill production.
 
 ## 7. API và phân quyền
+
+Flow MVP dùng `/mvp/config`, `/mvp/journey`, `/cases/:id/mvp/*`, guidance mode MVP và `/admin/mvp`. Contract/revision/ownership tại [.code/api-contracts.md](.code/api-contracts.md). `npm run test:e2e:mvp` kiểm riêng luồng mới.
+
+Tài khoản ADMIN/EXPERT do người vận hành backend cấp cho **tài khoản đã xác minh**, không có nút tự nâng quyền trong website. Ví dụ lệnh do operator chạy trên máy giữ volume (không chạy nếu chưa xác định đúng tài khoản):
+
+```powershell
+node scripts/set-role.mjs --username ten_quan_tri --role ADMIN --data-dir D:\duong-dan-volume
+node scripts/set-role.mjs --username ten_chuyen_gia --role EXPERT --data-dir D:\duong-dan-volume
+```
+
+Lệnh có audit, thu hồi phiên cũ và bảo vệ ADMIN cuối. Người dùng đăng nhập lại; quản trị mở `/admin/mvp`, tạo bản nháp; EXPERT khác tác giả duyệt; ADMIN nhập lại mật khẩu để kích hoạt hoặc quay lại bản đã duyệt. Task này không tự cấp quyền hay duyệt dữ liệu production.
+
 
 Base path: `/api/v1`. Thành công: `{data, meta}`; lỗi: `{error: {code, message, field_errors?}, request_id}`. Private response no-store.
 
@@ -244,6 +260,8 @@ macOS/Linux dùng `npm`/`npx`. E2E tự mở **3001**, cache `.next-e2e`, DB `.d
 Đã kiểm OTP/reset revoke, owner/CSRF/role injection, FAIL/missing-load/STALE, optimistic conflict, checklist, stock rollback, concurrent/idempotent completion, khóa hồ sơ hoàn tất, share revoke, private/fake image, template clone, PDF thật, desktop 1440/mobile 390 và UI hoàn tất bằng số đo nhập tay.
 
 Artifacts local: `output/qa/` screenshot/PDF, `test-results/` trace lỗi, không commit. `next-env.d.ts` và route types được Next.js sinh tự động, không commit; `typecheck` tự tạo trước khi kiểm. Đọc trace: `npx.cmd playwright show-trace <path-to-trace.zip>`. PDF QA tùy chọn sau E2E: `uv run --with pymupdf python scripts/inspect-export.py`; không dependency runtime.
+
+Đối chiếu PRD ngày **19/10/2026**: 165 unit/API tests và 23 E2E suites qua (6 workflow, 13 camera/voice, 4 MVP); Vision v3 provider smoke thật qua với ảnh trắng và ảnh AI minh họa. Chưa đo accuracy hoặc KPI vận chuyển. Evidence chi tiết tại [.code/implementation.md](.code/implementation.md).
 
 Bản đầu ngày **12/10/2026** qua typecheck, 18 unit test, 5 E2E suites và production build/smoke. Bản nâng cấp ngày **15/10/2026** có 31 test unit/regression (gồm 12 ca retrieval), 6 E2E suites và QA PDF 11 trang; evidence build/smoke cập nhật tại [.code/implementation.md](.code/implementation.md). Đây là evidence kỹ thuật phạm vi đã triển khai; chưa thay provider integration, chuyên môn hoặc NFR acceptance.
 
@@ -323,7 +341,7 @@ Không xóa `.data` nếu còn dữ liệu cần giữ. Issue gồm bước tái
 
 - Approval catalog/rule/template/sơ đồ chuyên môn; fixture **2 cm, 10–32 °C, 48 giờ** chưa là ngưỡng vận chuyển thực đã kiểm chứng.
 - SMS/Gemini/weather/route thật, evaluation/accuracy/model regression, transient retry/schema repair và budget tiền.
-- Alternatives/chat theo đầy đủ SRS và ảnh AI tùy biến cho cây thực; expert assignment/shared scope/revision, admin publishing/CMS/reporting.
+- Đánh giá hai phương án/SOP MVP với chuyên gia và kiện thật; ảnh tùy biến/các nghiệp vụ expert assignment, CMS/reporting ngoài MVP tiếp tục theo SRS.
 - Provenance từng field, weather validity, stock adjustment history/lượng dùng thực.
 - Policy retention/purge/xóa tài khoản/đổi số/provider cleanup/backup.
 - Worker độc lập, migration/scale, restore/metrics/alerts/load/performance, WCAG/cross-browser/pilot.
@@ -347,10 +365,6 @@ FR/NFR chưa nghiệm thu đầy đủ tiếp tục OPEN trong traceability. B�
 Đọc `agent.md`/`.code/README.md` trước khi đổi nghiệp vụ. Cập nhật contract/ADR/evidence cùng code; không đóng FR chỉ vì đã có màn hình.
 
 
-## Hướng dẫn AI theo hồ sơ
+## Hướng dẫn AI theo PRD MVP
 
-Chọn **Tạo hồ sơ** (`/app/new`) → thông số cây và ảnh → `/instructions` → `/guide`. Đường dẫn cũ `/app/live-packing` về cùng entry. Kiểm ảnh định kỳ khoảng 12 giây khi hình thay đổi chỉ báo lỗi, không tự chuyển; lời xác nhận mới chuyển bước sau điều kiện kiểm. Copy kỹ thuật/privacy/review được thu gọn, không còn banner bản local trên mọi màn.
-
-Cấu hình server theo mẫu riêng trong `deploy/`; không commit secret. Model phải khả dụng với tài khoản. Production có thể bật REFERENCE bằng `PLANTCARE_REFERENCE_GUIDE_ENABLED=true`; TRIAL/rule chưa duyệt vẫn bị chặn. Xem [flow và contract](GUIDED_PACKING.md), [SOP](SOP_INTEGRATION.md), [lệnh nói](VOICE_COMMANDS.md), [deploy](VERCEL_DEPLOYMENT.md).
-
-Kiểm phần giám sát: `npm run typecheck`, `npm test`, `npx playwright test --config playwright.live.config.ts`. Kiểm Gemini thật cần opt-in, có thể tốn quota; không chạy tự động trong bộ giả lập.
+Flow và ma trận 10 tính năng: [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md). API/phiên cũ giữ ở [GUIDED_PACKING.md](GUIDED_PACKING.md); yêu cầu đã cập nhật trong agent.md/plan.md. Quy tắc MVP production phải được EXPERT duyệt và ADMIN kích hoạt; flag REFERENCE chỉ dành phiên legacy. Deploy vẫn theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).

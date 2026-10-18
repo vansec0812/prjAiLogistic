@@ -52,7 +52,9 @@
     ".next-proxy-check/types/**/*.ts",
     ".next-proxy-check/dev/types/**/*.ts",
     ".next-vercel-check/types/**/*.ts",
-    ".next-vercel-check/dev/types/**/*.ts"
+    ".next-vercel-check/dev/types/**/*.ts",
+    ".next-mvp-e2e/types/**/*.ts",
+    ".next-mvp-e2e/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

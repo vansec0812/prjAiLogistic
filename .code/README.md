@@ -20,4 +20,4 @@ Thư mục `.code` dùng để điều hành triển khai từ SRS ở mức sen
 
 Nhãn **SRS** là yêu cầu từ PDF; **Đề xuất** là thiết kế/ước lượng của kế hoạch; **OPEN** là chưa có quyết định/bằng chứng. Không suy ra việc được ghi trong tài liệu đồng nghĩa đã triển khai, kiểm thử hoặc được phê duyệt.
 
-Flow hiện hành: tạo hồ sơ → thông số/nhận diện ảnh → ảnh hướng dẫn → AI từng bước, tại [GUIDED_PACKING.md](../GUIDED_PACKING.md). Gồm private session/voice/issue/resume, auto-fill giữ manual và phát âm Việt. Deploy tách Vercel/Node-volume tại [VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md); ADR/evidence trong implementation.md, không đóng acceptance chuyên môn hoặc FR/NFR gốc.
+Flow hiện hành: cây/ảnh và confidence → xác nhận → hành trình/kênh/ngày → xác nhận → hai phương án/BOM/chi phí → chọn → hướng dẫn đúng phương án → hậu kiểm → lưu. Ma trận PRD mới tại [prd-mvp-20261019.md](prd-mvp-20261019.md), thay luồng cũ trong GUIDED_PACKING.md. Deploy tách Vercel/Node-volume tại [VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md); gate chuyên môn và NFR tiếp tục cần evidence.

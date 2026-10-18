@@ -1,4 +1,6 @@
 # Tạo hồ sơ → nhận diện → ảnh hướng dẫn → làm cùng AI
+> Cập nhật 19/10/2026: flow MVP hiện hành theo [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md). Các phần REFERENCE/TRIAL dưới đây mô tả phiên cũ; MVP phải xác nhận hành trình, chọn phương án và hậu kiểm.
+
 
 Luồng hiện hành từ 18/10/2026, thay luồng mở camera ngay sau tạo hồ sơ.
 

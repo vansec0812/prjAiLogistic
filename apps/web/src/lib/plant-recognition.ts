@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PlantInput } from '@plantcare/domain';
+import { profileFields, type PlantInput, type ProfileField } from '@plantcare/domain';
 
 export const measuredFields=['height','length','width','potDiameter','potHeight','weight'] as const;
 const readingSchema=z.object({field:z.enum(measuredFields),value:z.number().finite().positive().max(100000),unit:z.enum(['cm','kg']),origin:z.literal('VISIBLE_LABEL_OR_SCALE'),evidence:z.string().min(5).max(500)}).strict();
@@ -22,7 +22,10 @@ export const fullPlantScanSchema=legacyVisionSchema.extend({
     if((r.origin==='UNKNOWN')!==(r.value===null)||r.unit!==(r.field==='weight'?'kg':'cm'))ctx.addIssue({code:'custom',path:['plant_details','readings',i],message:'Nguồn, giá trị hoặc đơn vị không khớp.'});
   });
 });
-export const visionSchema=z.discriminatedUnion('schema_version',[legacyVisionSchema,fullPlantScanSchema]);
+const confidenceSchema=z.object({confidence:z.number().min(0).max(100).nullable(),evidence:z.string().min(5).max(500)}).strict();
+const confidenceFields=z.object(Object.fromEntries(profileFields.map(k=>[k,confidenceSchema])) as Record<ProfileField,typeof confidenceSchema>).strict();
+export const prdPlantScanSchema=z.object({...fullPlantScanSchema.shape,schema_version:z.literal('vision-v3'),image_quality:z.enum(['CLEAR','RETAKE','NO_PLANT']),field_confidences:confidenceFields}).superRefine((r,ctx)=>{if(new Set(r.plant_details.readings.map(f=>f.field)).size!==6||r.plant_details.readings.some(r=>(r.origin==='UNKNOWN')!==(r.value===null)||r.unit!==(r.field==='weight'?'kg':'cm')))ctx.addIssue({code:'custom',message:'Thông số không khớp nguồn hoặc đơn vị.'});});
+export const visionSchema=z.discriminatedUnion('schema_version',[legacyVisionSchema,fullPlantScanSchema,prdPlantScanSchema]);
 export type PlantRecognition=z.infer<typeof visionSchema>;
 
 /** Fill editable fields only; a late result cannot undo edits or confirmation. */
@@ -42,7 +45,26 @@ export function applyPlantRecognition(current:PlantInput,atStart:PlantInput,resu
 export function plantProfileIssues(plant:PlantInput):string[]{
   const issues:string[]=[];
   if(!plant.name.trim()||plant.group==='UNKNOWN')issues.push('Nhập tên và nhóm cây.');
+  if(plant.fragility==='UNKNOWN')issues.push('Chọn độ dễ hư hỏng của cây.');
+  if(plant.height!==null&&plant.potHeight!==null&&plant.height<plant.potHeight)issues.push('Chiều cao tổng phải bao gồm chậu.');
   if(measuredFields.some(k=>plant[k]===null||plant[k]!<=0))issues.push('Bổ sung số đo và khối lượng cây, chậu.');
   if(!plant.confirmed)issues.push('Kiểm tra và xác nhận thông tin cây.');
+  if(Object.values(plant.fieldEvidence||{}).some(e=>e?.status==='NEED_INPUT'))issues.push('Nhập tay các trường AI chưa đủ tin cậy.');
   return issues;
+}
+
+export function editPlantField<K extends ProfileField>(plant:PlantInput,field:K,value:PlantInput[K]):PlantInput{return {...plant,[field]:value,confirmed:false,fieldEvidence:{...plant.fieldEvidence,[field]:{source:'USER',confidence:null,status:value===null||value===''||value==='UNKNOWN'?'NEED_INPUT':'SUGGESTED',evidence:'Người dùng nhập hoặc chỉnh sửa.'}}};}
+export function applyMvpRecognition(current:PlantInput,start:PlantInput,result:PlantRecognition,threshold=70):PlantInput{
+  if(current.confirmed)return current;
+  const suggested=applyPlantRecognition(current,start,result),next:PlantInput={...current,confirmed:false,fieldEvidence:{...current.fieldEvidence}},candidate=result.plant_candidates.find(c=>c.group!=='UNKNOWN');
+  for(const key of profileFields){
+    if(current.fieldEvidence?.[key]?.source==='USER'||current[key]!==start[key]||start[key]!==null&&start[key]!==''&&start[key]!=='UNKNOWN'&&start.fieldEvidence?.[key]?.source!=='AI'&&!(key==='potMaterial'&&start[key]==='Nhựa'))continue;
+    const confidence=result.schema_version==='vision-v3'?result.field_confidences[key].confidence:null;
+    const evidence=result.schema_version==='vision-v3'?result.field_confidences[key].evidence:'Kết quả cũ không có mức tin cậy từng trường.';
+    const value=result.schema_version==='vision-v3'?(key==='name'?candidate?.name:key==='group'?candidate?.group:key==='fragility'?result.plant_details.fragility:key==='potMaterial'?result.plant_details.pot_material:result.plant_details.readings.find(r=>r.field===key)?.value):suggested[key],good=result.schema_version==='vision-v3'&&result.image_quality==='CLEAR'&&confidence!==null&&confidence>=threshold&&value!==undefined&&value!==null&&value!==''&&value!=='UNKNOWN';
+    if(good)Object.assign(next,{[key]:value});
+    else Object.assign(next,{[key]:measuredFields.includes(key as typeof measuredFields[number])?null:key==='group'||key==='fragility'?'UNKNOWN':key==='potMaterial'?'Khác / chưa rõ':''});
+    next.fieldEvidence![key]={source:'AI',confidence,status:good?'SUGGESTED':'NEED_INPUT',evidence};
+  }
+  return next;
 }

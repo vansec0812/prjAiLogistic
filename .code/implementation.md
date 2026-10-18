@@ -147,3 +147,24 @@ Theo yêu cầu mới: Vision v2 đánh giá đủ tên/nhóm cây và sáu trư
 Đã bỏ toàn bộ mục Cách xử lý ảnh và đoạn người dùng chỉ định. Copy còn lại nhắc ngắn số AI có thể là ước tính; form vẫn giữ đủ trường và cho sửa. Không đổi Rule Engine, giá trị an toàn hoặc publication SOP.
 
 Kiểm thực chạy: 156 unit/API tests/14 files PASS, typecheck PASS, production webpack build PASS; E2E create/autofill và camera capture 2/2 PASS (provider giả) kiểm đủ tên/nhóm/sáu ô, giữ chiều cao đã nhập, nhãn ước tính, checkbox khóa submit và không còn mục xử lý ảnh. Gemini opt-in thật PASS với 2 ảnh: ảnh trắng 6 UNKNOWN/null, không có candidate nhóm xác định; ảnh cây AI mẫu trả tên/nhóm FOLIAGE và đủ 6 số dương, có VISUAL_ESTIMATE. Đây là kiểm giao tiếp/độ đầy đủ, không đo độ chính xác số/khối lượng từ ảnh hoặc an toàn vận chuyển. Không dùng ảnh riêng của người dùng; giữ file env người dùng ngoài commit.
+## Flow theo PRD MVP đã chốt — 19/10/2026
+
+Đã đọc toàn bộ PRD Word do user giao; fingerprint/locator và ma trận 10 tính năng ở [prd-mvp-20261019.md](prd-mvp-20261019.md). Flow mới bắt buộc xác nhận cây/NEED_INPUT → hành trình/kênh/ngày → xác nhận → PA1/PA2 từ danh mục → chọn → bước/hình/lời đọc đã pin → camera tùy chọn/Bắt đầu → hậu kiểm → lưu. Cấu hình/bundle bất biến, review độc lập và reauth activation; OTP login/profile; nguồn/confidence từng trường. Giữ API/plan/kho/PDF legacy và tách Vercel/Node-volume.
+
+| Kiểm thực chạy | Kết quả |
+| --- | --- |
+| npm run typecheck; npm run build | PASS TypeScript và production Turbopack |
+| npm test | PASS 165 tests / 16 files, gồm rule/unknown/confidence/manual precedence/owner/revision/voice và operator last-admin/session revoke |
+| npm run test:e2e | PASS 6 suites: OTP/reset/owner/CSRF, FAIL/STALE, kho completion atomic/idempotent, PDF/share/private upload, no-op/RAG và responsive legacy |
+| npm run test:e2e:live | PASS 13 suites: flow MVP ảnh/confidence/hành trình/2 phương án/Bắt đầu, camera capture, voice/checkpoint, lỗi/resolve, revoke/countdown/stop, resume, permission và UI |
+| npm run test:e2e:mvp | PASS 4 suites: alternative/start/postcheck/history guards; manual UI pause/offline/resume/postcheck mobile; config independent review/reauth/conflict; OTP login/lock |
+| Gemini Vision v3 opt-in thật | PASS 2 ảnh: blank giữ 6 unknown/null, ảnh AI cây trả 5 số gợi ý + 1 unknown; đủ 10 key confidence; không đo accuracy |
+| npm run test:production | PASS dev auth off, private API/storage, CSP production |
+| npm run test:proxy | PASS beforeFiles/body/query/CSRF/cookies/private cache và frontend không tạo DB |
+| UI QA | Đã xem screenshots options/postcheck mobile và history desktop; 390px không overflow; không có pageerror ở manual flow |
+
+Artifact test/ảnh dùng scratch DB, output/qa và test-results ignored. Real provider chỉ dùng ảnh trắng/ảnh AI thư viện, không ảnh người dùng. Không nâng quyền hoặc tạo approval thật trên DB người dùng; API duyệt trong DB E2E riêng không phải bằng chứng chuyên môn. Mock/camera giả không đo độ chính xác hoặc hiệu năng thiết bị thật. NFR/pilot/ảnh cây có nhãn/SMS thật/weather-route provider/hosting HTTPS và chuyên gia duyệt seed tiếp tục OPEN. REFERENCE flag không vượt gate MVP.
+
+File `.env.example` có chỉnh sửa riêng trước task, giữ ngoài commit; không xuất secret/log ảnh. Phần Docker/Linux và restart volume được bổ sung bằng kết quả smoke khi hoàn tất, không coi build đơn thuần là deploy.
+
+Docker/Linux bổ sung: build webpack trong image Node24 PASS; smoke API production + Secure/HttpOnly/SameSite cookie/private upload + REFERENCE legacy + gate draft MVP/legacy + operator CLI + PDF tiếng Việt PASS. Restart disposable persistent volume PASS: case/ảnh private/checkpoint/session và idle lease recovery tồn tại sau restart. Image local `plantcare-backend:prd-mvp`, không publish registry hoặc provision hosting.

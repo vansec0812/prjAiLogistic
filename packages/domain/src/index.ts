@@ -4,6 +4,7 @@ export interface PlantInput {
   name: string; group: Group; height: number | null; length: number | null; width: number | null;
   potDiameter: number | null; potHeight: number | null; weight: number | null;
   fragility: 'LOW'|'MEDIUM'|'HIGH'|'UNKNOWN'; potMaterial: string; confirmed: boolean;
+  fieldEvidence?:Partial<Record<import('./mvp').ProfileField,import('./mvp').FieldEvidence>>;
 }
 export interface MaterialInput {
   id: string; name: string; category: 'BOX'|'PADDING'|'FIXING'|'TAPE'|'LABEL';
@@ -16,6 +17,7 @@ export interface ShipmentInput {
   mode: string; carrier: string; orientation: 'UPRIGHT'|'UNKNOWN';
   minTemp: number | null; maxTemp: number | null; weatherSource: string;
   confirmed: boolean; observedAt: string; coverage: 'ENDPOINTS'|'DECLARED_ROUTE';
+  channel?:string;distanceKm?:number|null;context?:import('./mvp').JourneyContext;
 }
 export interface CaseInput {plant: PlantInput; materials: MaterialInput[]; shipment: ShipmentInput; priority:'SAFETY'|'COST'|'REUSE';}
 export interface Step {
@@ -46,7 +48,7 @@ export interface Plan {
   developmentOnly:boolean;
   report?:PackingReport;
 }
-export interface CaseRecord {id:string;name:string;version:number;status:string;input:CaseInput;updatedAt:string;createdAt:string;selectedVersion:string|null;demo:boolean;}
+export interface CaseRecord {id:string;name:string;version:number;status:string;input:CaseInput;updatedAt:string;createdAt:string;selectedVersion:string|null;demo:boolean;flow?:'MVP';}
 export interface PlanVersion {id:string;caseId:string;number:number;inputHash:string;snapshot:CaseInput;plan:Plan;createdAt:string;stale:boolean;}
 export const emptyInput = (): CaseInput => ({
   plant:{name:'',group:'UNKNOWN',height:null,length:null,width:null,potDiameter:null,potHeight:null,weight:null,fragility:'UNKNOWN',potMaterial:'Nhựa',confirmed:false},
@@ -54,3 +56,4 @@ export const emptyInput = (): CaseInput => ({
 });
 export const blankMaterial = (id:string,category:MaterialInput['category']='BOX'):MaterialInput => ({id,category,name:category==='BOX'?'Hộp carton':'Vật tư mới',quantity:1,unit:'cái',price:null,weight:null,length:null,width:null,height:null,maxLoad:null,confirmed:false,reusable:false,condition:'GOOD'});
 export { getReadiness, type ReadinessItem } from './readiness';
+export * from './mvp';

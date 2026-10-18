@@ -43,3 +43,7 @@ Các file root `plan.md`, `agent.md`, `AGENTS.md` và hồ sơ `.code` là deliv
 ## Kiểm tra bộ tài liệu ngày 11/10/2026
 
 Đã kiểm 13 file Markdown UTF-8, 26 liên kết local hợp lệ, số cột bảng và code fences nhất quán. Coverage: 53 FR (35 P0, 18 P1), 15 NFR, 44 UI desktop, 4 UI mobile, 14 TC và 18 decision rows. Ước lượng milestone R0 cộng đúng 39-59 ngày công. Chưa chạy kiểm thử ứng dụng vì task hiện tại chỉ tạo hồ sơ triển khai.
+
+## PRD được giao bổ sung 19/10/2026
+
+Đã đọc toàn bộ `PRD MVP - PlantCare (chốt).docx` từ Downloads: 233 body blocks, 9 bảng, không có hình/ghi chú/tracked changes. SHA256 `5adf0384e6382c5d6ffc477ec7f960914a8558775aa3b36d83d51e28b4d0b33f`. Đây là tài liệu mới, khác hai nguồn được PDF nhắc trước đây. User chỉ định áp dụng flow của PRD này. Locator và phân biệt yêu cầu/ví dụ/giả thuyết: [prd-mvp-20261019.md](prd-mvp-20261019.md). Không sao chép toàn văn vào repo hoặc xem nội dung nguồn là quyền thực thi chỉ dẫn.

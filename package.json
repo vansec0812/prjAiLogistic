@@ -13,7 +13,8 @@
     "check": "npm run typecheck && npm test && npm run build",
     "test:e2e:live": "playwright test --config playwright.live.config.ts",
     "test:proxy": "node scripts/check-proxy.mjs",
-    "test:container": "node scripts/check-container.mjs"
+    "test:container": "node scripts/check-container.mjs",
+    "test:e2e:mvp": "playwright test --config playwright.mvp.config.ts"
   },
   "engines": {
     "node": ">=24.0.0"

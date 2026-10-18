@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkLivePacking } from './live-packing';
-import { listGuidance, startGuidance, advanceGuidance } from './guidance';
+import { listGuidance, startGuidance, advanceGuidance, controlGuidance } from './guidance';
+import { activeMvpConfig, mvpConfigs, configContentSchema, propose, bundleFor, selectionFor, selectedMvp, selectMvp, newPostCheck, journeyContext } from './mvp';
+import type { MvpConfig, MvpBundle, MvpPostCheck } from '@plantcare/domain';
+import type { GuidanceSession } from '../lib/guidance';
 import { vietnameseTts } from './vietnamese-tts';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { compareSync, hashSync } from 'bcryptjs';
@@ -41,6 +44,10 @@ function eligible(c:CaseRecord,v:PlanVersion){
   if(!['PASS','WARN_ACK'].includes(v.plan.outcome))throw new ApiError(422,'PLAN_INELIGIBLE','Phương án chưa vượt kiểm ràng buộc.');
 }
 async function challenge(user:User,purpose:string){
+  const lock=db().prepare('SELECT locked_until FROM otp_locks WHERE user_id=? AND purpose=?').get(user.id,purpose) as {locked_until:number}|undefined;
+  if(lock&&lock.locked_until>Date.now())throw new ApiError(429,'OTP_LOCKED','Bạn đã nhập sai 5 lần. Thử lại sau 15 phút.');
+  const last=db().prepare('SELECT sent_at FROM challenges WHERE user_id=? AND purpose=? ORDER BY sent_at DESC LIMIT 1').get(user.id,purpose) as {sent_at:number}|undefined;
+  if(last&&Date.now()-last.sent_at<60000)throw new ApiError(429,'OTP_COOLDOWN','Chờ 60 giây trước khi gửi lại mã.');
   rateLimit('sms:'+sha(user.phone),5,3600000);
   const id=randomUUID(),code=newOtp(),now=Date.now();
   if(!development()&&!process.env.SMS_ADAPTER_URL)throw new ApiError(503,'SMS_UNAVAILABLE','SMS chưa hoạt động. Đăng ký vẫn chờ xác minh.');
@@ -57,7 +64,9 @@ function verify(id:string,code:string,purpose:string){
   const c=db().prepare('SELECT * FROM challenges WHERE id=?').get(id) as unknown as Challenge|undefined;
   if(!c||c.used||c.purpose!==purpose||c.expires_at<Date.now()||c.attempts>=5)throw new ApiError(422,'OTP_INVALID','Mã không hợp lệ hoặc đã hết hạn.');
   db().prepare('UPDATE challenges SET attempts=attempts+1 WHERE id=?').run(id);
-  if(!equalHash(c.code_hash,otpHash(id,code)))throw new ApiError(422,'OTP_INVALID','Mã không hợp lệ hoặc đã hết hạn.');
+  const lock=db().prepare('SELECT locked_until FROM otp_locks WHERE user_id=? AND purpose=?').get(c.user_id,purpose) as {locked_until:number}|undefined;
+  if(lock&&lock.locked_until>Date.now())throw new ApiError(429,'OTP_LOCKED','Bạn đã nhập sai 5 lần. Thử lại sau 15 phút.');
+  if(!equalHash(c.code_hash,otpHash(id,code))){if(c.attempts+1>=5)db().prepare('INSERT INTO otp_locks VALUES(?,?,?) ON CONFLICT(user_id,purpose) DO UPDATE SET locked_until=excluded.locked_until').run(c.user_id,purpose,Date.now()+900000);throw new ApiError(422,'OTP_INVALID','Mã không hợp lệ hoặc đã hết hạn.');}
   db().prepare('UPDATE challenges SET used=1 WHERE id=? AND used=0').run(id);
   return db().prepare('SELECT id,username,phone,name,status,role FROM users WHERE id=?').get(c.user_id) as unknown as User;
 }
@@ -106,9 +115,12 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       if(!user||!compareSync(data.password,user.password)||user.status!=='ACTIVE')throw new ApiError(401,'LOGIN_FAILED','Thông tin đăng nhập chưa hợp lệ hoặc tài khoản chưa xác minh.');
       audit(user.id,'LOGIN',user.id);return issueSession(user,{});
     }
+    if(parts[1]==='otp'&&parts[2]==='request'){
+      const v=parse(z.object({phone:z.string().regex(/^\+[1-9]\d{8,14}$/)}).strict(),value);rateLimit('phone-login:'+sha(v.phone),5,3600000);const u=db().prepare("SELECT * FROM users WHERE phone=? AND status='ACTIVE'").get(v.phone) as unknown as User|undefined;return success(u?await challenge(u,'LOGIN'):{challenge_id:randomUUID(),expires_in:300,resend_after:60,purpose:'LOGIN'},202);
+    }
     if(parts[1]==='otp'&&parts[2]==='verify'){
-      const data=parse(z.object({challenge_id:z.string(),code:z.string().regex(/^\d{6}$/),purpose:z.literal('REGISTER')}),value);
-      const user=verify(data.challenge_id,data.code,data.purpose);transaction(()=>{db().prepare("UPDATE users SET status='ACTIVE' WHERE id=? AND status='PENDING_PHONE'").run(user.id);audit(user.id,'PHONE_VERIFIED',user.id);});return issueSession({...user,status:'ACTIVE'},{});
+      const data=parse(z.object({challenge_id:z.string(),code:z.string().regex(/^\d{6}$/),purpose:z.enum(['REGISTER','LOGIN'])}),value);
+      const user=verify(data.challenge_id,data.code,data.purpose);if(data.purpose==='LOGIN'){if(user.status!=='ACTIVE')throw new ApiError(401,'LOGIN_FAILED','Tài khoản chưa sẵn sàng.');audit(user.id,'OTP_LOGIN',user.id);return issueSession(user,{});}transaction(()=>{db().prepare("UPDATE users SET status='ACTIVE' WHERE id=? AND status='PENDING_PHONE'").run(user.id);audit(user.id,'PHONE_VERIFIED',user.id);});return issueSession({...user,status:'ACTIVE'},{});
     }
     if(parts[1]==='otp'&&parts[2]==='send'){
       const data=parse(z.object({challenge_id:z.string()}),value);const c=db().prepare('SELECT * FROM challenges WHERE id=?').get(data.challenge_id) as unknown as Challenge|undefined;
@@ -129,6 +141,8 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
     throw missing();
   }
   const user=requireUser(req);if(!['GET','HEAD'].includes(method))checkMutation(req,user);
+  if(endpoint==='mvp/config'&&method==='GET')return success(activeMvpConfig());
+  if(endpoint==='mvp/journey'&&method==='POST'){const v=parse(z.object({origin:z.string().min(2).max(100),destination:z.string().min(2).max(100),departure:z.string().datetime(),channel:z.enum(['SHOPEE','TIKTOK','DIRECT','OTHER'])}).strict(),await body(req));if(Date.parse(v.departure)<Date.now())throw new ApiError(422,'DEPARTURE_INVALID','Chọn ngày gửi trong tương lai.');return success(journeyContext(v.origin,v.destination,v.departure,v.channel));}
   if(parts[0]==='knowledge'){
     if(endpoint==='knowledge/sources'&&method==='GET')return success({version:KNOWLEDGE_VERSION,sources:knowledgeSources,trainingStatus:'NOT_FINE_TUNED'});
     if(endpoint==='knowledge/search'&&method==='GET'){const query=(req.nextUrl.searchParams.get('q')||'').slice(0,1000),scope=parse(z.enum(['POTTED_PLANTS','NURSERY','CACTUS','MARITIME']),req.nextUrl.searchParams.get('scope')||'POTTED_PLANTS');return success({version:KNOWLEDGE_VERSION,items:retrieveKnowledge(query,scope),mode:'LOCAL_RETRIEVAL',notice:'Các ghi chú có nguồn, chưa chuyên gia duyệt; không là rule an toàn.'});}
@@ -144,8 +158,8 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   if(endpoint==='live-packing/check'&&method==='POST')return success(await checkLivePacking(req));
   if(endpoint==='live-packing/speech'&&method==='POST')return success(await vietnameseTts(req));
   if(endpoint==='me'){
-    if(method==='GET')return success({id:user.id,name:user.name,username:user.username,phone:user.phone.replace(/.(?=.{3})/g,'•'),role:user.role});
-    if(method==='PATCH'){const data=parse(z.object({name:z.string().trim().min(2).max(80)}).strict(),await body(req));db().prepare('UPDATE users SET name=? WHERE id=?').run(data.name,user.id);audit(user.id,'PROFILE_UPDATED',user.id);return success(data);}
+    if(method==='GET')return success({id:user.id,name:user.name,username:user.username,phone:user.phone.replace(/.(?=.{3})/g,'•'),role:user.role,...doc('profile',user.id,user.id)||{accountType:'PERSONAL',senderAddress:''}});
+    if(method==='PATCH'){const data=parse(z.object({name:z.string().trim().min(2).max(80),accountType:z.enum(['PERSONAL','SHOP']).optional(),senderAddress:z.string().max(300).optional()}).strict(),await body(req));transaction(()=>{db().prepare('UPDATE users SET name=? WHERE id=?').run(data.name,user.id);const old=doc<{accountType:string;senderAddress:string}>('profile',user.id,user.id),profile={accountType:data.accountType||old?.accountType||'PERSONAL',senderAddress:data.senderAddress??old?.senderAddress??''};if(old)updateDoc('profile',user.id,user.id,profile);else insertDoc('profile',user.id,user.id,profile);audit(user.id,'PROFILE_UPDATED',user.id);});return success(data);}
   }
   if(endpoint==='me/sessions'&&method==='GET')return success(db().prepare('SELECT created_at,expires_at FROM sessions WHERE user_id=?').all(user.id));
   if(endpoint==='consents'){
@@ -157,20 +171,37 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
     if(parts.length===1){
       if(method==='GET'){
         const q=(req.nextUrl.searchParams.get('q')||'').toLowerCase(),state=req.nextUrl.searchParams.get('status');
-        const all=docs<CaseRecord>('case',user.id).filter(c=>c.status!=='DELETED'&&(!q||c.name.toLowerCase().includes(q))&&(!state||c.status===state));
+        const group=req.nextUrl.searchParams.get('group'),alternative=req.nextUrl.searchParams.get('alternative'),from=req.nextUrl.searchParams.get('from'),to=req.nextUrl.searchParams.get('to');
+        const all=docs<CaseRecord>('case',user.id).filter(c=>c.status!=='DELETED'&&(!q||(c.name+' '+c.input.plant.name).toLowerCase().includes(q))&&(!state||c.status===state)&&(!group||c.input.plant.group===group)&&(!alternative||!!c.selectedVersion&&selectionFor(user.id,c)?.alternativeId===alternative)&&(!from||Date.parse(c.createdAt)>=Date.parse(from+'T00:00:00+07:00'))&&(!to||Date.parse(c.createdAt)<Date.parse(to+'T00:00:00+07:00')+86400000));
         const cursor=Number(req.nextUrl.searchParams.get('cursor')||0),size=Math.min(100,Math.max(1,Number(req.nextUrl.searchParams.get('page_size')||20)));
         return success({items:all.slice(cursor,cursor+size),total:all.length,nextCursor:cursor+size<all.length?cursor+size:null});
       }
       if(method==='POST'){
         const data=parse(z.object({name:z.string().trim().min(2).max(120),sample:z.boolean().optional()}),await body(req));const id=randomUUID(),now=new Date().toISOString();
-        const c:CaseRecord={id,name:data.name,version:1,status:'DRAFT',input:data.sample&&development()?sampleInput():emptyInput(),updatedAt:now,createdAt:now,selectedVersion:null,demo:!!data.sample&&development()};insertDoc('case',id,user.id,c,'DRAFT');audit(user.id,'CASE_CREATED',id);return success(c,201);
+        const c:CaseRecord={id,name:data.name,version:1,status:'DRAFT',input:data.sample&&development()?sampleInput():emptyInput(),flow:'MVP',updatedAt:now,createdAt:now,selectedVersion:null,demo:!!data.sample&&development()};insertDoc('case',id,user.id,c,'DRAFT');audit(user.id,'CASE_CREATED',id);return success(c,201);
       }
     }
     const c=owned<CaseRecord>('case',parts[1],user.id);if(c.status==='DELETED')throw missing();
+    if(parts[2]==='mvp'){
+      if(parts.length===3&&method==='GET')return success({bundles:docs<MvpBundle>('mvp-bundle',user.id).filter(b=>b.caseId===c.id).map(b=>({...b,stale:b.inputHash!==inputHash(c.input)})),selection:selectionFor(user.id,c),guidance:listGuidance(user.id,c).filter(g=>g.mode==='MVP'&&!g.stale),postchecks:docs<MvpPostCheck>('mvp-postcheck',user.id).filter(p=>p.caseId===c.id)});
+      if(parts[3]==='proposals'&&method==='POST'){const v=parse(z.object({case_version:z.number().int().positive()}).strict(),await body(req));if(v.case_version!==c.version)throw new ApiError(409,'VERSION_CONFLICT','Hồ sơ đã đổi.');return success(idempotent(req,user.id,endpoint,v,()=>propose(user.id,owned<CaseRecord>('case',c.id,user.id))),201);}
+      if(parts[3]==='selection'&&method==='POST'){const v=parse(z.object({bundle_id:z.string(),alternative_id:z.enum(['PA1','PA2']),expected_revision:z.number().int().min(0)}).strict(),await body(req));return success(transaction(()=>selectMvp(user.id,owned<CaseRecord>('case',c.id,user.id),v.bundle_id,v.alternative_id,v.expected_revision)));}
+      if(parts[3]==='postcheck'){
+        const v=method==='GET'?{guidance_id:req.nextUrl.searchParams.get('guidance_id')||''}:parse(z.object({guidance_id:z.string(),expected_revision:z.number().int().positive().optional(),items:z.array(z.object({id:z.string(),status:z.enum(['passed','needs_adjustment','unverifiable']),note:z.string().min(5).max(500)}).strict()).max(4).optional()}).strict(),await body(req));
+        const g=owned<GuidanceSession>('guidance',v.guidance_id,user.id);if(g.caseId!==c.id)throw missing();
+        if(method==='GET')return success(transaction(()=>newPostCheck(user.id,c,g)));
+        if(method==='PATCH')return success(transaction(()=>{bundleFor(user.id,c,g.bundleId!);const p=newPostCheck(user.id,c,g);if(p.completedAt||p.revision!==v.expected_revision)throw new ApiError(409,'VERSION_CONFLICT','Hậu kiểm đã đổi. Tải lại kết quả.');if(!v.items?.length||new Set(v.items.map(i=>i.id)).size!==v.items.length||v.items.some(i=>!p.items.some(x=>x.id===i.id)))throw new ApiError(422,'INVALID_CHECK','Tiêu chí không thuộc phương án.');p.items=p.items.map(i=>{const update=v.items?.find(x=>x.id===i.id);return update?{...i,status:update.status,reason:update.note,source:'USER'}:i;});p.revision++;p.updatedAt=new Date().toISOString();updateDoc('mvp-postcheck',p.id,user.id,p);return p;}));
+      }
+      if(parts[3]==='complete'&&method==='POST'){
+        const v=parse(z.object({guidance_id:z.string(),post_revision:z.number().int().positive()}).strict(),await body(req));return success(idempotent(req,user.id,endpoint,v,()=>{const current=owned<CaseRecord>('case',c.id,user.id),g=owned<GuidanceSession>('guidance',v.guidance_id,user.id),p=owned<MvpPostCheck>('mvp-postcheck',v.guidance_id,user.id);if(g.caseId!==c.id||p.caseId!==c.id)throw missing();if(p.completedAt)return p;const {s,b}=selectedMvp(user.id,current);if(g.status!=='FINISHED'||g.bundleId!==b.id||p.bundleId!==b.id||p.alternativeId!==s.alternativeId||p.revision!==v.post_revision||p.items.some(i=>i.status!=='passed')||p.items.find(i=>i.id==='fixation')?.source!=='USER')throw new ApiError(422,'POSTCHECK_INCOMPLETE','Kiểm trực tiếp độ cố định và hoàn tất mọi tiêu chí hậu kiểm.');p.completedAt=p.updatedAt=new Date().toISOString();p.revision++;updateDoc('mvp-postcheck',p.id,user.id,p);updateDoc('case',c.id,user.id,{...current,status:'PACKED',updatedAt:p.completedAt},'PACKED');audit(user.id,'MVP_PACKED',p.id);return p;}));
+      }
+      if(parts[3]==='clone'&&method==='POST'){const input=structuredClone(c.input);input.plant.confirmed=false;input.shipment.confirmed=false;input.shipment.departure='';input.shipment.context=undefined;for(const e of Object.values(input.plant.fieldEvidence||{}))if(e)e.status='SUGGESTED';const id=randomUUID(),now=new Date().toISOString(),copy:CaseRecord={id,name:c.name+' (bản nháp)',version:1,status:'DRAFT',input,createdAt:now,updatedAt:now,selectedVersion:null,demo:false,flow:'MVP'};insertDoc('case',id,user.id,copy,'DRAFT');return success(copy,201);}
+    }
     if(parts[2]==='guidance'){
       if(parts.length===3&&method==='GET')return success(listGuidance(user.id,c));
       if(parts.length===3&&method==='POST'){const value=await body(req);return success(idempotent(req,user.id,endpoint,value,()=>startGuidance(user.id,c,value)),201);}
       if(parts.length===4&&method==='PATCH')return success(advanceGuidance(user.id,c,parts[3],await body(req)));
+      if(parts[4]==='control'&&method==='POST')return success(controlGuidance(user.id,c,parts[3],await body(req)));
     }
     if(parts.length===2){
       if(method==='GET')return success(c);
@@ -196,7 +227,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       });wakeWorker();return success({job_id:job.id,status:job.status},202);
     }
     if(parts[2]==='plant-analysis'||parts[2]==='material-analysis'){
-      if(method!=='POST')throw missing();const value=parse(z.object({upload_ids:z.array(z.string()).min(1).max(6),consent_id:z.string()}),await body(req));
+      if(method!=='POST')throw missing();const value=parse(z.object({upload_ids:z.array(z.string()).min(1).max(parts[2]==='plant-analysis'?1:6),consent_id:z.string()}),await body(req));
       const consent=owned<{revoked:boolean;purpose:string}>('consent',value.consent_id,user.id);if(consent.revoked||consent.purpose!=='AI_ANALYSIS')throw new ApiError(403,'CONSENT_REQUIRED','Cần đồng ý riêng cho nhận diện AI.');
       for(const id of value.upload_ids){const upload=owned<Upload>('upload',id,user.id);if(upload.caseId!==c.id)throw missing();}
       if(!process.env.GEMINI_API_KEY||!process.env.GEMINI_VISION_MODEL)throw new ApiError(503,'AI_UNAVAILABLE','AI chưa được cấu hình. Bạn vẫn tiếp tục bằng nhập tay.');
@@ -272,15 +303,19 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       let data:FormData;try{data=await new Request(req.url,{method:'POST',headers:req.headers,body:Buffer.concat(chunks)}).formData();}catch{throw new ApiError(422,'INVALID_IMAGE','Dữ liệu ảnh chưa hợp lệ.');}
       const file=data.get('file'),caseId=String(data.get('case_id')||''),purpose=String(data.get('purpose')||'PLANT'),target=owned<CaseRecord>('case',caseId,user.id);if(target.status==='DELETED')throw missing();
       if(!['PLANT','MATERIAL','CHECK','FEEDBACK'].includes(purpose))throw new ApiError(422,'UPLOAD_PURPOSE','Mục đích ảnh không hợp lệ.');
+      if(purpose==='PLANT'&&data.get('storage_consent')!=='true')throw new ApiError(403,'STORAGE_CONSENT_REQUIRED','Xác nhận cho phép lưu ảnh cây trước khi tải lên.');
+      if(purpose==='PLANT'&&['PACKED','SHIPPED','RECEIVED'].includes(target.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất.');
       if(!(file instanceof File)||file.size>10*1024*1024)throw new ApiError(413,'UPLOAD_TOO_LARGE','Mỗi ảnh tối đa 10 MB.');
-      const existing=docs<Upload>('upload',user.id).filter(u=>u.caseId===caseId);if(existing.length>=12||(['PLANT','MATERIAL'].includes(purpose)&&existing.filter(u=>u.purpose===purpose).length>=6))throw new ApiError(422,'UPLOAD_LIMIT','Tối đa 6 ảnh cây, 6 ảnh vật tư và 12 ảnh/hồ sơ.');
+      const existing=docs<Upload>('upload',user.id).filter(u=>u.caseId===caseId);if(existing.filter(u=>purpose!=='PLANT'||u.purpose!=='PLANT').length>=12||(purpose==='MATERIAL'&&existing.filter(u=>u.purpose===purpose).length>=6))throw new ApiError(422,'UPLOAD_LIMIT','Một ảnh cây, tối đa 6 ảnh vật tư và 12 ảnh/hồ sơ.');
       const bytes=Buffer.from(await file.arrayBuffer());let metadata:Metadata;try{metadata=await sharp(bytes,{limitInputPixels:30000000}).metadata();}catch{throw new ApiError(422,'INVALID_IMAGE','Ảnh không giải mã được hoặc vượt 30 MP.');}
       if(!['jpeg','png','webp'].includes(metadata.format||'')||(metadata.pages||1)>1)throw new ApiError(422,'INVALID_IMAGE','Chỉ nhận ảnh tĩnh JPEG, PNG và WebP.');
       let normalized:Buffer;
       try{normalized=await sharp(bytes,{limitInputPixels:30000000}).rotate().resize(2048,2048,{fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}
       catch{throw new ApiError(422,'INVALID_IMAGE','Ảnh bị lỗi hoặc không giải mã được.');}
       const id=randomUUID(),filename=id+'.webp';mkdirSync(path.join(dataDir(),'uploads'),{recursive:true});writeFileSync(path.join(dataDir(),'uploads',filename),normalized);
-      const upload:Upload={id,caseId,purpose,file:filename,mime:'image/webp',size:normalized.length};insertDoc('upload',id,user.id,upload,'READY');audit(user.id,'UPLOAD_READY',id);return success(upload,201);
+      const upload:Upload={id,caseId,purpose,file:filename,mime:'image/webp',size:normalized.length},removed:Upload[]=[];
+      try{transaction(()=>{const current=owned<CaseRecord>('case',caseId,user.id);if(current.status==='DELETED'||purpose==='PLANT'&&['PACKED','SHIPPED','RECEIVED'].includes(current.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã kết thúc.');insertDoc('upload',id,user.id,{...upload,...(purpose==='PLANT'?{storageConsent:{acceptedAt:new Date().toISOString(),purpose:'PLANT_PROFILE'}}:{})},'READY');if(purpose==='PLANT')for(const old of docs<Upload>('upload',user.id).filter(u=>u.caseId===caseId&&u.purpose==='PLANT'&&u.id!==id)){db().prepare("DELETE FROM documents WHERE kind='upload' AND id=? AND owner_id=?").run(old.id,user.id);removed.push(old);}});}catch(e){unlinkSync(path.join(dataDir(),'uploads',filename));throw e;}
+      for(const old of removed){const filePath=path.join(dataDir(),'uploads',old.file);if(existsSync(filePath))unlinkSync(filePath);}audit(user.id,'UPLOAD_READY',id);return success(upload,201);
     }
     if(parts.length===1&&method==='GET'){const caseId=req.nextUrl.searchParams.get('case_id');if(caseId)owned<CaseRecord>('case',caseId,user.id);return success(docs<Upload>('upload',user.id).filter(u=>!caseId||u.caseId===caseId).map(({file,...u})=>u));}
     const u=owned<Upload>('upload',parts[1],user.id);
@@ -319,6 +354,20 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   }
   if(parts[0]==='admin'){
     if(!['ADMIN','OPERATOR','EDITOR','EXPERT'].includes(user.role))throw new ApiError(403,'FORBIDDEN','Bạn không có quyền truy cập quản trị.');
+    if(parts[1]==='mvp'){
+      if(!['ADMIN','EXPERT'].includes(user.role))throw new ApiError(403,'FORBIDDEN','Chỉ quản trị và người duyệt chuyên môn.');
+      if(method==='GET')return success({configs:mvpConfigs(),activeVersion:activeMvpConfig().version});
+      const value=await body(req);
+      if(parts[2]==='draft'&&method==='POST'){
+        if(user.role!=='ADMIN')throw new ApiError(403,'FORBIDDEN','Chỉ quản trị tạo cấu hình.');const v=parse(z.object({base_version:z.string(),reason:z.string().min(10).max(500),content:configContentSchema}).strict(),value);if(!mvpConfigs().some(c=>c.version===v.base_version))throw new ApiError(409,'VERSION_CONFLICT','Không tìm thấy phiên bản gốc.');const now=new Date().toISOString(),config:MvpConfig={...v.content,version:'mvp-'+randomUUID(),status:'DRAFT',author:user.id,createdAt:now,effectiveAt:now,reason:v.reason,expertReview:null};insertDoc('mvp-config',config.version,user.id,config,'DRAFT');audit(user.id,'MVP_CONFIG_DRAFT',config.version);return success(config,201);
+      }
+      if(parts[2]==='review'&&method==='POST'){
+        if(user.role!=='EXPERT')throw new ApiError(403,'EXPERT_REQUIRED','Cần tài khoản chuyên gia duyệt độc lập.');const v=parse(z.object({version:z.string(),note:z.string().min(20).max(1000)}).strict(),value),base=mvpConfigs().find(c=>c.version===v.version);if(!base||base.status!=='DRAFT'||base.author===user.id)throw new ApiError(422,'REVIEW_INVALID','Chọn bản nháp do người khác tạo.');const now=new Date().toISOString(),approved:MvpConfig={...base,version:'mvp-approved-'+randomUUID(),createdAt:now,status:'APPROVED',expertReview:{by:user.id,at:now,note:v.note},reason:'Duyệt từ '+base.version+': '+v.note};insertDoc('mvp-config',approved.version,user.id,approved,'APPROVED');audit(user.id,'MVP_CONFIG_APPROVED',approved.version);return success(approved,201);
+      }
+      if(parts[2]==='activate'&&method==='POST'){
+        if(user.role!=='ADMIN')throw new ApiError(403,'FORBIDDEN','Chỉ quản trị kích hoạt.');const v=parse(z.object({version:z.string(),expected_active:z.string(),password:z.string().max(128)}).strict(),value);const u=db().prepare('SELECT password FROM users WHERE id=?').get(user.id) as {password:string};if(!compareSync(v.password,u.password))throw new ApiError(401,'REAUTH_REQUIRED','Nhập mật khẩu quản trị hiện tại.');return success(transaction(()=>{const target=mvpConfigs().find(c=>c.version===v.version);if(activeMvpConfig().version!==v.expected_active)throw new ApiError(409,'VERSION_CONFLICT','Cấu hình hiệu lực đã đổi.');if(!target||target.status!=='APPROVED'||!target.expertReview||Date.parse(target.effectiveAt)>Date.now())throw new ApiError(422,'APPROVAL_REQUIRED','Chỉ kích hoạt phiên bản đã duyệt và đến ngày hiệu lực.');const old=doc('mvp-active','current');if(old)db().prepare("UPDATE documents SET body=?,version=version+1,updated_at=? WHERE kind='mvp-active' AND id='current'").run(JSON.stringify({version:target.version}),new Date().toISOString());else insertDoc('mvp-active','current',user.id,{version:target.version});audit(user.id,'MVP_CONFIG_ACTIVATED',target.version);return {version:target.version};}));
+      }
+    }
     if(method!=='GET')throw new ApiError(503,'ADMIN_MUTATION_GATED','Chưa bật thay đổi production khi quy trình duyệt chưa được cấu hình.');
     if(parts[1]==='rules')return success([draftRulePack]);
     if(parts[1]==='jobs')return success(docs<Job>('job').map(j=>({id:j.id,type:j.type,status:j.status,stage:j.stage,createdAt:j.createdAt,error:j.error})));

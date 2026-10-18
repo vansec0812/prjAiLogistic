@@ -16,6 +16,7 @@ function setup() {
 afterEach(() => vi.useRealTimers());
 describe('Vietnamese packing commands', () => {
   it.each(['Đã xong bước này','Tôi đã xong bước này','Tiếp tục bước tiếp theo','Chuyển sang bước tiếp theo'])('confirms the current step with %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
+  it('distinguishes explicit physical inspection from generic agreement',()=>{expect(packingIntent('Tôi đã kiểm tra trực tiếp')).toBe('MANUAL_CONFIRM');expect(packingIntent('Tôi chưa kiểm tra trực tiếp')).toBeNull();});
   it.each(['Tôi gặp lỗi','Tôi làm sai','Tôi gặp vấn đề'])('pauses on a problem report %s',text=>expect(packingIntent(text)).toBe('ISSUE'));
   it.each(['Tôi đã xử lý lỗi','Đã khắc phục'])('recognizes resolution without step completion %s',text=>expect(packingIntent(text)).toBe('RESOLVED'));
   it.each(['Chưa xong bước này','Đừng tiếp tục bước tiếp theo','Tôi chưa xử lý lỗi'])('does not accept negated workflow command %s',text=>expect(packingIntent(text)).toBeNull());

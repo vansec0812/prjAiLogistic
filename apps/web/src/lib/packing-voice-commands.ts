@@ -1,8 +1,9 @@
-export type PackingIntent='CHECK'|'CONFIRM'|'REPEAT'|'HELP'|'STOP'|'ISSUE'|'RESOLVED';
+export type PackingIntent='CHECK'|'CONFIRM'|'MANUAL_CONFIRM'|'REPEAT'|'HELP'|'STOP'|'ISSUE'|'RESOLVED';
 export function packingIntent(transcript: string): PackingIntent|null {
   const text = transcript.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
     .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   // Whole utterances only: never accept substrings of negations or conversation.
+  if(['toi da kiem tra truc tiep','da kiem tra truc tiep','da xong va da kiem tra truc tiep'].includes(text))return 'MANUAL_CONFIRM';
   if(['da xong buoc nay','toi da xong buoc nay','xong buoc nay','tiep tuc buoc tiep theo','chuyen sang buoc tiep theo','sang buoc tiep theo','toi da hoan thanh buoc nay'].includes(text))return 'CONFIRM';
   if(['toi gap loi','co loi','bi loi','sai roi','toi lam sai','can kiem tra lai','cay bi hu','toi gap van de'].includes(text))return 'ISSUE';
   if(['da xu ly loi','toi da xu ly loi','da sua xong loi','da khac phuc'].includes(text))return 'RESOLVED';
@@ -16,7 +17,7 @@ export function packingIntent(transcript: string): PackingIntent|null {
 export const isPackingCheckCommand=(text:string)=>packingIntent(text)==='CHECK';
 export type PackingCommand='check'|'confirm_manual';
 /** Compatibility for existing consumers; the instructor uses the full intent. */
-export function packingCommand(text:string):PackingCommand|null{const intent=packingIntent(text);return intent==='CHECK'?'check':intent==='CONFIRM'?'confirm_manual':null;}
+export function packingCommand(text:string):PackingCommand|null{const intent=packingIntent(text);return intent==='CHECK'?'check':intent==='CONFIRM'||intent==='MANUAL_CONFIRM'?'confirm_manual':null;}
 
 export interface RecognitionResultEvent {
   resultIndex: number;

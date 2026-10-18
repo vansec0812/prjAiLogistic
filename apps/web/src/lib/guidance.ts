@@ -1,8 +1,10 @@
-import type { CheckpointResult, SopContext, StepRecord, LiveStep } from './live-packing';
+import type { CheckpointResult, SopContext, StepRecord, LiveStep, LiveSop } from './live-packing';
 import { guidedDecision } from './guided-packing';
 
 export interface GuidanceSession {
-  id:string;caseId:string;inputHash:string;sopId:string;sopVersion:string;context:SopContext;mode?:'TRIAL'|'REFERENCE';
+  id:string;caseId:string;inputHash:string;sopId:string;sopVersion:string;context:SopContext;mode?:'TRIAL'|'REFERENCE'|'MVP';
+  bundleId?:string;alternativeId?:'PA1'|'PA2';boundSop?:LiveSop;executionState?:'READY'|'RUNNING'|'PAUSED'|'ENDED';
+  confidenceThreshold?:number;
   revision:number;index:number;status:'ACTIVE'|'FINISHED'|'REVIEW_REQUIRED';records:Record<string,StepRecord>;
   checks:Record<string,CheckpointResult>;createdAt:string;updatedAt:string;stale?:boolean;
   currentIssue?:{stepId:string;note:string;at:string};

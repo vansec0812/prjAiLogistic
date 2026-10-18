@@ -12,6 +12,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core ca-certificates && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PLANTCARE_MODE=production PLANTCARE_DEPLOYMENT_TARGET=backend PLANTCARE_DATA_DIR=/data PLANTCARE_PDF_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
 COPY --from=build --chown=node:node /app /app
+COPY --chown=node:node scripts/set-role.mjs /app/scripts/set-role.mjs
 RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 3000

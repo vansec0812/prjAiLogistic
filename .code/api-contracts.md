@@ -113,3 +113,29 @@ Contract hiện hành thay entry camera trước thiết lập, chi tiết tại
 Guidance POST thêm mode REFERENCE/reference_ack:true, bắt buộc profile cây đã xác nhận và context khớp name/potDiameter/height. TRIAL mặc định tương thích approved_for_trial, bị chặn production. REFERENCE production cần PLANTCARE_REFERENCE_GUIDE_ENABLED=true; không đổi approval rules/SOP. PATCH thêm REPORT_ISSUE/RESOLVE_ISSUE, không cần manual_checked cho hai action này; advance vẫn cần true. REPORT xóa pass, resolve không tăng index; currentIssue chặn advance trừ ảnh mới đạt, override lý do hoặc skip ghi REVIEW_REQUIRED. Checkpoint production chỉ nhận bound REFERENCE với reference_guidance:true. Khung hình đồng màu/không chi tiết trả unverifiable và không tiêu thụ provider quota.
 
 Multipart hard cap 12 MiB trước formData, file ≤10 MiB/30 MP. Client ảnh cây ≤1920 px/3 MiB. Proxy non-JSON/413/502 báo lỗi ngắn thay vì lỗi parse. API dispatch đặt private/no-store và x-vercel-enable-rewrite-caching:0 cho mọi response. beforeFiles proxy upstream HTTPS trên Vercel; handler local trên Vercel fail 503 BACKEND_ROUTING_REQUIRED trước DB. Provider GenerateContent dùng enum APPLICATION_JSON, không dùng MIME lowercase của Interactions. TTS chuẩn hóa phát âm ở cả client/server, WAV PCM valid, cache pin lexicon version.
+
+## PRD MVP — 19/10/2026 (flow hiện hành)
+
+Tất cả resource owner + session; mutation CSRF/origin, private/no-store. Các route SRS phía trên vẫn phục vụ phiên bản cũ.
+
+| Endpoint | Input / guard |
+| --- | --- |
+| POST /auth/otp/request; POST /auth/otp/verify | phone E.164; purpose LOGIN hoặc REGISTER, OTP 5 phút/6 số, cooldown 60s, 5 sai khóa gửi mới 15 phút |
+| GET /mvp/config | Danh mục/config hiệu lực; mặc định DRAFT, không approval |
+| POST /mvp/journey | origin/destination/departure/channel; trả đường chim bay/ETA cấu hình/giả định mùa có nhãn; unknown null |
+| GET /cases/:id/mvp | bundles + stale, selection, postchecks của owner |
+| POST /cases/:id/mvp/proposals | case_version + Idempotency-Key; NEED_INPUT/NEEDS_EXPERT hoặc hai alternatives; immutable snapshot |
+| POST /cases/:id/mvp/selection | bundle_id, alternative_id, expected_revision (0 lần đầu); không stale/draft production/đã Bắt đầu |
+| POST /cases/:id/guidance | mode MVP, case_version, bundle_id, alternative_id, Idempotency-Key; server dựng SOP theo selection, state READY |
+| POST /cases/:id/guidance/:id/control | expected_revision, action BEGIN/PAUSE/RESUME/END; kiểm transition và lock selection |
+| PATCH /cases/:id/guidance/:id | expected_revision/step_id/action/method; MVP phải RUNNING; manual note ≥10 ký tự cho visual; giữ ảnh fail trong record |
+| POST /live-packing/check | Bound session + revision/consent/image; MVP dùng SOP từ server, dưới threshold → unverifiable; hậu kiểm thêm post_check:true/post_revision và step_id postcheck |
+| GET /cases/:id/mvp/postcheck?guidance_id= | Gắn bundle/alternative/phiên FINISHED; checklist PA1/PA2 khác nhau |
+| PATCH /cases/:id/mvp/postcheck | guidance_id, expected_revision, items[{id,status,note}]; kiểm tay ghi nguồn USER |
+| POST /cases/:id/mvp/complete | guidance_id, post_revision + Idempotency-Key; tất cả passed, fixation USER; atomic PACKED, không trừ kho |
+| POST /cases/:id/mvp/clone | Nháp mới, bỏ confirmed/ngày/context; không ảnh/consent |
+| GET /admin/mvp; POST /admin/mvp/draft/review/activate | ADMIN tạo version mới, EXPERT khác tác giả duyệt; ADMIN reauth + expected_active kích hoạt/rollback bản approved; bundle/config immutable |
+
+Vision v3: plant_details đủ 6 readings như v2, image_quality CLEAR/RETAKE/NO_PLANT; field_confidences object đúng 10 key name/group/height/length/width/potDiameter/potHeight/weight/fragility/potMaterial, mỗi key {confidence:0..100|null,evidence}. Object key cố định tránh lỗi HTTP400 của provider khi dùng mảng confidence 10 entries; server vẫn validate mọi key/đơn vị/source/value. Job legacy v1/v2 đọc được, không áp dụng như gợi ý đủ tin cậy của flow mới.
+
+Upload cây bắt buộc multipart storage_consent=true, một ảnh mới thay ảnh cũ sau decode/normalize thành công. Không gửi nhiều ảnh tới plant-analysis. Camera/postcheck xử lý ephemeral; không lưu bytes mặc định. CaseInput mở rộng fieldEvidence, channel/distance/context; dữ liệu draft version cũ vẫn đọc được.

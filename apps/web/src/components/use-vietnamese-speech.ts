@@ -4,10 +4,12 @@ import { vietnameseVoice } from '../lib/vietnamese-voice';
 import { api } from './common';
 import { vietnameseSpeechText } from '../lib/vietnamese-pronunciation';
 
-export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
+export function useVietnameseSpeech(enabled: boolean, csrf: string | null, volume=1) {
   const speaking = useRef(false), [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceName, setVoiceName] = useState(''), [notice, setNotice] = useState(''), [audioState, setAudioState] = useState('Chưa phát âm thanh'), [usingCloud, setUsingCloud] = useState(false);
-  const settings = useRef({ enabled, csrf }); settings.current = { enabled, csrf };
+  const settings = useRef({ enabled, csrf, volume }); settings.current = { enabled, csrf, volume };
+  const gain=useRef<GainNode|null>(null);
+  useEffect(()=>{if(gain.current)gain.current.gain.value=volume;if(utteranceRef.current)utteranceRef.current.volume=volume;},[volume]);
   const finishRef = useRef<(() => void) | null>(null), alive = useRef(true), serial = useRef(0), cloudAllowed = useRef(false);
   const context = useRef<AudioContext | null>(null), source = useRef<AudioBufferSourceNode | null>(null), request = useRef<AbortController | null>(null), utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const buffers = useRef(new Map<string, AudioBuffer>());
@@ -49,7 +51,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
     const selected = vietnameseVoice(window.speechSynthesis?.getVoices() || []);
     if (selected && !cloudAllowed.current) {
       const outcome = await new Promise<'ok' | 'failed' | 'cancelled'>(resolve => {
-        const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'vi-VN'; utterance.voice = selected; utterance.volume = 1; utterance.rate = 1; utteranceRef.current = utterance;
+        const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'vi-VN'; utterance.voice = selected; utterance.volume = settings.current.volume; utterance.rate = 1; utteranceRef.current = utterance;
         let ended = false;
         const finish = (result: 'ok' | 'failed' | 'cancelled') => { if (ended) return; ended = true; clearTimeout(startTimer); clearTimeout(endTimer); utterance.onstart = null; utterance.onend = null; utterance.onerror = null; finishRef.current = null; utteranceRef.current = null; resolve(result); };
         const startTimer = setTimeout(() => { finish('failed'); window.speechSynthesis.cancel(); }, 3000);
@@ -80,7 +82,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
       }
       await context.current.resume(); if (!current()) return;
       if (context.current.state !== 'running') throw new Error('AUDIO_BLOCKED');
-      const sound = context.current.createBufferSource(); sound.buffer = audio; sound.connect(context.current.destination); source.current = sound;
+      const sound = context.current.createBufferSource(); sound.buffer = audio;const level=context.current.createGain();level.gain.value=settings.current.volume;gain.current=level;sound.connect(level);level.connect(context.current.destination); source.current = sound;
       setNotice(''); setAudioState('Đang phát giọng Việt AI');
       await new Promise<void>(resolve => { const timer = setTimeout(() => { sound.onended = null; try { sound.stop(); } catch {} resolve(); }, 130000); const finish = () => { clearTimeout(timer); sound.onended = null; if (source.current === sound) source.current = null; finishRef.current = null; resolve(); }; sound.onended = finish; finishRef.current = finish; sound.start(); });
       if (current()) setAudioState('Đã đọc xong');

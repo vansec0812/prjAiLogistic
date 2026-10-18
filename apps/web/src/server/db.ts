@@ -15,10 +15,12 @@ export function db(){
     CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, phone TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password TEXT NOT NULL, status TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'MEMBER', created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), csrf TEXT NOT NULL, expires_at INTEGER NOT NULL, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS challenges(id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), purpose TEXT NOT NULL, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, used INTEGER NOT NULL DEFAULT 0, sent_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS otp_locks(user_id TEXT NOT NULL REFERENCES users(id),purpose TEXT NOT NULL,locked_until INTEGER NOT NULL,PRIMARY KEY(user_id,purpose));
     CREATE TABLE IF NOT EXISTS documents(kind TEXT NOT NULL, id TEXT NOT NULL, owner_id TEXT NOT NULL REFERENCES users(id), version INTEGER NOT NULL DEFAULT 1, status TEXT NOT NULL, body TEXT NOT NULL CHECK(json_valid(body)), created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(kind,id));
     CREATE INDEX IF NOT EXISTS docs_owner ON documents(kind,owner_id,updated_at,id);
     CREATE INDEX IF NOT EXISTS docs_status ON documents(kind,status,updated_at);
     CREATE TRIGGER IF NOT EXISTS immutable_plan BEFORE UPDATE ON documents WHEN OLD.kind='plan' BEGIN SELECT RAISE(ABORT,'plan version is immutable'); END;
+    CREATE TRIGGER IF NOT EXISTS immutable_mvp BEFORE UPDATE ON documents WHEN OLD.kind IN ('mvp-bundle','mvp-config') BEGIN SELECT RAISE(ABORT,'MVP version is immutable'); END;
     CREATE TABLE IF NOT EXISTS shares(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), version_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, expires_at INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS idempotency(owner_id TEXT NOT NULL, endpoint TEXT NOT NULL, key TEXT NOT NULL, request_hash TEXT NOT NULL, response TEXT NOT NULL CHECK(json_valid(response)), PRIMARY KEY(owner_id,endpoint,key));
     CREATE TABLE IF NOT EXISTS completions(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), case_id TEXT NOT NULL, version_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(case_id,version_id));
@@ -28,6 +30,7 @@ export function db(){
     CREATE TABLE IF NOT EXISTS limits(bucket TEXT PRIMARY KEY,count INTEGER NOT NULL,reset_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS ai_calls(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, day TEXT NOT NULL, status TEXT NOT NULL, usage TEXT NOT NULL, created_at TEXT NOT NULL);
     INSERT OR IGNORE INTO schema_migrations VALUES(1,datetime('now'));
+    INSERT OR IGNORE INTO schema_migrations VALUES(2,datetime('now'));
   `);
   globalDb.plantcareDb=d; return d;
 }

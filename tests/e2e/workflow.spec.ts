@@ -95,9 +95,9 @@ test('pinned share revocation, private photo, sanitized template and actual PDF 
   const template=await value(await mutate(a,'templates',{case_id:c.id,name:'Mẫu test'}));
   const clone=await value(await mutate(a,'templates/'+template.id+'/clone'));expect(clone.input.plant.confirmed).toBe(false);expect(clone.input.shipment.departure).toBe('');expect(clone.input.materials.every((m:any)=>!m.confirmed)).toBe(true);
   const png=await sharp({create:{width:10,height:10,channels:3,background:'#146445'}}).png().toBuffer();
-  const upload=await a.client.post('/api/v1/uploads',{headers:{'x-csrf-token':a.csrf},multipart:{case_id:c.id,purpose:'PLANT',file:{name:'private.png',mimeType:'image/png',buffer:png}}});
+  const upload=await a.client.post('/api/v1/uploads',{headers:{'x-csrf-token':a.csrf},multipart:{case_id:c.id,purpose:'PLANT',storage_consent:'true',file:{name:'private.png',mimeType:'image/png',buffer:png}}});
   const u=await value(upload);expect((await a.client.get('/api/v1/uploads/'+u.id)).status()).toBe(200);expect((await b.client.get('/api/v1/uploads/'+u.id)).status()).toBe(404);
-  const malformed=await a.client.post('/api/v1/uploads',{headers:{'x-csrf-token':a.csrf},multipart:{case_id:c.id,purpose:'PLANT',file:{name:'fake.png',mimeType:'image/png',buffer:Buffer.from('<svg><script/></svg>')}}});expect(malformed.status()).toBe(422);
+  const malformed=await a.client.post('/api/v1/uploads',{headers:{'x-csrf-token':a.csrf},multipart:{case_id:c.id,purpose:'PLANT',storage_consent:'true',file:{name:'fake.png',mimeType:'image/png',buffer:Buffer.from('<svg><script/></svg>')}}});expect(malformed.status()).toBe(422);
   const exported=await value(await mutate(a,`cases/${c.id}/exports`,{version_id:v.id},'post',randomUUID()));let job:any;
   await expect.poll(async()=>{job=await value(await a.client.get('/api/v1/jobs/'+exported.job_id));return job.status;},{timeout:30000}).toBe('SUCCEEDED');
   const pdf=await a.client.get('/api/v1/exports/'+exported.job_id);expect(pdf.status()).toBe(200);const bytes=await pdf.body();expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
@@ -131,8 +131,9 @@ test('responsive UI: landing, dashboard, wizard and plan walkthrough',async({pag
   await page.goto('/app/new');await page.getByPlaceholder('Ví dụ: Trầu bà gửi Đà Nẵng').fill('Hồ sơ UI test');await page.getByRole('button',{name:/Hoặc tạo hồ sơ mẫu/}).click();await expect(page).toHaveURL(/\/plant$/);
   const caseId=new URL(page.url()).pathname.split('/')[3];
   await page.screenshot({path:'output/qa/wizard-desktop.png',fullPage:true});
-  for(const stage of ['materials','shipment','review']){await page.getByRole('button',{name:'Lưu & tiếp tục'}).click();await expect(page).toHaveURL(new RegExp('/'+stage+'$'));}
-  await page.getByRole('button',{name:'Tạo hướng dẫn',exact:true}).click();await expect(page).toHaveURL(/\/plans\?version=/,{timeout:20000});
+  // Legacy SRS plan viewer remains available for existing immutable plan versions.
+  const token=(await(await page.request.get('/api/v1/session')).json()).data.csrf,c=(await(await page.request.get('/api/v1/cases/'+caseId)).json()).data;
+  const pending=await page.request.post(`/api/v1/cases/${caseId}/plans`,{headers:{Origin:origin,'x-csrf-token':token,'Idempotency-Key':randomUUID()},data:{input_version:c.version}});expect(pending.ok()).toBe(true);const jobId=(await pending.json()).data.job_id;let ready:any;await expect.poll(async()=>{ready=(await(await page.request.get('/api/v1/jobs/'+jobId)).json()).data;return ready.status;}).toBe('SUCCEEDED');await page.goto(`/app/cases/${caseId}/plans?version=${ready.result.id}`);
   await expect(page.getByText('Cần xác nhận cảnh báo',{exact:true}).first()).toBeVisible();await page.screenshot({path:'output/qa/plan-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});await expect.poll(async()=>{const b=await page.locator('.sidebar').boundingBox();return b?b.x+b.width:0;}).toBeLessThanOrEqual(0);await page.screenshot({path:'output/qa/plan-mobile.png',fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
