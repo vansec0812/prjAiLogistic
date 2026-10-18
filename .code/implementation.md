@@ -134,3 +134,9 @@ Người dùng chọn Vercel frontend + Node persistent backend. beforeFiles ext
 | UI | Xem screenshot mobile results/guide và desktop guide, 390px không overflow; ảnh minh họa có provenance; preview 3000 health ok/aiConfigured true. Artifacts ignored output/qa/*-v3.png |
 
 Provider smoke là ít lượt opt-in, chỉ dùng ảnh trắng/ảnh AI mẫu và lời SOP, không ảnh người dùng hoặc nhãn chuyên môn. Bộ mặc định không gọi provider trả phí. Chưa đánh giá micro vật lý trong xưởng, ảnh cây thật có nhãn/accuracy, SMS thật, backup/restore/load/HA hoặc approval chuyên môn. Chưa tạo hosting/domain/Vercel deployment; cần backend HTTPS và secrets SMS/Gemini trên môi trường triển khai. R0/R1 gốc tiếp tục OPEN. File env người dùng đang sửa được giữ ngoài commit.
+
+## Checkbox xác nhận thông số trước submit — 18/10/2026
+
+Theo yêu cầu người dùng, dùng một checkbox rõ nghĩa “Tôi xác nhận thông số cây và chậu đã chính xác” tại form cây/chậu. Chưa tích thì khóa Xem hướng dẫn, Lưu & tiếp tục và tab bước sau; handler cũng chặn tiếp tục. Sửa thông số bỏ confirmed và khóa lại. Lưu nháp vẫn cho phép chưa xác nhận. Không đổi schema hoặc guard server/readiness đã có.
+
+Typecheck PASS; E2E create/autofill/results/guide PASS với regression cho chưa tích, tích, bỏ tích và sửa số sau xác nhận; kiểm cả hai nút và tab vật tư. Provider giả lập, không gọi Gemini trả phí trong thay đổi này. Ánh xạ FR-10..17/TC-02, không đóng nghiệm thu FR/NFR gốc.
