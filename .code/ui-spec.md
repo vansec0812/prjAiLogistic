@@ -88,3 +88,9 @@ Mobile variants dùng cùng domain/API, không thêm bốn backend feature riên
 ## UI QA và lệch mockup
 
 Kiểm 360/390/768/1440px, zoom 200%, keyboard/screen reader và focus/contrast. Mockup p.75 đánh dấu carrier bắt buộc trong khi FR-14 nói tùy chọn: làm theo FR, nếu cần carrier limits thì hỏi dữ liệu giới hạn tương ứng, không ép chọn một carrier không biết. p.78 vừa ghi hộp đã xác nhận tải trọng vừa yêu cầu xác nhận: chỉ trình bày trạng thái từ engine thực, thiếu tải trọng không tạo PASS. UI-26 shell owner và UI-42 shell public được tách theo quyền. Các ví dụ hình/thao tác/metrics chỉ là mẫu cần duyệt.
+
+## Flow hiện hành theo yêu cầu người dùng — 18/10/2026
+
+Tạo hồ sơ tại /app/new → plant (thông số + upload/chụp tự nhận diện) → instructions (5 ảnh hướng dẫn, CTA Bắt đầu với AI) → guide (camera + bước hiện tại). Trường đã nhập/confirmed không bị overwrite. Ảnh thật phong cách chụp vẫn có nhãn minh họa AI, nhóm khác dùng SVG. Vật tư/hành trình/phương án tiếp tục là nhánh đầy đủ tùy chọn từ màn kết quả.
+
+Guide có một CTA Đã xong bước này, kiểm ảnh, nhắc lại và báo lỗi; micro/quyền kiểm ảnh bật riêng. Lỗi hiện ngay khi có kết quả, giữ bước và remedy; lỗi người dùng báo được lưu. Resolve không skip; resume media off. Copy kỹ thuật/provider/privacy/trạng thái review ở details, bỏ banner local lặp lại. Mobile 390 px được kiểm overflow và screenshot tại output/qa/*-v3.png (ignored). Chi tiết contract tại ../GUIDED_PACKING.md; không sửa danh mục UI/SRS cũ thành nghiệm thu toàn bộ.

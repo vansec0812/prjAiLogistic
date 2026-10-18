@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    env_file: .env.backend.local
+    environment:
+      NODE_ENV: production
+      PLANTCARE_MODE: production
+      PLANTCARE_DEPLOYMENT_TARGET: backend
+      PLANTCARE_DATA_DIR: /data
+      PLANTCARE_REFERENCE_GUIDE_ENABLED: "true"
+    volumes:
+      - plantcare-data:/data
+    ports:
+      - "127.0.0.1:3004:3000"
+    restart: unless-stopped
+    stop_grace_period: 40s
+volumes:
+  plantcare-data:

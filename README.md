@@ -2,11 +2,11 @@
 
 Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đóng gói **một cây/chậu cho một hành trình**. Người dùng nhập hoặc tải ảnh, đo/cân thực tế, xác nhận vật tư và bối cảnh vận chuyển. Rule Engine tạo phương án có giải thích, ảnh/sơ đồ từng bước và checklist; hồ sơ được lưu trên server để xem lại, xuất PDF hoặc chia sẻ phiên bản chỉ xem.
 
-**Trạng thái:** bản local có frontend/backend hoạt động. Quy tắc, nội dung và ảnh minh họa hiện là **DRAFT**, chưa được duyệt chuyên môn để vận chuyển cây thật. Dự án chưa đạt toàn bộ release gate R0/R1 và chưa triển khai lên hosting production.
+**Trạng thái:** frontend/backend hoạt động; có cấu hình triển khai **Vercel cho giao diện + Docker Node có persistent volume**. Quy tắc/SOP vẫn DRAFT, chưa duyệt chuyên môn; release gates R0/R1 chưa nghiệm thu đầy đủ. Chưa tạo hosting production.
 
 Repository: [vansec0812/prjAiLogistic](https://github.com/vansec0812/prjAiLogistic).
 
-Chuẩn bị Vercel: đọc [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Backend SQLite/filesystem/worker local hiện còn điểm chặn runtime; merge/build thành công chưa đồng nghĩa deploy toàn bộ ứng dụng lên Vercel đã dùng được.
+Deploy theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md): backend giữ DB/ảnh/jobs trên volume, Vercel proxy API cùng origin. Cần domain backend HTTPS và SMS/Gemini thật; không chạy SQLite trên Vercel Functions.
 
 ## Mục lục
 
@@ -30,6 +30,7 @@ Chuẩn bị Vercel: đọc [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Backen
 | --- | --- | --- |
 | Tài khoản | Đăng ký pending, OTP một lần, đăng nhập/đăng xuất, reset mật khẩu thu hồi phiên cũ, sửa tên | OTP dev hiển thị trên UI; SMS thật chưa chọn/kiểm chứng |
 | Hồ sơ | Dashboard, tạo/lưu nháp, wizard cây → vật tư → hành trình → xem lại; optimistic version | Một cây/chậu; chưa có tổ chức hoặc nhiều kiện |
+| Flow AI | Tạo hồ sơ → thông số cây → upload/chụp tự nhận diện và fill → ảnh hướng dẫn → làm cùng AI; voice xác nhận từng bước, báo lỗi, resume | Số đo phải kiểm thực tế; ảnh chỉ kiểm phần nhìn thấy; phiên hướng dẫn không trừ kho/complete case |
 | Ảnh | JPEG/PNG/WebP, giải mã/chuẩn hóa, bỏ metadata, private owner proxy | Tối đa 10 MB/ảnh, 30 MP, 12 ảnh/hồ sơ; AI không thay đo/cân |
 | Phương án | Engine kiểm fit/load/vật tư, phần chi phí đã biết, rule trace và snapshot | Một phương án fixture; chưa nhiều alternatives |
 | Đóng gói | Sáu bước có thao tác/điểm kiểm/điểm dừng và ảnh AI (FOLIAGE) hoặc sơ đồ, checklist theo version, nhập số đo/cân kiện thực, completion atomic/idempotent | Rule/template/sơ đồ DRAFT; lượng dùng theo vật tư đã chọn trong phương án |
@@ -37,7 +38,7 @@ Chuẩn bị Vercel: đọc [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Backen
 | Lịch sử | Phiên bản bất biến, STALE khi input đổi, feedback, tự khai báo bàn giao/nhận | Không tracking nhà vận chuyển thật |
 | PDF và chia sẻ | PDF/Markdown/JSON/ZIP chi tiết có bill, thao tác, ảnh, nguồn và trace từ snapshot; link chỉ xem tối đa 7 ngày, thu hồi ngay | Share không gồm snapshot đầu vào, ảnh gốc hoặc PII tài khoản |
 | Hỗ trợ và nội dung | Ticket mô tả/thread của owner, thông báo job, ba bài hướng dẫn chuẩn bị | Chưa chuyên gia được phân công hoặc CMS đầy đủ |
-| AI/quản trị | Vision adapter tùy chọn, consent riêng/revoke, quota số calls; admin read-only có role gate | Chưa provider integration, budget tiền, chat, ảnh AI/admin publishing |
+| AI/quản trị | Vision adapter tùy chọn, consent riêng/revoke, quota số calls; admin read-only có role gate | Chưa evaluation chuyên môn, budget tiền, chat hoặc admin publishing |
 
 Dashboard đọc số liệu từ DB. Hồ sơ seed có nhãn mẫu phát triển; tài khoản đăng ký riêng không tự nhận seed. Không công bố chỉ số giảm hư hỏng/accuracy AI khi chưa có đánh giá thực tế.
 
@@ -73,7 +74,7 @@ flowchart LR
 
 Frontend trình bày dữ liệu; server quyết định quyền/eligibility. Engine không import HTTP/DB/SDK Gemini. AI chỉ gợi ý nhận diện/giải thích nguồn; dữ liệu đã xác nhận không tự bị AI ghi đè.
 
-SQLite/private filesystem/job trong process là lựa chọn local không cần Docker. NestJS/PostgreSQL/Redis trong kế hoạch gốc là **baseline đề xuất**; lựa chọn local không đồng nghĩa đã chốt kiến trúc production. Xem [.code/implementation.md](.code/implementation.md).
+Local chạy không cần Docker. Khi triển khai, người dùng chọn Vercel frontend + backend Node có volume: Docker Linux giữ SQLite/files/jobs, dispatcher khởi động và mỗi 5 giây, HTTPS proxy API trước Route Handlers. NestJS/PostgreSQL/Redis trong kế hoạch gốc là baseline đề xuất; không có migration DB tự động. Xem [.code/implementation.md](.code/implementation.md).
 
 ## 3. Cài đặt và chạy local
 
@@ -144,15 +145,14 @@ SMS adapter nhận POST JSON `{phone, code, purpose, request_id}` với purpose 
 
 ## 5. Dùng thử một hồ sơ
 
-1. Bấm **Khám phá bản thử nghiệm local** trên trang chủ: tài khoản demo dùng chung trên máy, ba hồ sơ và kho mẫu.
-2. **Tạo hồ sơ**, đặt tên; tạo hồ sơ mẫu để kiểm luồng hoặc nhập tay.
-3. **Cây**: chọn nhóm, nhập chiều cao/tán/chậu/khối lượng/mức dễ hư; đo/cân trước khi xác nhận. Ảnh tùy chọn.
-4. **Vật tư**: lượng dự kiến dùng, đơn giá nếu biết, khối lượng/tình trạng; hộp dùng kích thước **trong** và tải trọng có nguồn. Chọn từ kho nếu cần ghi stock khi complete.
-5. **Hành trình**: nơi đi/đến, ngày gửi tương lai, thời lượng, tư thế, min/max nhiệt độ và nguồn; xác nhận bối cảnh.
-6. **Xem lại → Tạo hướng dẫn**: server lưu job; UI hiện stage thực, có thể rời trang.
-7. Đọc kết quả/trace: FAIL/thiếu điều kiện cần sửa input; cảnh báo acknowledgeable cần xác nhận trước checklist.
-8. Xem sáu bước/sơ đồ, đánh dấu checklist, nhập số đo/cân kiện thực tế để **Xác nhận hoàn tất**.
-9. Tải PDF hoặc gói ZIP (PDF + Markdown + JSON + ảnh), lưu mẫu hoặc chia sẻ version chỉ xem; thu hồi link khi cần.
+1. Đăng nhập; development có nút dùng tài khoản mẫu, production dùng tài khoản đã OTP.
+2. **Tạo hồ sơ**, đặt tên → màn thông số cây/chậu.
+3. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**: AI tự fill tên/nhóm/vật liệu chậu/độ dễ hư khi có thông tin. Số chỉ đọc từ nhãn/thước/cân nhìn rõ; giữ số đã nhập và dữ liệu đã xác nhận. Không Gemini vẫn nhập tay.
+4. Kiểm/sửa số đo, cân thực tế rồi xác nhận → **Xem hướng dẫn đóng gói**.
+5. Xem 5 ảnh/bước → **Bắt đầu với AI**. Bật camera, quyền kiểm ảnh và micro riêng. Nói **“Đã xong bước này”**, **“Tiếp tục bước tiếp theo”** để xác nhận; visual cần ảnh đạt hoặc kiểm tay có lý do.
+6. AI báo lỗi ảnh khi kiểm, giữ bước để sửa. “Tôi gặp lỗi”, “Tôi đã xử lý lỗi”, “Nhắc lại”, “Dừng lại” hỗ trợ thao tác. Tiến độ/lỗi được lưu, reload tắt media/consent.
+
+Khi cần phương án vận chuyển đầy đủ, chọn **Bổ sung vật tư & hành trình**: xác nhận hộp/tải trọng/vật tư/nguồn nhiệt độ/ngày gửi → xem lại → tạo phương án. FAIL/STALE/thiếu điều kiện chặn chọn/complete. Checklist, số đo/cân kiện, trừ kho atomic/idempotent, PDF/ZIP/share theo version vẫn giữ riêng. Kết thúc phiên AI không tự complete case.
 
 Tài khoản riêng: số E.164, ví dụ `+84901234567`; username 4–30 ký tự chữ thường/số/`.`/`_`; mật khẩu 12–128 ký tự. OTP local có nhãn, không gửi SMS thật; hết hạn 5 phút, dùng một lần, tối đa 5 lần thử, gửi lại có cooldown.
 
@@ -160,9 +160,9 @@ Không Gemini vẫn hoàn tất luồng manual. Consent không tick sẵn; nhậ
 
 ### Tri thức có nguồn và đầu ra mới
 
-Mở **Tri thức có nguồn** trong menu hoặc `/app/knowledge`; chọn phạm vi cây chậu/xương rồng/container rồi tra cứu. Bộ runtime có 11 metadata nguồn, 11 claims ngắn đã triage, tất cả UNREVIEWED. Lexical retrieval chạy local; chưa phải embeddings hoặc training trọng số. Video chưa đọc transcript/frame và bài chỉ có abstract/metadata không cấp claim cho retrieval. Xem [research/README.md](research/README.md).
+Mở **Tri thức có nguồn** trong menu hoặc `/app/knowledge`; chọn phạm vi cây chậu/xương rồng/container/vườn ươm rồi tra cứu. Bộ runtime có 19 nguồn/19 ghi chú, tất cả UNREVIEWED; metadata-only không cấp claim kỹ thuật. Lexical retrieval chạy local; chưa phải embeddings hoặc training trọng số. Video chưa đọc transcript/frame và bài chỉ có abstract/metadata không cấp claim cho retrieval. Xem [research/README.md](research/README.md).
 
-**Hỏi AI với nguồn** cần cấu hình Gemini + consent AI_KNOWLEDGE riêng. Job pin context/version, có quota/timeout/citation/schema check; câu trả lời chỉ tham khảo, không sửa số đo, rule, checklist hoặc kho. Chưa gọi provider thật trong QA. Không nhập thông tin cá nhân vào câu hỏi.
+**Hỏi AI với nguồn** cần cấu hình Gemini + consent AI_KNOWLEDGE riêng. Job pin context/version, có quota/timeout/citation/schema check; câu trả lời chỉ tham khảo, không sửa số đo, rule, checklist hoặc kho. Smoke Gemini thật đã kiểm schema/context RAG; chưa đánh giá chất lượng/chuyên môn. Không nhập thông tin cá nhân vào câu hỏi.
 
 Trang xem lại chỉ rõ dữ liệu còn thiếu; giá unknown vẫn hợp lệ. Lưu dữ liệu không đổi giữ phương án đã chọn. Report thêm assumptions, bill/thành tiền, thao tác/điểm kiểm/điểm dừng, handover/recipient checks và sources. Ảnh photorealistic là cây mẫu trầu bà cho FOLIAGE, không là ảnh kiện thật. SVG giữ cho nhóm khác và làm fallback. ZIP chứa asset tương đối để xem offline; Markdown riêng dùng đường dẫn asset website.
 
@@ -191,7 +191,7 @@ Giá/khối lượng/kích thước unknown là `null`, không tự thành 0. De
 
 `.data/` chứa SQLite/WAL, OTP secret, uploads chuẩn hóa và PDF; dữ liệu tồn tại sau restart. Storage, env, build cache và QA artifacts bị Git bỏ qua. Không đưa `.data` vào `public` hoặc static hosting.
 
-Job lưu status/lease/attempt/outbox trong DB, chạy trong process ứng dụng. Request đánh thức worker; request sau restart phục hồi QUEUED hoặc RUNNING hết lease. Chưa có worker Redis độc lập/SLA liên tục. Cancel là best-effort; không giữ transaction xuyên external call.
+Job lưu status/lease/attempt/outbox trong DB, chạy trong process ứng dụng. Backend Docker có dispatcher startup + mỗi 5 giây để phục hồi QUEUED/RUNNING hết lease cả khi không polling. Local vẫn đánh thức từ request. Chưa có worker Redis độc lập/SLA liên tục. Cancel best-effort; không giữ transaction xuyên external call.
 
 Nếu sao lưu local, dừng server trước khi sao chép **toàn bộ storage directory**, giữ DB/private files/OTP secret cùng một snapshot. Chưa có automated backup/retention/restore drill production.
 
@@ -229,11 +229,14 @@ Private API cần cookie HttpOnly và owner check. Mutation cần Origin hợp l
 | Lệnh PowerShell | Nội dung |
 | --- | --- |
 | `npm.cmd run typecheck` | Sinh Next.js route types bằng `next typegen`, rồi TypeScript strict; chạy được ngay sau clone/cài dependencies |
-| `npm.cmd run test` | 31 test engine/readiness/export/citation/retrieval/template replay |
+| `npm.cmd run test` | 153 unit/API/regression: engine, quyền, guidance, nhận diện, voice, WAV, deploy, RAG/export |
 | `npm.cmd run build` | Production compilation/TypeScript |
 | `npm.cmd run check` | Typecheck + unit + build; không gồm E2E |
 | `npx.cmd playwright install chromium` | Browser test trước E2E lần đầu |
-| `npm.cmd run test:e2e` | 5 scenario suites API/browser |
+| `npm.cmd run test:e2e` | 6 scenario suites API/browser của workflow đầy đủ |
+| `npm.cmd run test:e2e:live` | 13 ca flow nhận diện/camera/ảnh hướng dẫn/voice/lỗi/resume, provider giả lập |
+| `npm.cmd run test:proxy` | Proxy frontend/API: cookie/CSRF/body/private cache/no local DB |
+| `npm.cmd run test:container` | Smoke image Docker: auth/ảnh/PDF/guidance/restart/job recovery, volume test riêng |
 | `npm.cmd run test:production` | Production smoke; build trước |
 
 macOS/Linux dùng `npm`/`npx`. E2E tự mở **3001**, cache `.next-e2e`, DB `.data/e2e/<uuid>`, tắt external AI và tự dừng. Production smoke dùng **3002**, storage riêng/tự dừng; không cần dev server 3000.
@@ -344,10 +347,10 @@ FR/NFR chưa nghiệm thu đầy đủ tiếp tục OPEN trong traceability. B�
 Đọc `agent.md`/`.code/README.md` trước khi đổi nghiệp vụ. Cập nhật contract/ADR/evidence cùng code; không đóng FR chỉ vì đã có màn hình.
 
 
-## Giám sát đóng gói theo SOP và lệnh nói
+## Hướng dẫn AI theo hồ sơ
 
-Chọn **Hồ sơ & camera** (`/app/new`) sau khi đăng nhập. Tạo hồ sơ để mở camera và hướng dẫn tại `/app/cases/:id/guide`; đường dẫn cũ `/app/live-packing` dẫn về cùng entry. Camera có nút mở/bật lại, micro và gửi ảnh cần đồng ý riêng. Nói “kiểm tra” để kiểm ảnh; “đồng ý”, “dạ vâng”, “OK” để xác nhận bước đang làm khi đủ điều kiện. “nhắc lại”, “giúp tôi”, “dừng lại” hỗ trợ thao tác. Tiến độ lưu theo hồ sơ, tải lại không tự bật media hoặc consent. AI chỉ kiểm khung hình theo từng bước, không theo dõi video liên tục; kiểm tay vẫn bắt buộc.
+Chọn **Tạo hồ sơ** (`/app/new`) → thông số cây và ảnh → `/instructions` → `/guide`. Đường dẫn cũ `/app/live-packing` về cùng entry. Kiểm ảnh định kỳ khoảng 12 giây khi hình thay đổi chỉ báo lỗi, không tự chuyển; lời xác nhận mới chuyển bước sau điều kiện kiểm. Copy kỹ thuật/privacy/review được thu gọn, không còn banner bản local trên mọi màn.
 
-Cấu hình key phía server theo `.env.example`; không commit `.env.local`. Model phải khả dụng với tài khoản; model/quota ví dụ không là cam kết miễn phí. SOP hiện chưa duyệt chuyên môn và chỉ mở thực hiện ở development. Xem [flow hợp nhất và contract](GUIDED_PACKING.md), [hướng dẫn SOP](SOP_INTEGRATION.md) và [nhận lệnh nói](VOICE_COMMANDS.md).
+Cấu hình server theo mẫu riêng trong `deploy/`; không commit secret. Model phải khả dụng với tài khoản. Production có thể bật REFERENCE bằng `PLANTCARE_REFERENCE_GUIDE_ENABLED=true`; TRIAL/rule chưa duyệt vẫn bị chặn. Xem [flow và contract](GUIDED_PACKING.md), [SOP](SOP_INTEGRATION.md), [lệnh nói](VOICE_COMMANDS.md), [deploy](VERCEL_DEPLOYMENT.md).
 
 Kiểm phần giám sát: `npm run typecheck`, `npm test`, `npx playwright test --config playwright.live.config.ts`. Kiểm Gemini thật cần opt-in, có thể tốn quota; không chạy tự động trong bộ giả lập.

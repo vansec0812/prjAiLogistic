@@ -105,3 +105,32 @@ Tích hợp thêm origin/dev-nam b920625 qua merge với feature commit 6233016.
 Lượt browser đầu phát hiện helper test chưa đợi async commit và mock session dùng CSRF cũ; sửa helper chờ bước mới và session mock giữ token hiện tại. Browser cũng phát hiện nghe lệnh không resume sau chuyển manual step khi TTS tắt; sửa wrapper speech luôn resume có điều kiện khi hoàn tất. Bộ 12 ca cuối gồm regression resume này, lệnh lặp, phủ định, thu hồi consent, stop/unmount, camera mở lại, manual override, JSON không media, entry/resume và failed visual không chuyển. Không nới assertion nghiệp vụ để che lỗi.
 
 Không gọi Gemini thật hoặc bật billing; không đánh giá accuracy ảnh cây/micro vật lý, chưa approval chuyên môn hoặc deploy Vercel. Các release gate gốc tiếp tục OPEN.
+
+## Flow ảnh tự điền, AI từng bước và deploy tách — 18/10/2026
+
+Thay entry camera ngay bằng /app/new → /plant → /instructions → /guide. Upload/chụp tạo private image và tự chạy Vision; tên/nhóm chưa nhập, vật liệu chậu mặc định chưa xác nhận, fragility và số đọc rõ từ nhãn là gợi ý. Giữ số manual/late edits/confirmed, không suy cm/kg từ pixel. Plant confirmation bắt buộc trước ảnh kết quả. 5 ảnh nguyên chậu dùng library photoreal AI cho FOLIAGE với nhãn minh họa, nhóm khác SVG; ảnh kiểm toàn bộ là hộp còn mở. Vật tư/hành trình/full plan vẫn giữ đường đi riêng.
+
+“Đã xong bước này”/“Tiếp tục bước tiếp theo” xác nhận đúng bước: manual self-report; visual kiểm ảnh nếu chưa có kết quả rồi advance một lần khi pass/commit, hoặc override có lý do. REPORT_ISSUE xóa pass, lưu currentIssue/revision, resolve không tăng bước. Monitoring ảnh thay đổi mỗi khoảng 12 giây chỉ báo lỗi. Uniform frame trả unverifiable trước quota/provider. Stop/hidden/unmount dừng tracks/lượt chờ; refresh media/consent off, progress/issue persisted. Copy dài/trial/dev banner được rút gọn hoặc đưa vào details.
+
+TTS giữ fixed SOP, normalize cách đọc khoảng/số âm/thập phân/so sánh/đơn vị ở client và server; xác minh WAV PCM trước trả, cache pin từ điển. Gemini thật phát hiện enum GenerateContent không nhận MIME lowercase application/json; sửa Vision/RAG sang APPLICATION_JSON, giữ protocol TTS 3.8 đúng hiện hành. Không đổi rule/SOP approvals hoặc thêm biological thresholds.
+
+Người dùng chọn Vercel frontend + Node persistent backend. beforeFiles external HTTPS rewrite giữ cùng-origin auth/CSRF, private/no-store và tắt rewrite caching; Vercel handler fail trước DB. Docker Node24/Linux/user node/font tiếng Việt, volume /data, stable OTP secret, validate env startup và dispatcher startup/mỗi 5 giây. REFERENCE flag cho coaching production explicit, TRIAL vẫn chặn; Engine production NEEDS_EXPERT với rules DRAFT. Không case completion/inventory từ guide. Cấu hình deploy thật tại ../VERCEL_DEPLOYMENT.md.
+
+| Check thực chạy | Kết quả |
+| --- | --- |
+| Typecheck | PASS sau thêm camera/normalizer/deploy và provider smoke |
+| npm test | 153 tests/14 files PASS trên code cuối; thêm guard ảnh đồng màu không tiêu quota |
+| Workflow E2E | 6/6 PASS trong lần cập nhật; full manual plan/checklist/stock/export giữ nguyên nghiệp vụ |
+| Live browser | 13 ca đã PASS qua các lượt chạy; chạy lại ca lỗi selector bằng last-failed và các ca create/capture/responsive bằng grep. Camera, nhận giọng và provider giả; upload/API private thật. Bao phủ autofill giữ số nhập, kết quả, done một lần, định kỳ báo lỗi, issue/resolve, negation, override/skip, stale/resume, unsupported voice, camera permission/cleanup |
+| Build Windows | npm run build -- --webpack PASS trên code cuối; production smoke PASS dev auth 404/private API401/storage404/CSP |
+| Build frontend Vercel | VERCEL=1 + HTTPS upstream fixture + distDir riêng PASS; routes-manifest có beforeFiles /api/v1/* trước API local. Chưa gọi Vercel hosting |
+| Proxy smoke | PASS forwarding body 3 MiB/hash/query/Origin/CSRF/cookie, no-store/cache opt-out, owners riêng và frontend không khởi tạo DB |
+| Docker Linux | Build final plantcare-backend:flow-v2 PASS (Node24/bookworm); npm ci/prune báo 0 vulnerabilities tại lúc chạy |
+| Container smoke | PASS production auth/Secure cookies, private upload, bound REFERENCE/uniform frame giữ bước/no AI call, draft engine gate, PDF tiếng Việt; restart giữ case/ảnh/voice checkpoint/session. Lease giả của worker chết hết hạn sau restart, kiểm DB job SUCCEEDED trước API poll: periodic idle recovery PASS. Container/volume test được cleanup |
+| Gemini Vision thật | PASS job SUCCEEDED/vision-v1/UNCONFIRMED, ảnh trắng không sinh số đo |
+| Gemini checkpoint thật | PASS schema cho ảnh AI minh họa có chi tiết, manual_check_required=true; không đo accuracy. Blank frame API guard PASS unverifiable/không gọi provider |
+| Gemini RAG thật | PASS RAG_WITH_GEMINI, pinned plantcare-evidence-20261018-v3, 5 nguồn context, server validate citation/schema |
+| Gemini TTS thật | HTTP200, WAV PCM 1.449.954 bytes, decode 30,08 giây/RMS>0; browser Web Audio phát hoàn tất khi không có voice Việt cài trên máy. Không là đánh giá phát âm bởi con người |
+| UI | Xem screenshot mobile results/guide và desktop guide, 390px không overflow; ảnh minh họa có provenance; preview 3000 health ok/aiConfigured true. Artifacts ignored output/qa/*-v3.png |
+
+Provider smoke là ít lượt opt-in, chỉ dùng ảnh trắng/ảnh AI mẫu và lời SOP, không ảnh người dùng hoặc nhãn chuyên môn. Bộ mặc định không gọi provider trả phí. Chưa đánh giá micro vật lý trong xưởng, ảnh cây thật có nhãn/accuracy, SMS thật, backup/restore/load/HA hoặc approval chuyên môn. Chưa tạo hosting/domain/Vercel deployment; cần backend HTTPS và secrets SMS/Gemini trên môi trường triển khai. R0/R1 gốc tiếp tục OPEN. File env người dùng đang sửa được giữ ngoài commit.

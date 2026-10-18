@@ -7,15 +7,24 @@ import { db, doc, insertDoc, updateDoc, transaction } from '../apps/web/src/serv
 import { startGuidance, advanceGuidance, ownedGuidance, listGuidance, saveGuidanceCheck, clearGuidanceCheck } from '../apps/web/src/server/guidance';
 import { confirmationDecision } from '../apps/web/src/lib/guidance';
 import { selectSop, type CheckpointResult } from '../apps/web/src/lib/live-packing';
+import { sampleInput } from '../apps/web/src/server/seed';
 const directory=mkdtempSync(path.join(tmpdir(),'plantcare-guidance-'));
 const sop=selectSop('potted','POTTED'),context={species:'Cây shop xác nhận',shop_scope_confirmed:true as const,pot_cm:null,height_cm:null,packed_kg:null};
 let c:CaseRecord;
 beforeAll(()=>{process.env.PLANTCARE_DATA_DIR=directory;process.env.PLANTCARE_MODE='development';for(const id of ['a','b'])db().prepare('INSERT INTO users VALUES(?,?,?,?,?,?,?,?)').run(id,id,id,id,'unused','ACTIVE','MEMBER',new Date().toISOString());});
-beforeEach(()=>{c={id:crypto.randomUUID(),name:'Cây kiểm thử',version:1,status:'DRAFT',input:emptyInput(),selectedVersion:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),demo:false};insertDoc('case',c.id,'a',c,'DRAFT');});
+beforeEach(()=>{process.env.PLANTCARE_MODE='development';delete process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED;c={id:crypto.randomUUID(),name:'Cây kiểm thử',version:1,status:'DRAFT',input:emptyInput(),selectedVersion:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),demo:false};insertDoc('case',c.id,'a',c,'DRAFT');});
 afterAll(()=>{db().close();delete (globalThis as {plantcareDb?:unknown}).plantcareDb;delete process.env.PLANTCARE_DATA_DIR;delete process.env.PLANTCARE_MODE;if(!path.resolve(directory).startsWith(path.resolve(tmpdir())+path.sep)||!path.basename(directory).startsWith('plantcare-guidance-'))throw Error('UNSAFE_CLEANUP');rmSync(directory,{recursive:true});});
 const begin=()=>transaction(()=>startGuidance('a',c,{case_version:1,sop_id:sop.id,sop_version:sop.version,context,approved_for_trial:true}));
 const confirm=(revision:number,step_id:string,extra={})=>({expected_revision:revision,step_id,action:'CONFIRM',method:'VOICE',manual_checked:true,...extra});
 describe('case-bound instructor confirmations',()=>{
+  it('persists a reported problem and blocks acknowledgement until a manual issue is resolved',()=>{
+    let g=begin();g=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id,{action:'REPORT_ISSUE',manual_checked:false,note:'Chậu bị nứt khi thao tác.'}));expect(g.currentIssue?.stepId).toBe(sop.steps[0].id);expect(g.index).toBe(0);expect(()=>advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id))).toThrow();g=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id,{action:'RESOLVE_ISSUE',manual_checked:false}));g=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id));expect(g.index).toBe(1);expect(g.currentIssue).toBeUndefined();
+  });
+  it('allows explicitly enabled reference coaching with confirmed plant inputs without publishing any SOP',()=>{
+    c.input=sampleInput();updateDoc('case',c.id,'a',c,'DRAFT');process.env.PLANTCARE_MODE='production';process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED='true';
+    const value={case_version:c.version,sop_id:sop.id,sop_version:sop.version,mode:'REFERENCE',reference_ack:true,context:{...context,species:c.input.plant.name,pot_cm:c.input.plant.potDiameter,height_cm:c.input.plant.height}};
+    const g=transaction(()=>startGuidance('a',c,value));expect(g.mode).toBe('REFERENCE');expect(sop.production_enabled).toBe(false);expect(()=>transaction(()=>startGuidance('a',c,{...value,reference_ack:false}))).toThrow();expect(()=>begin()).toThrow();c.input.plant.confirmed=false;updateDoc('case',c.id,'a',c,'DRAFT');expect(()=>transaction(()=>startGuidance('a',c,value))).toThrow();delete process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED;
+  });
   it('saves one voice confirmation, rejects replay/stale checkpoint, and never completes case or inventory',()=>{
     const g=begin(),next=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id));expect(next.index).toBe(1);expect(next.records[sop.steps[0].id].confirmation?.method).toBe('VOICE');
     expect(()=>advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id))).toThrow();expect(()=>advanceGuidance('a',c,g.id,confirm(next.revision,sop.steps[0].id))).toThrow();

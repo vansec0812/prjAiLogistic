@@ -11,7 +11,9 @@
     "test:e2e": "playwright test",
     "test:production": "node scripts/check-production.mjs",
     "check": "npm run typecheck && npm test && npm run build",
-    "test:e2e:live": "playwright test --config playwright.live.config.ts"
+    "test:e2e:live": "playwright test --config playwright.live.config.ts",
+    "test:proxy": "node scripts/check-proxy.mjs",
+    "test:container": "node scripts/check-container.mjs"
   },
   "engines": {
     "node": ">=24.0.0"

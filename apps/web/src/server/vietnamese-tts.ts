@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ApiError, requireUser, checkMutation, rateLimit, sha } from './security';
 import { db, transaction } from './db';
+import { vietnameseSpeechText, PRONUNCIATION_VERSION } from '../lib/vietnamese-pronunciation';
+import { validWav } from '../lib/wav';
 const cache = new Map<string, { expires: number; value: SpeechAudio }>();
 const pending = new Map<string, Promise<SpeechAudio>>();
 type SpeechAudio = { audio_base64: string; mime_type: 'audio/wav' };
@@ -13,9 +15,11 @@ export async function vietnameseTts(req: NextRequest): Promise<SpeechAudio> {
   let raw: unknown; try { raw = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ApiError(422, 'TTS_INPUT', 'Nội dung đọc không hợp lệ.'); }
   const parsed = z.object({ text: z.string().trim().min(1).max(3000), consent: z.literal(true) }).strict().safeParse(raw);
   if (!parsed.success) throw new ApiError(422, 'TTS_INPUT', 'Cần đồng ý tạo giọng Việt và nội dung đọc hợp lệ.');
+  parsed.data.text=vietnameseSpeechText(parsed.data.text);
+  if(parsed.data.text.length>3000)throw new ApiError(422,'TTS_INPUT','Nội dung đọc quá dài.');
   const key = process.env.GEMINI_API_KEY, model = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-lite-tts';
   if (!key || !/^[\w.-]+$/.test(model)) throw new ApiError(503, 'TTS_CONFIG', 'Chưa cấu hình giọng Việt AI.');
-  const hash = sha(user.id + ':' + model + ':' + parsed.data.text), now = Date.now();
+  const hash = sha(user.id + ':' + model + ':' + PRONUNCIATION_VERSION + ':' + parsed.data.text), now = Date.now();
   for (const [id, entry] of cache) if (entry.expires <= now) cache.delete(id);
   const cached = cache.get(hash); if (cached) return cached.value;
   const running = pending.get(hash); if (running) return running;
@@ -31,7 +35,7 @@ export async function vietnameseTts(req: NextRequest): Promise<SpeechAudio> {
       const inline = data.candidates?.[0]?.content?.parts?.find((p: { inlineData?: { data?: string } }) => p.inlineData?.data)?.inlineData;
       if (typeof inline?.data !== 'string' || inline.data.length > 8000000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(inline.data)) throw new Error('INVALID_AUDIO');
       const bytes = Buffer.from(inline.data, 'base64');
-      if (bytes.length < 44 || bytes.subarray(0, 4).toString() !== 'RIFF' || bytes.subarray(8, 12).toString() !== 'WAVE') throw new Error('INVALID_AUDIO');
+      if (!validWav(bytes)) throw new Error('INVALID_AUDIO');
       const value: SpeechAudio = { audio_base64: bytes.toString('base64'), mime_type: 'audio/wav' };
       db().prepare('UPDATE ai_calls SET status=?,usage=? WHERE id=?').run('SUCCEEDED', JSON.stringify(data.usageMetadata || {}), id);
       while (cache.size >= 8) cache.delete(cache.keys().next().value!);

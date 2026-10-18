@@ -6,15 +6,16 @@ import { canAdvance, contextIssues, contextSchema, sopCatalog, type StepRecord, 
 import { docs, doc, insertDoc, updateDoc, transaction, development, audit } from './db';
 import { ApiError, inputHash } from './security';
 import { parse } from './schemas';
+import { plantProfileIssues } from '../lib/plant-recognition';
 
 const missing=()=>new ApiError(404,'NOT_FOUND','Không tìm thấy phiên hướng dẫn.');
-export function assertGuidanceCase(c:CaseRecord){
+export function assertGuidanceCase(c:CaseRecord,mode:'TRIAL'|'REFERENCE'='TRIAL'){
   if(['DELETED','PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã kết thúc. Tạo hồ sơ mới để hướng dẫn.');
-  if(!development())throw new ApiError(409,'SOP_NOT_APPROVED','SOP đang thử nghiệm; camera xem tại chỗ vẫn có thể mở.');
+  if(!development()&&!(mode==='REFERENCE'&&process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED==='true'))throw new ApiError(409,'SOP_NOT_APPROVED','Chưa bật trợ lý hướng dẫn. Liên hệ người quản lý.');
 }
 export function guidanceSop(g:GuidanceSession){const sop=sopCatalog.sops.find(s=>s.id===g.sopId&&s.version===g.sopVersion);if(!sop)throw new ApiError(409,'SOP_VERSION_MISMATCH','SOP đã thay đổi. Tạo phiên mới để giữ lịch sử.');return sop;}
 export function ownedGuidance(owner:string,c:CaseRecord,id:string,revision?:number){
-  assertGuidanceCase(c);const g=doc<GuidanceSession>('guidance',id,owner);if(!g||g.caseId!==c.id)throw missing();
+  const g=doc<GuidanceSession>('guidance',id,owner);if(!g||g.caseId!==c.id)throw missing();assertGuidanceCase(c,g.mode);
   if(g.inputHash!==inputHash(c.input))throw new ApiError(409,'GUIDANCE_STALE','Đầu vào hồ sơ đã thay đổi. Tạo phiên hướng dẫn mới.');
   if(revision!==undefined&&g.revision!==revision)throw new ApiError(409,'VERSION_CONFLICT','Phiên đã thay đổi ở nơi khác. Tải lại tiến độ.');
   guidanceSop(g);return g;
@@ -22,22 +23,32 @@ export function ownedGuidance(owner:string,c:CaseRecord,id:string,revision?:numb
 export function listGuidance(owner:string,c:CaseRecord){return docs<GuidanceSession>('guidance',owner).filter(g=>g.caseId===c.id).map(g=>({...g,stale:g.inputHash!==inputHash(c.input)||!sopCatalog.sops.some(s=>s.id===g.sopId&&s.version===g.sopVersion)}));}
 export function startGuidance(owner:string,c:CaseRecord,value:unknown){
   const current=doc<CaseRecord>('case',c.id,owner);if(!current)throw missing();c=current;
-  assertGuidanceCase(c);const v=parse(z.object({case_version:z.number().int().positive(),sop_id:z.string(),sop_version:z.string(),context:contextSchema,approved_for_trial:z.literal(true)}).strict(),value);
+  const v=parse(z.object({case_version:z.number().int().positive(),sop_id:z.string(),sop_version:z.string(),context:contextSchema,approved_for_trial:z.literal(true).optional(),mode:z.enum(['TRIAL','REFERENCE']).default('TRIAL'),reference_ack:z.literal(true).optional()}).strict(),value);assertGuidanceCase(c,v.mode);
+  if(v.mode==='TRIAL'&&!v.approved_for_trial||v.mode==='REFERENCE'&&!v.reference_ack)throw new ApiError(422,'GUIDANCE_ACK_REQUIRED','Xem hướng dẫn trước khi bắt đầu.');
+  if(v.mode==='REFERENCE'&&(plantProfileIssues(c.input.plant).length||v.context.species!==c.input.plant.name||v.context.pot_cm!==c.input.plant.potDiameter||v.context.height_cm!==c.input.plant.height))throw new ApiError(422,'PLANT_CONFIRMATION_REQUIRED','Kiểm tra và xác nhận thông tin cây trước khi bắt đầu.');
   if(c.version!==v.case_version)throw new ApiError(409,'VERSION_CONFLICT','Hồ sơ vừa được sửa, tải lại dữ liệu.');
   const sop=sopCatalog.sops.find(s=>s.id===v.sop_id&&s.version===v.sop_version);if(!sop)throw new ApiError(409,'SOP_VERSION_MISMATCH','SOP đã đổi.');
   if(contextIssues(sop,v.context).length)throw new ApiError(422,'SOP_SCOPE_MISMATCH','Thiếu dữ liệu hoặc ngoài phạm vi SOP.');
-  const now=new Date().toISOString();const g:GuidanceSession={id:randomUUID(),caseId:c.id,inputHash:inputHash(c.input),sopId:sop.id,sopVersion:sop.version,context:v.context,revision:1,index:0,status:'ACTIVE',records:{},checks:{},createdAt:now,updatedAt:now};
+  const now=new Date().toISOString();const g:GuidanceSession={id:randomUUID(),caseId:c.id,inputHash:inputHash(c.input),sopId:sop.id,sopVersion:sop.version,context:v.context,mode:v.mode,revision:1,index:0,status:'ACTIVE',records:{},checks:{},createdAt:now,updatedAt:now};
   insertDoc('guidance',g.id,owner,g,'ACTIVE');audit(owner,'GUIDANCE_STARTED',g.id);return g;
 }
 export function advanceGuidance(owner:string,c:CaseRecord,id:string,value:unknown){
-  const v=parse(z.object({expected_revision:z.number().int().positive(),step_id:z.string(),action:z.enum(['CONFIRM','MANUAL','SKIP']),method:z.enum(['BUTTON','VOICE']),manual_checked:z.literal(true),note:z.string().max(500).default('')}).strict(),value);
+  const v=parse(z.object({expected_revision:z.number().int().positive(),step_id:z.string(),action:z.enum(['CONFIRM','MANUAL','SKIP','REPORT_ISSUE','RESOLVE_ISSUE']),method:z.enum(['BUTTON','VOICE']),manual_checked:z.boolean().optional(),note:z.string().max(500).default('')}).strict(),value);
   return transaction(()=>{
     const currentCase=doc<CaseRecord>('case',c.id,owner);if(!currentCase)throw missing();
     const g=ownedGuidance(owner,currentCase,id,v.expected_revision),sop=guidanceSop(g),step=sop.steps[g.index];
     if(g.status!=='ACTIVE'||!step||step.id!==v.step_id)throw new ApiError(409,'CHECKPOINT_MISMATCH','Lời xác nhận không còn thuộc bước hiện tại.');
+    if(v.action==='REPORT_ISSUE'||v.action==='RESOLVE_ISSUE'){
+      if(v.action==='REPORT_ISSUE'){g.currentIssue={stepId:step.id,note:v.note||'Người dùng báo lỗi ở bước hiện tại.',at:new Date().toISOString()};delete g.checks[step.id];}
+      else {if(step.mode==='visual'&&g.checks[step.id]?.status!=='passed')throw new ApiError(422,'CHECK_REQUIRED','Kiểm tra lại ảnh sau khi sửa lỗi.');delete g.currentIssue;}
+      g.revision++;g.updatedAt=new Date().toISOString();updateDoc('guidance',id,owner,g,g.status);audit(owner,'GUIDANCE_'+v.action,id);return g;
+    }
+    if(!v.manual_checked)throw new ApiError(422,'MANUAL_CHECK_REQUIRED','Xác nhận kiểm tra thực tế trước khi chuyển bước.');
+    if(g.currentIssue&&g.checks[step.id]?.status!=='passed'&&!(v.action==='MANUAL'&&v.note.trim().length>=10)&&v.action!=='SKIP')throw new ApiError(409,'ISSUE_UNRESOLVED','Xử lý lỗi ở bước hiện tại trước khi tiếp tục.');
     const result=g.checks[step.id];const record:StepRecord=v.action==='SKIP'?{kind:'skipped',note:v.note,result}:v.action==='MANUAL'||step.mode==='manual'?{kind:'manual',note:v.note,result}:{kind:'ai',result,note:v.note};
     if(v.action!=='SKIP'&&!canAdvance(step,record,true))throw new ApiError(422,'CHECK_REQUIRED','Cần kiểm lại ảnh hoặc ghi lý do kiểm tay trước khi chuyển bước.');
     g.records[step.id]={...record,confirmation:{method:v.method,at:new Date().toISOString()}};
+    delete g.currentIssue;
     if(g.index===sop.steps.length-1)g.status=Object.values(g.records).some(r=>r.kind==='skipped')?'REVIEW_REQUIRED':'FINISHED';else g.index++;
     g.revision++;g.updatedAt=new Date().toISOString();updateDoc('guidance',id,owner,g,g.status);audit(owner,'GUIDANCE_'+v.action,id);return g;
   });

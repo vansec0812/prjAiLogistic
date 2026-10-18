@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { waveFixture } from './fixtures/wave';
 import { NextRequest } from 'next/server';
 const mocks = vi.hoisted(() => ({ auth: vi.fn(() => ({ id: 'tts-owner' })), csrf: vi.fn(), get: vi.fn(() => ({ n: 0 })), run: vi.fn() }));
 vi.mock('../apps/web/src/server/security', () => ({ ApiError: class extends Error { constructor(public status: number, public code: string, message: string) { super(message); } }, requireUser: mocks.auth, checkMutation: mocks.csrf, rateLimit: vi.fn(), sha: (s: string) => s }));
@@ -13,7 +14,7 @@ describe('Vietnamese cloud speech boundary', () => {
   it('respects quota shared with Vision', async () => { mocks.get.mockReturnValue({ n: 20 }); await expect(vietnameseTts(req({ text: 'Kiểm hạn mức', consent: true }))).rejects.toMatchObject({ status: 429 }); });
   it('does not serve invalid provider audio', async () => { vi.stubGlobal('fetch', vi.fn(async () => Response.json({ candidates: [{ content: { parts: [{ inlineData: { data: Buffer.from('invalid audio').toString('base64') } }] } }] }))); await expect(vietnameseTts(req({ text: 'Âm thanh lỗi', consent: true }))).rejects.toMatchObject({ code: 'TTS_FAILED' }); });
   it('reuses valid audio for the same owner and text without another paid call', async () => {
-    const wave = Buffer.alloc(46); wave.write('RIFF'); wave.write('WAVE', 8);
+    const wave = waveFixture();
     const fetcher = vi.fn(async () => Response.json({ candidates: [{ content: { parts: [{ inlineData: { data: wave.toString('base64') } }] } }] })); vi.stubGlobal('fetch', fetcher);
     const data = { text: 'Xin chào, kiểm tra bộ nhớ tạm', consent: true };
     expect((await vietnameseTts(req(data))).mime_type).toBe('audio/wav'); await vietnameseTts(req(data)); expect(fetcher).toHaveBeenCalledTimes(1);

@@ -119,3 +119,9 @@ Người dùng chọn tri thức/RAG trước. Đã thêm readiness, lưu không
 ## 12. Hướng dẫn camera theo hồ sơ — 18/10/2026
 
 Theo yêu cầu mới, gộp entry hồ sơ/camera, lưu phiên private theo input/SOP/revision; nhận xác nhận tiếng Việt theo bước hiện tại, hướng dẫn lại/trợ giúp/dừng, mở lại camera và giữ consent riêng. Bổ sung 8 nguồn mới vào registry với phân biệt metadata/claim, nhánh nguyên chậu FedEx DRAFT và scope NURSERY. Chi tiết/evidence tại [GUIDED_PACKING.md](GUIDED_PACKING.md) và [.code/implementation.md](.code/implementation.md). Approval chuyên môn, đánh giá ảnh/micro thật và vận hành production tiếp tục OPEN.
+
+## 13. Nhận diện tự điền, ảnh kết quả và triển khai tách — 18/10/2026
+
+Yêu cầu mới thay entry mở camera ngay: tạo → thông số cây → upload/chụp tự nhận diện/fill → xác nhận → ảnh hướng dẫn → AI từng bước. Giữ dữ liệu manual/confirmed, số không thấy từ nhãn là unknown. “Đã xong bước này”/“Tiếp tục bước tiếp theo” xác nhận đúng bước sau kiểm; lỗi giữ bước, resolve không skip. Kiểm định kỳ ảnh thay đổi, copy thu gọn, phát âm Việt deterministic theo SOP.
+
+Người dùng chọn Vercel giao diện + Node có persistent storage. Đã thêm beforeFiles proxy/private cache/CSRF-cookie, Docker Linux/font, env validation/stable OTP secret và startup/periodic job recovery. REFERENCE feature flag không phê duyệt draft rules/SOP. Code/contract/test/evidence cập nhật cùng nhau; hosting HTTPS/SMS/Gemini thật, micro/ảnh có nhãn và chuyên môn vẫn cần kiểm trên staging. Hướng dẫn cụ thể: [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Không tạo dịch vụ/billing hoặc coi readiness kỹ thuật là toàn bộ R0/R1.

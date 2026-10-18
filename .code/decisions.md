@@ -64,3 +64,13 @@ Yêu cầu mới hợp nhất entry tạo hồ sơ/giám sát và nhận lời �
 Gộp thêm origin/dev-nam b920625 (fixed narration/guard và tests), giữ RAG/ảnh/báo cáo của main cùng flow mới. Controller trong RAM của nhánh đó được thay bằng phiên lưu trên server; nguyên văn speech_vi và guard đúng step_id được giữ qua packingNarration/guidedDecision. Lệnh tôi đã kiểm tra trực tiếp vẫn hỗ trợ cùng các câu đồng ý mới. Micro tiếp tục opt-in riêng. Không tự bật mic từ CTA mở camera hoặc lấy lại consent sau refresh. Nghe mẫu đọc bước đang chọn, không đánh dấu hoàn tất.
 
 Nguồn mới được đọc theo scope, ghi rights/locator và phân biệt metadata. Bổ sung nhánh nguyên chậu FedEx cùng chú giải AmericanHort/VBN/USDA; không đổi sáu SOP version cũ hoặc đưa bảng nhiệt vào Rule Engine. RAG tiếp tục read-only/UNREVIEWED; chưa fine-tune hay copy/index toàn văn. Không đổi approval hoặc giới hạn Vercel. Đây là quyết định triển khai tương tác local, chưa nghiệm thu chuyên môn/production.
+
+## ADR-004: Flow ảnh tự điền và Vercel/Node-volume — 18/10/2026
+
+**User xác nhận:** Vercel cho giao diện + backend Node có ổ lưu trữ. **User đổi flow:** tạo hồ sơ → thông số → upload/chụp tự điền → ảnh hướng dẫn → AI theo từng câu hoàn tất; báo lỗi, phát âm Việt đúng SOP, tối giản copy.
+
+Chọn mở plant trước, bổ sung private image upload/automatic Vision schema, giữ số manual và user confirmation. Chỉ chấp nhận số đọc từ nhãn/thước/cân rõ, không estimation pixel. Ảnh dùng library hiện có với provenance/fallback, generic potted SOP 5 bước; vật tư/hành trình và plan/completion giữ riêng. Ghi issue/resolve theo revision; monitoring stills 12 giây/ảnh thay đổi chỉ báo lỗi. TTS fixed SOP + deterministic pronunciation/WAV validation, không generative rewrite.
+
+REFERENCE là chế độ coaching theo nguồn với feature flag backend explicit, có thể chạy production; không sửa published/production_enabled hoặc làm bypass plan eligibility/inventory. TRIAL cũ tiếp tục fail closed production. Không suy user's yêu cầu deploy thành approval chuyên môn.
+
+Frontend Next.js beforeFiles external rewrite cùng origin để giữ CSRF/cookies; fail build thiếu upstream và fail local API trên Vercel. Docker Node24/Linux/font/user node, stable OTP secret, volume /data, startup/5 giây dispatcher, một replica. Không migrate DB/serverless hoặc provision/billing ngoài scope. Rollback image/code cùng feature flag off; giữ volume/history, không xóa phiên hoặc đổi draft approvals. Cấu hình/release checks cụ thể tại ../VERCEL_DEPLOYMENT.md.

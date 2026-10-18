@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { vietnameseVoice } from '../lib/vietnamese-voice';
 import { api } from './common';
+import { vietnameseSpeechText } from '../lib/vietnamese-pronunciation';
 
 export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
   const speaking = useRef(false), [isSpeaking, setIsSpeaking] = useState(false);
@@ -21,7 +22,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
   }, []);
   useEffect(() => {
     alive.current = true;
-    const refresh = () => { const selected = vietnameseVoice(window.speechSynthesis?.getVoices() || []); setVoiceName(selected?.name || ''); if (!selected && !cloudAllowed.current) setNotice('Trình duyệt chưa có giọng Việt. Bấm Bật âm thanh và đọc bước hiện tại để dùng giọng Việt AI.'); };
+    const refresh = () => { const selected = vietnameseVoice(window.speechSynthesis?.getVoices() || []); setVoiceName(selected?.name || ''); if (!selected && !cloudAllowed.current) setNotice('Chưa có giọng Việt trên máy. Chọn Dùng giọng AI.'); };
     refresh(); window.speechSynthesis?.addEventListener('voiceschanged', refresh);
     return () => { alive.current = false; window.speechSynthesis?.removeEventListener('voiceschanged', refresh); cancel(); void context.current?.close(); context.current = null; buffers.current.clear(); };
   }, [cancel]);
@@ -36,9 +37,10 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
       await context.current.resume();
       if (context.current.state !== 'running') throw new Error('AUDIO_BLOCKED');
       cloudAllowed.current = true; if (alive.current) { setUsingCloud(true); setNotice(''); setAudioState('Âm thanh đã bật'); }
-    } catch { if (alive.current) setNotice('Trình duyệt chưa cho phát âm thanh. Mở trang trong Chrome/Edge, bật âm thanh cho trang rồi bấm nghe thử lại.'); }
+    } catch { if (alive.current) setNotice('Cho phép âm thanh rồi chọn Dùng giọng AI.'); }
   }, []);
   const speak = useCallback(async (text: string): Promise<void> => {
+    text=vietnameseSpeechText(text);
     cancel(); const token = serial.current;
     const current = () => alive.current && token === serial.current && settings.current.enabled;
     if (!settings.current.enabled) return;
@@ -61,7 +63,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
       if (outcome === 'ok') { setAudioState('Đã đọc xong'); setNotice(''); return; }
     }
     if (!current()) return;
-    if (!cloudAllowed.current || !context.current) { setNotice('Chưa phát được giọng Việt. Bấm Bật âm thanh và đọc bước hiện tại; đồng thời kiểm tra loa và âm lượng của trang.'); setAudioState('Cần bật âm thanh'); return; }
+    if (!cloudAllowed.current || !context.current) { setNotice('Chưa phát được giọng Việt. Chọn Dùng giọng AI.'); setAudioState('Cần bật âm thanh'); return; }
     try {
       setAudioState('Đang tạo giọng Việt AI…');
       let audio = buffers.current.get(text);
@@ -85,7 +87,7 @@ export function useVietnameseSpeech(enabled: boolean, csrf: string | null) {
     } catch (error) {
       if (!current()) return;
       setAudioState('Chưa phát được âm thanh');
-      setNotice(error instanceof Error && error.message === 'AUDIO_BLOCKED' ? 'Âm thanh bị trình duyệt chặn. Bấm Bật âm thanh và đọc bước hiện tại lại.' : error instanceof Error && !['INVALID_AUDIO'].includes(error.message) ? error.message : 'Không giải mã được giọng Việt. Bấm nghe thử lại.');
+      setNotice(error instanceof Error && error.message === 'AUDIO_BLOCKED' ? 'Cho phép âm thanh rồi thử lại.' : error instanceof Error && !['INVALID_AUDIO'].includes(error.message) ? error.message : 'Không phát được âm thanh. Thử lại hoặc đọc hướng dẫn.');
     }
     } finally {
       if (token === serial.current) { speaking.current = false; if (alive.current) setIsSpeaking(false); }

@@ -1,126 +1,137 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { CaseRecord } from '@plantcare/domain';
-import { api, useSession, useLoad, Spinner, Alert, PageHeading } from './common';
+import { Camera, Mic, Volume2, ArrowRight, AlertTriangle } from 'lucide-react';
+import { api, useSession, useLoad, Spinner, Alert, Empty, PageHeading } from './common';
 import { useVietnameseSpeech } from './use-vietnamese-speech';
 import { usePackingCommands } from './use-packing-commands';
-import type { PackingIntent } from '../lib/packing-voice-commands';
+import { instructionImage } from './packing-results';
 import { packingNarration } from '../lib/packing-narration';
 import { confirmationDecision, type GuidanceSession } from '../lib/guidance';
-import { canAdvance, contextIssues, formLabels, plantLabels, selectSop, sopCatalog, validateResult, type PlantKind, type ShippingForm, type CheckpointResult, type StepRecord } from '../lib/live-packing';
-const labels={passed:'Đạt tiêu chí nhìn thấy',needs_adjustment:'Cần điều chỉnh',unverifiable:'Không thể xác minh'};
+import { sopCatalog, validateResult, type CheckpointResult, type StepRecord } from '../lib/live-packing';
+import type { PackingIntent } from '../lib/packing-voice-commands';
+
+const labels={passed:'Đạt phần nhìn thấy',needs_adjustment:'Cần sửa trước khi tiếp tục',unverifiable:'Chưa nhìn rõ để kiểm tra'};
 export function CaseGuidedPacking({caseId}:{caseId:string}){
   const {data,error}=useLoad<CaseRecord>('cases/'+caseId);
   return error?<Alert kind="error">{error}</Alert>:data?<LivePacking key={caseId} caseRecord={data}/>:<Spinner/>;
 }
 export function LivePacking({caseRecord}:{caseRecord:CaseRecord}){
-  const {session}=useSession();
-  const [plant,setPlant]=useState<PlantKind>('potted'),[form,setForm]=useState<ShippingForm>('POTTED'),[species,setSpecies]=useState(caseRecord.input.plant.confirmed?caseRecord.input.plant.name:''),[scopeConfirmed,setScopeConfirmed]=useState(false);
-  const [potCm,setPotCm]=useState(''),[heightCm,setHeightCm]=useState(''),[packedKg,setPackedKg]=useState('');
-  const [guidance,setGuidance]=useState<GuidanceSession|null>(null),[loading,setLoading]=useState(true),[history,setHistory]=useState<GuidanceSession[]>([]);
-  const [approved,setApproved]=useState(false),[consent,setConsent]=useState(false),[index,setIndex]=useState(0),[records,setRecords]=useState<Record<string,StepRecord>>({}),[manual,setManual]=useState(false),[manualNote,setManualNote]=useState('');
-  const [phase,setPhase]=useState<'idle'|'positioning'|'checking'|'saving'>('idle'),[countdown,setCountdown]=useState<number|null>(null),[message,setMessage]=useState(''),[error,setError]=useState(''),[camera,setCamera]=useState(false),[voice,setVoice]=useState(true),[finished,setFinished]=useState(false);
-  const {speak:say,cancel:cancelSpeech,activate,voiceName,audioState,usingCloud,speaking,isSpeaking,notice:voiceNotice}=useVietnameseSpeech(voice,session.csrf);
+  const {session}=useSession(),params=useSearchParams(),requested=params.get('session');
+  const [guidance,setGuidance]=useState<GuidanceSession|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
+  const [camera,setCamera]=useState(false),[consent,setConsent]=useState(false),[monitor,setMonitor]=useState(false),[voice,setVoice]=useState(true);
+  const [phase,setPhase]=useState<'idle'|'positioning'|'checking'|'saving'>('idle'),[countdown,setCountdown]=useState<number|null>(null),[manual,setManual]=useState(false),[manualNote,setManualNote]=useState('');
+  const [override,setOverride]=useState<StepRecord|undefined>(),[lastChecked,setLastChecked]=useState('');
   const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null),controller=useRef<AbortController|null>(null),mounted=useRef(true),starting=useRef(false),generation=useRef(0),run=useRef(0),locked=useRef(false),saving=useRef(false),waitCancel=useRef<(()=>void)|null>(null),ack=useRef('');
-  const sop=selectSop(plant,form),steps=sop.steps,step=steps[index]||steps[0],record=records[step.id],busy=phase!=='idle';
-  const numberOrNull=(s:string)=>s.trim()?Number(s.replace(',','.')):null;
-  const context={species,shop_scope_confirmed:scopeConfirmed,pot_cm:numberOrNull(potCm),height_cm:numberOrNull(heightCm),packed_kg:numberOrNull(packedKg)},issues=contextIssues(sop,context);
-  const positionPrompt='Đưa sản phẩm trước camera để tôi kiểm tra bước vừa làm. '+step.camera_prompt_vi;
-  const commands=usePackingCommands({ready:approved&&!finished&&session.development,paused:busy||isSpeaking,speaking,onCommand:intent=>{void handleVoiceCommand(intent);}});
+  const checkRef=useRef<(auto:boolean,advance:boolean)=>Promise<void>>(async()=>{}),frameSignature=useRef<number[]|null>(null);
+  const {speak:say,cancel:cancelSpeech,activate,voiceName,audioState,speaking,isSpeaking,notice:voiceNotice}=useVietnameseSpeech(voice,session.csrf);
+  const sop=sopCatalog.sops.find(s=>s.id===guidance?.sopId&&s.version===guidance?.sopVersion)||sopCatalog.sops[0],index=guidance?.index||0,step=sop.steps[index],finished=!!guidance&&guidance.status!=='ACTIVE',busy=phase!=='idle';
+  const record=override||(guidance?.checks[step.id]?{kind:'ai' as const,result:guidance.checks[step.id]}:guidance?.records[step.id]);
+  const enabled=!!guidance&&!finished&&(session.development||session.referenceGuideEnabled===true);
+  const commands=usePackingCommands({ready:enabled,paused:busy||isSpeaking,speaking,onCommand:intent=>{void handleVoiceCommand(intent);}});
   const suspend=commands.suspend,resume=commands.resume,speak=useCallback((text:string)=>{suspend();return say(text).finally(resume);},[say,suspend,resume]);
-  function apply(g:GuidanceSession){setGuidance(g);setIndex(g.index);setRecords({...Object.fromEntries(Object.entries(g.checks).map(([id,result])=>[id,{kind:'ai' as const,result}])),...g.records});setFinished(g.status!=='ACTIVE');}
+  function apply(g:GuidanceSession){setGuidance(g);setOverride(undefined);}
   useEffect(()=>{let active=true;void api<GuidanceSession[]>('cases/'+caseRecord.id+'/guidance').then(list=>{
-    if(!active)return;setHistory(list);const g=list.filter(x=>!x.stale).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
-    if(g){const s=sopCatalog.sops.find(x=>x.id===g.sopId&&x.version===g.sopVersion)!;setPlant(s.plant);setForm(s.shipping_form);setSpecies(g.context.species);setScopeConfirmed(true);setPotCm(g.context.pot_cm?.toString()||'');setHeightCm(g.context.height_cm?.toString()||'');setPackedKg(g.context.packed_kg?.toString()||'');apply(g);setApproved(true);setMessage('Đã khôi phục tiến độ. Camera, micro và quyền gửi ảnh cần bạn bật lại.');}
-  }).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[caseRecord.id]);
+    if(!active)return;const g=requested?list.find(x=>x.id===requested&&!x.stale):list.filter(x=>!x.stale).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+    if(g)apply(g);else if(list.some(x=>x.stale))setError('Thông tin cây đã đổi. Mở lại hướng dẫn để bắt đầu phiên mới.');
+  }).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[caseRecord.id,requested]);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;stop();};},[]);
-  useEffect(()=>{if(loading)return;const url=new URL(window.location.href);if(url.searchParams.get('camera')==='1'){url.searchParams.delete('camera');window.history.replaceState(null,'',url.pathname+url.search);void start();}},[loading]);
   useEffect(()=>{const hide=()=>{if(document.hidden)stop();};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},[]);
-  useEffect(()=>{if(approved&&!finished&&!locked.current){const prefix=ack.current;ack.current='';void speak(prefix+packingNarration(sop,index));}return cancelSpeech;},[index,approved,finished,voice,voiceName,speak,cancelSpeech,step,sop]);
-  function cancelCheck(){run.current++;controller.current?.abort();waitCancel.current?.();waitCancel.current=null;cancelSpeech();if(!saving.current)locked.current=false;if(mounted.current&&!saving.current){setPhase('idle');setCountdown(null);}}
-  function stop(){commands.disable();generation.current++;cancelCheck();stream.current?.getTracks().forEach(t=>{t.onended=null;t.stop();});stream.current=null;if(video.current)video.current.srcObject=null;if(mounted.current)setCamera(false);}
-  function reset(){stop();setGuidance(null);setApproved(false);setRecords({});setIndex(0);setManual(false);setManualNote('');setFinished(false);setScopeConfirmed(false);setMessage('');setError('');}
+  useEffect(()=>{if(enabled&&!locked.current){const prefix=ack.current;ack.current='';void speak(prefix+packingNarration(sop,index));}return cancelSpeech;},[index,guidance?.id,finished,voice,voiceName,speak,cancelSpeech,enabled,sop]);
+  useEffect(()=>{frameSignature.current=null;},[guidance?.id,index]);
+  useEffect(()=>{
+    if(!monitor||!camera||!consent||!enabled||step.mode!=='visual')return;
+    const timer=setInterval(()=>{if(!locked.current&&!speaking.current&&!document.hidden)void checkRef.current(true,false);},12000);
+    return()=>clearInterval(timer);
+  },[monitor,camera,consent,enabled,index,step.mode,speaking]);
+  function cancelCheck(){run.current++;controller.current?.abort();waitCancel.current?.();waitCancel.current=null;cancelSpeech();if(!saving.current){locked.current=false;if(mounted.current){setPhase('idle');setCountdown(null);}}}
+  function stop(){commands.disable();generation.current++;cancelCheck();stream.current?.getTracks().forEach(t=>{t.onended=null;t.stop();});stream.current=null;if(video.current)video.current.srcObject=null;if(mounted.current){setCamera(false);setMonitor(false);}}
   async function start(){
     if(starting.current||locked.current)return;starting.current=true;const token=++generation.current;
-    try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('CAMERA_UNAVAILABLE');const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera chưa được hỗ trợ.');const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
       if(!mounted.current||token!==generation.current){media.getTracks().forEach(t=>t.stop());return;}
-      stream.current?.getTracks().forEach(t=>{t.onended=null;t.stop();});stream.current=media;media.getVideoTracks().forEach(t=>{t.onended=()=>{stop();if(mounted.current)setMessage('Camera đã ngắt. Bấm Mở camera và cấp lại quyền nếu cần.');};});
-      if(video.current){video.current.srcObject=media;await video.current.play();}if(!mounted.current||token!==generation.current){media.getTracks().forEach(t=>t.stop());return;}setCamera(true);setError('');setMessage('Camera đang mở. Chưa gửi ảnh khi bạn chưa đồng ý và yêu cầu kiểm tra.');
-    }catch{stop();if(mounted.current)setError('Không mở được camera. Dùng HTTPS/localhost, cấp quyền camera trong trình duyệt rồi bấm Mở camera; hoặc tiếp tục kiểm tay. Không cần quyền micro.');}finally{starting.current=false;}
+      stream.current?.getTracks().forEach(t=>{t.onended=null;t.stop();});stream.current=media;media.getVideoTracks().forEach(t=>{t.onended=()=>{stop();if(mounted.current)setError('Camera bị ngắt. Bật lại camera để tiếp tục.');};});
+      if(video.current){video.current.srcObject=media;await video.current.play();}if(!mounted.current||token!==generation.current){media.getTracks().forEach(t=>t.stop());return;}setCamera(true);setError('');
+    }catch{stop();if(mounted.current)setError('Không mở được camera. Cấp quyền camera rồi thử lại trên HTTPS hoặc localhost.');}finally{starting.current=false;}
   }
-  async function begin(){
-    if(locked.current||issues.length)return;locked.current=true;saving.current=true;setPhase('saving');setError('');
-    try{const g=await api<GuidanceSession>('cases/'+caseRecord.id+'/guidance',{method:'POST',headers:{'Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({case_version:caseRecord.version,sop_id:sop.id,sop_version:sop.version,context,approved_for_trial:true})},session.csrf);if(mounted.current){locked.current=false;apply(g);setApproved(true);setMessage('Đã lưu phiên hướng dẫn vào hồ sơ.');}}
-    catch(e){if(mounted.current)setError((e as Error).message);}finally{locked.current=false;saving.current=false;if(mounted.current)setPhase('idle');}
-  }
-  async function move(method:'BUTTON'|'VOICE',action:'CONFIRM'|'MANUAL'|'SKIP'='CONFIRM'){
-    if(locked.current||!guidance||finished)return;locked.current=true;saving.current=true;commands.suspend();setPhase('saving');setError('');cancelSpeech();
-    try{const g=await api<GuidanceSession>(`cases/${caseRecord.id}/guidance/${guidance.id}`,{method:'PATCH',body:JSON.stringify({expected_revision:guidance.revision,step_id:step.id,action,method,manual_checked:true,note:manualNote.trim()||record?.note||''})},session.csrf);
-      if(!mounted.current)return;ack.current=action==='SKIP'?'Đã ghi bước chưa đạt. ':'Đã nhận xác nhận của bạn. Chuyển bước tiếp theo. ';locked.current=false;apply(g);setManual(false);setManualNote('');setMessage(action==='SKIP'?'Đã ghi bỏ qua; phiên cần xem lại.':'Đã lưu xác nhận '+(method==='VOICE'?'bằng giọng nói.':'kiểm tay.'));
-      if(g.status!=='ACTIVE'){stop();await speak('Đã kết thúc phiên hướng dẫn. '+(g.status==='REVIEW_REQUIRED'?'Có bước chưa đạt cần xem lại. ':'')+'Hồ sơ vận chuyển chưa được hoàn tất.');}
-    }catch(e){if(mounted.current){setError((e as Error).message);await speak('Chưa lưu được xác nhận. Giữ nguyên bước này và tải lại tiến độ nếu có xung đột.');}}
+  async function mutate(action:'CONFIRM'|'MANUAL'|'SKIP'|'REPORT_ISSUE'|'RESOLVE_ISSUE',method:'BUTTON'|'VOICE',base=guidance){
+    if(!base||locked.current||finished)return;locked.current=true;saving.current=true;commands.suspend();setPhase('saving');setError('');cancelSpeech();
+    try{const g=await api<GuidanceSession>(`cases/${caseRecord.id}/guidance/${base.id}`,{method:'PATCH',body:JSON.stringify({expected_revision:base.revision,step_id:sop.steps[base.index].id,action,method,manual_checked:!['REPORT_ISSUE','RESOLVE_ISSUE'].includes(action),note:manualNote.trim()})},session.csrf);
+      if(!mounted.current)return;locked.current=false;
+      if(action==='REPORT_ISSUE'){apply(g);const text='Tạm dừng bước này. '+step.remedy_vi;setMessage(text);await speak(text);return;}
+      if(action==='RESOLVE_ISSUE'){apply(g);setMessage('Đã ghi nhận xử lý lỗi. Kiểm tra xong, nói đã xong bước này.');return;}
+      ack.current=action==='SKIP'?'Đã ghi bước chưa hoàn tất. ':'Đã xác nhận. ';apply(g);setManual(false);setManualNote('');setMessage('');
+      if(g.status!=='ACTIVE'){stop();await speak(g.status==='REVIEW_REQUIRED'?'Phiên kết thúc, còn bước cần xem lại.':'Bạn đã hoàn tất các bước hướng dẫn. Kiểm lại kiện trước khi bàn giao.');}
+    }catch(e){if(mounted.current){setError((e as Error).message);await speak('Chưa lưu được. Giữ nguyên bước này và thử lại.');}}
     finally{locked.current=false;saving.current=false;if(mounted.current)setPhase('idle');commands.resume();}
   }
+  async function done(method:'BUTTON'|'VOICE'){
+    if(!enabled||locked.current)return;
+    if(guidance?.currentIssue&&step.mode==='manual'){const text='Bạn đang báo lỗi ở bước này. Xử lý xong, nói đã xử lý lỗi trước khi tiếp tục.';setMessage(text);await speak(text);return;}
+    const decision=confirmationDecision(step,record);
+    if(decision==='CONFIRM'){await mutate(record?.kind==='manual'?'MANUAL':'CONFIRM',method);return;}
+    if(decision==='REPAIR'){const text=(record?.result?labels[record.result.status]+'. '+record.result.reason+'. ':'')+step.remedy_vi;setMessage(text);await speak(text);return;}
+    await check(false,true,method);
+  }
   async function handleVoiceCommand(intent:PackingIntent){
-    try{if(locked.current||!approved||finished)return;
-      if(intent==='STOP'){stop();setMessage('Đã dừng camera và micro. Tiến độ đã lưu trong hồ sơ.');return;}
-      const referenceHelp=(sop.reference_notes||[]).filter(n=>n.step_id===step.id).map(n=>n.text).join(' ');
-      if(intent==='REPEAT'||intent==='HELP'){await speak(packingNarration(sop,index)+(intent==='HELP'?' '+step.remedy_vi+(referenceHelp?' Ghi chú nguồn tham khảo chưa chuyên gia duyệt: '+referenceHelp:''):''));return;}
-      const decision=confirmationDecision(step,record);
-      if(decision==='CONFIRM'&&(intent==='CONFIRM'||step.mode==='manual')){setManual(true);await move('VOICE',record?.kind==='manual'?'MANUAL':'CONFIRM');return;}
-      if(intent==='CONFIRM'&&decision==='REPAIR'){const text='Chưa thể chuyển bước. '+(record?.result?labels[record.result.status]+'. '+record.result.reason+'. ':'')+step.remedy_vi;setMessage(text);await speak(text);return;}
-      if(!camera||!consent||!session.aiConfigured){const text=!camera?'Hãy bấm Mở camera trước khi kiểm ảnh.':!consent?'Cần đồng ý gửi ảnh để AI kiểm tra. Bạn vẫn có thể kiểm tay.':'AI chưa được cấu hình. Hãy dùng xác nhận thủ công.';setMessage(text);await speak(text);return;}await confirmStep(true);
+    try{if(!enabled||locked.current)return;
+      if(intent==='STOP'){stop();setMessage('Đã dừng camera và nghe lệnh.');return;}
+      if(intent==='ISSUE'){await mutate('REPORT_ISSUE','VOICE');return;}
+      if(intent==='RESOLVED'){await mutate('RESOLVE_ISSUE','VOICE');return;}
+      if(intent==='HELP'||intent==='REPEAT'){const notes=(sop.reference_notes||[]).filter(n=>n.step_id===step.id).map(n=>n.text).join(' ');await speak(packingNarration(sop,index)+(intent==='HELP'?' '+step.remedy_vi+' '+notes:''));return;}
+      if(intent==='CONFIRM'||step.mode==='manual')await done('VOICE');else await check(false,false,'VOICE');
     }finally{commands.resume();}
   }
-  async function confirmStep(fromVoice=false){
-    if(locked.current||!guidance||!approved||!consent||!session.aiConfigured||!camera||step.mode!=='visual'||issues.length||!session.development)return;
+  async function check(auto=false,advance=false,method:'VOICE'|'BUTTON'='BUTTON'){
+    if(locked.current||!guidance||!enabled||step.mode!=='visual')return;
+    if(!camera||!consent||!session.aiConfigured){const text=!camera?'Bật camera để kiểm tra.':!consent?'Bật Cho AI kiểm tra hình ảnh.':'AI chưa kết nối. Dùng xác nhận thủ công để tiếp tục.';setError(text);if(!auto)await speak(text);return;}
     locked.current=true;const token=++run.current;commands.suspend();const active=()=>mounted.current&&token===run.current&&locked.current;
-    setPhase('positioning');setCountdown(null);setError('');setMessage('');setManual(false);setRecords(r=>{const n={...r};delete n[step.id];return n;});
-    try{await speak((fromVoice?'Đã nhận yêu cầu kiểm tra. ':'')+positionPrompt);if(!active())return;
-      for(let seconds=3;seconds>0;seconds--){setCountdown(seconds);await new Promise<void>(resolve=>{const timer=setTimeout(()=>{waitCancel.current=null;resolve();},1000);waitCancel.current=()=>{clearTimeout(timer);resolve();};});if(!active())return;}
-      setCountdown(null);const v=video.current;if(!v||v.readyState<2||!v.videoWidth||!stream.current?.getVideoTracks().some(t=>t.readyState==='live'))throw new Error('Camera chưa có hình rõ; mở lại camera rồi thử.');
-      const canvas=document.createElement('canvas'),scale=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight));canvas.width=Math.round(v.videoWidth*scale);canvas.height=Math.round(v.videoHeight*scale);const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Không lấy được khung hình.');ctx.drawImage(v,0,0,canvas.width,canvas.height);const image=canvas.toDataURL('image/jpeg',0.8);canvas.width=canvas.height=0;
+    setPhase(auto?'checking':'positioning');setError('');setMessage('');setOverride(undefined);
+    try{
+      if(!auto){await speak(step.camera_prompt_vi);if(!active())return;for(let seconds=3;seconds>0;seconds--){setCountdown(seconds);await new Promise<void>(resolve=>{const timer=setTimeout(()=>{waitCancel.current=null;resolve();},1000);waitCancel.current=()=>{clearTimeout(timer);resolve();};});if(!active())return;}}
+      setCountdown(null);const v=video.current;if(!v||v.readyState<2||!v.videoWidth||!stream.current?.getVideoTracks().some(t=>t.readyState==='live'))throw new Error('Camera chưa có hình. Bật lại camera rồi thử.');
+      const canvas=document.createElement('canvas'),scale=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight));canvas.width=Math.round(v.videoWidth*scale);canvas.height=Math.round(v.videoHeight*scale);const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Không lấy được ảnh.');ctx.drawImage(v,0,0,canvas.width,canvas.height);
+      const tiny=document.createElement('canvas');tiny.width=tiny.height=8;const tctx=tiny.getContext('2d')!;tctx.drawImage(canvas,0,0,8,8);const signature=Array.from(tctx.getImageData(0,0,8,8).data);tiny.width=tiny.height=0;
+      const old=frameSignature.current;if(auto&&old&&signature.reduce((sum,n,i)=>sum+Math.abs(n-old[i]),0)/signature.length<4)return;
+      const image=canvas.toDataURL('image/jpeg',0.8);canvas.width=canvas.height=0;frameSignature.current=signature;
       if(!active())return;setPhase('checking');controller.current=new AbortController();
-      const raw=await api<CheckpointResult&{guidance?:GuidanceSession}>('live-packing/check',{method:'POST',signal:controller.current.signal,body:JSON.stringify({case_id:caseRecord.id,session_id:guidance.id,session_revision:guidance.revision,sop_id:sop.id,shipping_form:form,context,step_id:step.id,sop_version:sop.version,approved_for_trial:true,consent:true,image})},session.csrf);
-      if(!active())return;const {guidance:updated,...value}=raw,result=validateResult(value,step);if(updated)apply(updated);setRecords(r=>({...r,[step.id]:{kind:'ai',result}}));
-      await speak(labels[result.status]+'. Tôi quan sát thấy: '+result.observed+'. '+result.reason+'. '+(result.status==='passed'?step.manual+' Sau khi kiểm trực tiếp, nói đồng ý để tôi chuyển bước.':step.remedy_vi+' Sửa hoặc đổi góc ảnh rồi nói kiểm tra.'));
-    }catch(e){if(!active())return;setError((e as Error).message);await speak('Chưa kiểm tra được bước này. Hãy kiểm tra camera rồi thử lại hoặc xác nhận thủ công.');}
+      const raw=await api<CheckpointResult&{guidance?:GuidanceSession}>('live-packing/check',{method:'POST',signal:controller.current.signal,body:JSON.stringify({case_id:caseRecord.id,session_id:guidance.id,session_revision:guidance.revision,sop_id:sop.id,shipping_form:sop.shipping_form,context:guidance.context,step_id:step.id,sop_version:sop.version,approved_for_trial:true,...(guidance.mode==='REFERENCE'?{reference_guidance:true}:{}),consent:true,image})},session.csrf);
+      if(!active())return;const {guidance:updated,...value}=raw,result=validateResult(value,step);if(updated)apply(updated);else setOverride({kind:'ai',result});setLastChecked(new Date().toLocaleTimeString('vi-VN'));
+      if(result.status!=='passed'){setMessage(result.reason);if(!auto||guidance.checks[step.id]?.status!==result.status)await speak(labels[result.status]+'. '+result.reason+'. '+step.remedy_vi);}
+      else if(advance&&updated){locked.current=false;await mutate('CONFIRM',method,updated);}
+      else if(!auto)await speak('Phần nhìn thấy đạt. Kiểm tra trực tiếp xong, nói đã xong bước này để tiếp tục.');
+    }catch(e){if(!active())return;frameSignature.current=null;setError((e as Error).message);if(auto)setMonitor(false);else await speak('Chưa kiểm tra được ảnh. Thử lại hoặc kiểm tra thủ công.');}
     finally{if(active()){locked.current=false;setPhase('idle');setCountdown(null);}commands.resume();}
   }
-  const canNext=step.mode==='manual'?manual:canAdvance(step,record,manual);
-  function exportSession(){const data={schema_version:'plantmove-guidance-v3',case_id:caseRecord.id,sop_id:sop.id,sop_version:sop.version,records:guidance?.records,session:guidance,approved_professionally:false,transport_safe:null,generated_at:new Date().toISOString()};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='PlantMove-phien-huong-dan.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-  return <div className="live-packing"><PageHeading title="Hồ sơ & camera" description={`${caseRecord.name} · Hồ sơ v${caseRecord.version} · Hướng dẫn từng bước, lưu tiến độ và kiểm tra bằng ảnh`}/>
-    <div className="button-row"><Link className="button secondary" href={`/app/cases/${caseRecord.id}/plant`}>Bổ sung cây, vật tư & hành trình</Link><Link className="button secondary" href={`/app/cases/${caseRecord.id}/plans`}>Phương án & hồ sơ vận chuyển</Link></div>
-    <Alert>SOP thử nghiệm {sop.version}, chưa duyệt chuyên môn hoặc đánh giá ảnh thật. AI chỉ nhận một khung hình khi bạn yêu cầu kiểm tra.</Alert>
-    {!session.development&&<Alert kind="error">SOP chưa được duyệt; thực hiện chỉ mở trong kiểm thử local. Bạn có thể mở camera xem tại chỗ.</Alert>}
-    <section className="panel live-camera"><video ref={video} muted playsInline autoPlay style={camera?undefined:{aspectRatio:'16 / 9',maxHeight:180}} aria-label="Camera đóng gói trực tiếp"/><div className="button-row"><button className="button secondary" disabled={busy} onClick={()=>void start()}>Mở camera</button><button className="button secondary" onClick={stop}>Tắt camera</button></div><p role="status">{camera?'Camera đang mở — có thể tắt bất kỳ lúc nào.':'Camera đang tắt. Bấm Mở camera để bật hoặc bật lại; trình duyệt sẽ hỏi quyền nếu cần.'}</p><div className="camera-permissions">      <label><input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);if(!e.target.checked){commands.disable();cancelCheck();}}}/> Đồng ý để AI lấy khung hình từ camera sau khi tôi xác nhận bước và gửi đến Google Gemini để phân tích. Tránh người, địa chỉ hoặc dữ liệu riêng tư. Ứng dụng không lưu ảnh/video; nhà cung cấp xử lý theo chính sách của họ.</label>      <label><input type="checkbox" checked={commands.enabled} disabled={!approved||finished||!commands.supported} onChange={e=>e.target.checked?commands.enable():commands.disable()}/> Điều khiển bằng giọng nói — đồng ý dùng micro để nhận lệnh.</label></div></section>
-    {loading&&<Spinner/>}{error&&<Alert kind="error">{error}</Alert>}{message&&<Alert kind="info">{message}</Alert>}{history.some(g=>g.stale)&&<Alert>Có phiên cũ theo đầu vào/SOP khác. Lịch sử được giữ; bắt đầu phiên mới cho dữ liệu hiện tại.</Alert>}
-    {finished?<section className="panel live-controls live-step"><h2>Đã kết thúc phiên kiểm thử</h2>{steps.map(s=><p key={s.id}>{s.title}: {records[s.id]?.kind==='skipped'?'Đã bỏ qua — chưa đạt':records[s.id]?.kind==='manual'?'Người dùng xác nhận thủ công':records[s.id]?.result?labels[records[s.id].result!.status]+' + xác nhận tay':'Chưa kiểm tra'}</p>)}<p>{guidance?.status==='REVIEW_REQUIRED'?'Có bước chưa đạt cần xem lại. ':''}Tiến độ lưu riêng trong hồ sơ. Phiên này không hoàn tất hồ sơ vận chuyển hoặc trừ kho.</p><button className="button secondary" onClick={exportSession}>Tải biên bản kiểm thử (không ảnh)</button><button className="button secondary" onClick={reset}>Thử phiên mới</button></section>:approved&&<section className="panel live-controls live-step"><p>Bước {index+1}/{steps.length} — {step.mode==='manual'?'Kiểm tra trực tiếp, không gửi ảnh':'Kiểm ảnh và kiểm tay'}</p><h2>{step.title}</h2><p>{step.instruction}</p><button className="button secondary" disabled={busy} onClick={()=>void speak(packingNarration(sop,index))}>Nghe lại</button><p>Nguồn: {step.source_id} — {step.source_locator}</p>{sop.reference_notes?.some(n=>n.step_id===step.id)&&<details><summary>Giải thích và tài liệu tham khảo</summary>{sop.reference_notes.filter(n=>n.step_id===step.id).map(n=><p key={n.source_id}>{n.text} <a href={sopCatalog.sources.find(x=>x.id===n.source_id)!.url} target="_blank" rel="noreferrer">{n.source_id} — {n.locator}</a></p>)}<p>Ghi chú chưa chuyên gia duyệt; không thay phép đo hoặc quy tắc an toàn.</p></details>}
-      {step.mode==='visual'&&(!camera||!consent||!session.aiConfigured)&&<Alert kind="info">{!camera?'Mở camera để kiểm ảnh. ':''}{!consent?'Đồng ý gửi ảnh ở phần camera phía trên. ':''}{!session.aiConfigured?'Chưa cấu hình AI; bạn có thể kiểm tay và ghi lý do.':''}</Alert>}{step.mode==='manual'?<Alert kind="info">Bạn kiểm trực tiếp. Kiểm xong, nói “đồng ý” hoặc đánh dấu kiểm tay rồi nhấn Bước tiếp.</Alert>:<><p>{step.camera_prompt_vi} Làm xong, AI nhắc vị trí, đếm ngược rồi lấy một ảnh.</p><details><summary>AI sẽ kiểm tra điều gì?</summary>{step.criteria.map(c=><div key={c.id}><p>Đạt phần nhìn thấy: {c.visible_pass}</p><p>Lỗi nhìn thấy: {c.visible_fail}</p></div>)}<p>Ảnh thiếu hoặc mờ: không thể xác minh. Không suy phần bị che.</p></details><button className="button primary" disabled={busy||!camera||!consent||!session.aiConfigured} onClick={()=>void confirmStep()}>{phase==='positioning'?'Đưa sản phẩm trước camera…':phase==='checking'?'AI đang kiểm tra…':record?'Yêu cầu AI kiểm tra lại':'Đã làm xong bước này — nhờ AI kiểm tra'}</button></>}
-      {busy&&<div role="status"><p>{phase==='saving'?'Đang lưu xác nhận…':phase==='positioning'?positionPrompt:'AI đang xem ảnh. Vui lòng chờ phản hồi.'}</p>{countdown!==null&&<strong>Tự kiểm tra sau {countdown} giây</strong>}{phase!=='saving'&&<button className="button secondary" onClick={cancelCheck}>Hủy kiểm tra</button>}</div>}
-      {record?.result&&<div aria-live="polite"><h3>{labels[record.result.status]}</h3><p>Quan sát: {record.result.observed}</p><p>{record.result.reason}</p>{record.result.criterion_results.map(c=><p key={c.criterion_id}>{c.criterion_id}: {labels[c.status]} — {c.observation}</p>)}<p>{step.remedy_vi}</p><p>Bắt buộc kiểm tra thủ công: có</p></div>}
-      <label><input type="checkbox" checked={manual} disabled={busy} onChange={e=>setManual(e.target.checked)}/>{step.manual}</label><label>Ghi nhận kiểm tay / lý do thay kết luận ảnh <textarea value={manualNote} disabled={busy} maxLength={500} onChange={e=>setManualNote(e.target.value)}/></label>
-      <button className="button secondary" disabled={busy||!manual||(step.mode==='visual'&&manualNote.trim().length<10)} onClick={()=>{setRecords(r=>({...r,[step.id]:{kind:'manual',note:manualNote.trim(),result:r[step.id]?.result}}));setMessage('Đã chọn kiểm tay. Nhấn Bước tiếp để lưu vào hồ sơ.');}}>Dùng xác nhận thủ công</button>{step.mode==='visual'&&<p>Thay kiểm ảnh cần lý do ít nhất 10 ký tự; kết quả ảnh trước vẫn giữ trong biên bản. Lời đồng ý không tự ghi lý do thay kết luận ảnh.</p>}
-      <div className="button-row"><button className="button secondary" disabled={busy} onClick={()=>void move('BUTTON','SKIP')}>Bỏ qua — ghi chưa đạt</button><button className="button primary" disabled={busy||!canNext} onClick={()=>void move('BUTTON',record?.kind==='manual'?'MANUAL':'CONFIRM')}>{index===steps.length-1?'Kết thúc thử nghiệm':'Bước tiếp'}</button></div><p>Tiến độ tự lưu sau xác nhận. Xem bước trước qua checklist văn bản; không ghi đè bước đã xác nhận.</p>
-    </section>}
-    <section className="panel live-controls"><details className="live-setup" open={!approved}><summary>Thiết lập cây và SOP — {sop.title}</summary>
-      <label>Nhóm cây <select value={plant} disabled={busy||approved} onChange={e=>{reset();setPlant(e.target.value as PlantKind);if(e.target.value==='potted')setForm('POTTED');}}>{Object.entries(plantLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <label>Hình thức gửi <select value={form} disabled={busy||approved||plant==='potted'} onChange={e=>{reset();setForm(e.target.value as ShippingForm);}}>{Object.entries(formLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <label>Loài/giống đã xác nhận <input value={species} disabled={approved||busy} maxLength={100} onChange={e=>setSpecies(e.target.value)}/></label><p>{sop.scope} Shop cần xác nhận loài; AI không xác định loài từ tên nhập.</p>
-      {sop.limits&&<><p>Nhập số đo/cân thực. Chiều cao xét hộp đo cả cây/chậu từ đáy chậu, khác chiều cao thương mại từ mặt đất. Khối lượng cây không thay cho khối lượng kiện.</p>{form==='POTTED'&&<label>Đường kính chậu (cm)<input inputMode="decimal" disabled={approved} value={potCm} onChange={e=>setPotCm(e.target.value)}/></label>}<label>Chiều cao cả cây/chậu (cm)<input inputMode="decimal" disabled={approved} value={heightCm} onChange={e=>setHeightCm(e.target.value)}/></label><label>Khối lượng kiện dự kiến đã cân (kg)<input inputMode="decimal" disabled={approved} value={packedKg} onChange={e=>setPackedKg(e.target.value)}/></label></>}
-      <details><summary>Nguồn và phạm vi SOP</summary>{sopCatalog.sources.filter(s=>sop.source_ids.includes(s.id)).map(s=><p key={s.id}><a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> — {s.locator}. Đọc {s.accessed_at}. {s.limitation}</p>)}<p>Chưa có người duyệt chuyên môn hoặc đánh giá ảnh thật. ETA, yêu cầu theo loài và điều kiện nhận gửi cần xác nhận riêng.</p></details>
-      <label><input type="checkbox" disabled={approved||busy} checked={scopeConfirmed} onChange={e=>setScopeConfirmed(e.target.checked)}/> Tôi đại diện shop đã xem phạm vi nguồn, đúng loài và hình thức để thử; đây chưa là duyệt chuyên môn.</label>{issues.length>0&&<Alert kind="info">{issues.join(' ')}</Alert>}
-      <details><summary>Xem checklist văn bản cho phiên thử</summary>{steps.map(s=><p key={s.id}><strong>{s.title}</strong>: {s.speech_vi} Kiểm tay: {s.manual} ({s.source_id} — {s.source_locator})</p>)}</details>
-    </details><label><input type="checkbox" disabled={busy||loading||approved||issues.length>0||!session.development} checked={approved||(phase==='saving'&&!guidance)} onChange={()=>void begin()}/> Tôi đã xem và duyệt checklist này để kiểm thử, không phải phê duyệt chuyên môn.</label>
-      {approved&&<button className="button secondary" disabled={busy} onClick={reset}>Đổi thiết lập — tạo phiên mới</button>}
-
-      <label><input type="checkbox" checked={voice} onChange={e=>setVoice(e.target.checked)}/> Đọc hướng dẫn và phản hồi bằng tiếng Việt. Chức năng đọc không cần micro.</label><p>Âm thanh AI gửi nội dung cần đọc tới Gemini, dùng hạn mức API sau khi bạn bật. Giọng Việt trên máy được ưu tiên.</p>
-      <button className="button secondary" disabled={busy} onClick={async()=>{setVoice(true);await activate();await speak(packingNarration(sop,index));}}>Bật âm thanh và đọc bước hiện tại</button>{voice&&<p role="status">Âm thanh: {audioState}</p>}{voice&&(usingCloud||voiceName)&&<p>Giọng tiếng Việt: {usingCloud?'AI':voiceName}</p>}{voiceNotice&&<Alert kind="info">{voiceNotice}</Alert>}
-
-      <p>Nói “kiểm tra” khi làm xong; “đồng ý”, “vâng”, “OK” để xác nhận kiểm tay và chuyển bước hiện tại; “nhắc lại”, “giúp tôi”, “dừng lại”. Bước kiểm ảnh chỉ chuyển sau kết quả đạt hoặc kiểm tay có lý do. AI giải thích và chờ sửa khi chưa đạt. Hệ thống ngừng nghe khi đang nói/kiểm tra. Trình duyệt có thể gửi âm thanh tới dịch vụ nhận dạng; PlantMove không lưu âm thanh.</p>
-      {!commands.supported&&<p>Trình duyệt chưa hỗ trợ nhận lệnh hoặc trang chưa dùng HTTPS/localhost. Các nút vẫn dùng được.</p>}<p role="status">Nhận lệnh: {commands.state}</p>{commands.error&&<Alert kind="info">{commands.error}</Alert>}
-    </section>{!session.aiConfigured&&<Alert kind="info">Chưa cấu hình Vision API. Camera và checklist thủ công vẫn dùng được.</Alert>}
-
+  checkRef.current=(auto,advance)=>check(auto,advance);
+  function exportSession(){const url=URL.createObjectURL(new Blob([JSON.stringify({schema_version:'plantmove-guidance-v4',case_id:caseRecord.id,session:guidance,approved_professionally:false,transport_safe:null},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='PlantCare-huong-dan.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  if(loading)return <Spinner/>;
+  if(!guidance)return <><PageHeading title="AI hướng dẫn đóng gói"/>{error&&<Alert kind="error">{error}</Alert>}<Empty title="Mở hướng dẫn trước khi bắt đầu" description="Xem các bước đóng gói cho hồ sơ này." action={<Link className="button primary" href={`/app/cases/${caseRecord.id}/instructions`}>Xem hướng dẫn</Link>}/></>;
+  return <div className="guided-workspace"><PageHeading title="AI hướng dẫn đóng gói" description={caseRecord.name} action={<Link className="button secondary" href={`/app/cases/${caseRecord.id}/instructions`}>Xem các bước</Link>}/>
+    {error&&<Alert kind="error">{error}</Alert>}
+    {finished?<section className="panel guidance-finished"><h2>{guidance.status==='REVIEW_REQUIRED'?'Còn bước cần kiểm tra lại':'Đã hoàn tất hướng dẫn'}</h2><p>Kiểm lại kiện trước khi bàn giao.</p>{sop.steps.map(s=><p key={s.id}>{s.title}: {guidance.records[s.id]?.kind==='skipped'?'Chưa hoàn tất':'Đã xác nhận'}</p>)}<div className="button-row"><button className="button secondary" onClick={exportSession}>Tải biên bản</button><Link className="button primary" href={`/app/cases/${caseRecord.id}/instructions`}>Về hướng dẫn</Link></div></section>:<>
+    <div className="guidance-progress" aria-label="Tiến độ đóng gói">{sop.steps.map((s,i)=><span key={s.id} className={i<index?'done':i===index?'current':''}>{i+1}<small>{s.title}</small></span>)}</div>
+    <div className="guided-layout"><section className="panel live-camera"><video ref={video} muted playsInline autoPlay aria-label="Camera đóng gói"/><div className="button-row"><button className="button secondary" disabled={busy} onClick={()=>void start()}><Camera size={16}/>{camera?'Mở lại camera':'Bật camera'}</button><button className="button subtle" onClick={stop}>Tắt camera</button></div>
+      <label className="check-label"><input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);setMonitor(e.target.checked);if(!e.target.checked)cancelCheck();}}/>Cho AI kiểm tra hình ảnh</label>
+      <label className="check-label"><input type="checkbox" checked={commands.enabled} disabled={!commands.supported||!enabled} onChange={e=>e.target.checked?commands.enable():commands.disable()}/><Mic size={16}/>Bật micro nhận lệnh</label>
+      <p className="field-hint" role="status">{commands.enabled?commands.state:'Micro đang tắt'}{camera&&monitor&&step.mode==='visual'?' · Kiểm ảnh định kỳ':''}</p>
+      {commands.error&&<Alert kind="error">{commands.error}</Alert>}
+      <details className="privacy-details"><summary>Quyền riêng tư & chế độ kiểm tra</summary><p>AI nhận khung hình qua Google Gemini khi bạn yêu cầu hoặc bật kiểm ảnh định kỳ. Chế độ định kỳ kiểm khoảng 12 giây khi hình thay đổi; không xác minh mọi diễn biến. Không lưu video/âm thanh. Micro dùng nhận giọng của trình duyệt. Tắt camera hoặc rời tab để dừng.</p><label className="check-label"><input type="checkbox" checked={monitor} disabled={!consent} onChange={e=>setMonitor(e.target.checked)}/>Kiểm ảnh định kỳ khi thao tác</label></details>
+    </section><section className="panel live-controls live-step"><span className="eyebrow">BƯỚC {index+1}/{sop.steps.length}</span><h2>{step.title}</h2><p>{step.instruction}</p><p className="physical-check">{step.manual}</p>
+      <div className="button-row"><button className="button secondary" disabled={busy} onClick={async()=>{setVoice(true);if(!voiceName)await activate();await speak(packingNarration(sop,index));}}><Volume2 size={16}/>Nghe hướng dẫn</button><button className="button subtle" disabled={busy} onClick={()=>void mutate('REPORT_ISSUE','BUTTON')}><AlertTriangle size={16}/>Tôi gặp lỗi</button></div>
+      <label className="check-label"><input type="checkbox" checked={voice} onChange={e=>setVoice(e.target.checked)}/>Đọc hướng dẫn bằng tiếng Việt</label>
+      {voiceNotice&&<p className="field-hint">{voiceNotice}</p>}
+      {busy&&<div className="guidance-status" role="status">{phase==='saving'?'Đang lưu…':phase==='positioning'?step.camera_prompt_vi:'AI đang kiểm tra ảnh…'}{countdown!==null&&<strong>Kiểm tra sau {countdown} giây</strong>}{phase!=='saving'&&<button className="button subtle small" onClick={cancelCheck}>Hủy kiểm tra</button>}</div>}
+      {(guidance.currentIssue||record?.result&&record.result.status!=='passed')&&<Alert kind="error"><strong>{guidance.currentIssue?'Đang tạm dừng vì lỗi':labels[record!.result!.status]}</strong><p>{record?.result?.reason||guidance.currentIssue?.note}</p><p>{step.remedy_vi}</p>{step.mode==='manual'&&<button className="button secondary" disabled={busy} onClick={()=>void mutate('RESOLVE_ISSUE','BUTTON')}>Tôi đã xử lý lỗi</button>}</Alert>}
+      {record?.result?.status==='passed'&&<Alert kind="success">Ảnh đạt phần nhìn thấy. Kiểm tra trực tiếp trước khi chuyển bước.</Alert>}
+      {message&&<p role="status">{message}</p>}
+      <p className="voice-hint">Nói “Đã xong bước này” để xác nhận. “Nhắc lại”, “Tôi gặp lỗi” hoặc “Dừng lại” khi cần.</p>
+      <div className="button-row">{step.mode==='visual'&&<button className="button secondary" disabled={busy||!camera||!consent||!session.aiConfigured} onClick={()=>void check()}>Kiểm tra ảnh</button>}<button className="button primary" disabled={busy||!enabled} onClick={()=>void done('BUTTON')}>Đã xong bước này <ArrowRight size={17}/></button></div>
+      <details className="manual-override"><summary>Xác nhận thủ công</summary><label className="check-label"><input type="checkbox" checked={manual} disabled={busy} onChange={e=>setManual(e.target.checked)}/>Tôi đã kiểm tra trực tiếp</label><label>Lý do / ghi nhận<textarea value={manualNote} maxLength={500} onChange={e=>setManualNote(e.target.value)}/></label><button className="button secondary" disabled={busy||!manual||step.mode==='visual'&&manualNote.trim().length<10} onClick={()=>void mutate('MANUAL','BUTTON')}>Dùng kiểm tay & tiếp tục</button><button className="button subtle" disabled={busy} onClick={()=>void mutate('SKIP','BUTTON')}>Bỏ qua và ghi chưa hoàn tất</button></details>
+      <details><summary>Ảnh minh họa & nguồn SOP</summary><img className="guide-reference-image" src={instructionImage(sop,step,index,caseRecord.input.plant.group)} alt={'Minh họa '+step.title}/><p>{step.source_id} · {step.source_locator}</p><p>{sop.version} · nguồn tham khảo chưa duyệt chuyên môn.</p>{step.criteria.map(c=><p key={c.id}>{c.visible_pass} Lỗi: {c.visible_fail}</p>)}{sop.reference_notes?.filter(n=>n.step_id===step.id).map(n=><p key={n.source_id}>{n.text}</p>)}</details>
+      {!!lastChecked&&<small className="muted">Kiểm ảnh gần nhất {lastChecked}</small>}<details><summary>Âm thanh</summary><p>{audioState}</p><button className="button secondary" onClick={async()=>{setVoice(true);await activate();await speak(packingNarration(sop,index));}}>Dùng giọng AI</button><p>Nội dung đọc được gửi tới Gemini khi dùng giọng AI.</p></details>
+    </section></div></>}
   </div>;
 }

@@ -1,43 +1,44 @@
-# Hồ sơ & camera — 18/10/2026
+# Tạo hồ sơ → nhận diện → ảnh hướng dẫn → làm cùng AI
 
-## Luồng sử dụng
+Luồng hiện hành từ 18/10/2026, thay luồng mở camera ngay sau tạo hồ sơ.
 
-1. Đăng nhập, chọn **Hồ sơ & camera**. Đặt tên một hồ sơ cho một cây/chậu, nhấn **Tạo hồ sơ & mở camera**. Trình duyệt hỏi quyền camera nếu cần; không yêu cầu micro ở bước này. Có thể chọn nhập hồ sơ kỹ thuật trước.
-2. Xem hình camera ngay trong hồ sơ. **Mở camera** cũng bật lại camera đã tắt/ngắt. Nếu trình duyệt chặn, cấp lại quyền camera cho HTTPS/localhost rồi bấm lại. Ứng dụng không tự vượt quyền thiết bị.
-3. Chọn SOP, nhập loài shop xác nhận, đọc nguồn và xác nhận phạm vi thử. Nhánh mặc định là một cây nguyên chậu tham khảo FedEx, không tự suy lịch tưới/nhiệt độ. Sáu nhánh loài/hình thức cũ được giữ riêng, gồm giới hạn cây nhỏ của nguồn trầu bà.
-4. Đồng ý checklist để tạo **phiên hướng dẫn lưu vào hồ sơ**. Đây là thử nghiệm local; SOP chưa được chuyên gia duyệt. Camera xem tại chỗ hoạt động riêng với quyền thực hiện SOP.
-5. AI đọc nguyên speech_vi theo mẫu, số bước, điều cần kiểm tay và bước tiếp theo; nút bật âm thanh đọc bước đang chọn. Có thể bật micro riêng để nhận lệnh. Muốn AI xem ảnh, cần đồng ý gửi khung hình tới Gemini. Mỗi lần yêu cầu chỉ lấy một ảnh sau nhắc vị trí/đếm ngược; không theo dõi toàn video.
-6. Kiểm trực tiếp xong, nói **đồng ý / dạ vâng / OK / tôi xác nhận / tiếp tục**. Bước manual ghi xác nhận của người dùng; bước visual cần kết quả ảnh đạt, hoặc đã chọn kiểm tay với lý do tối thiểu 10 ký tự. AI xác nhận và đọc bước mới sau khi máy chủ lưu thành công.
-7. Khi ảnh chưa đạt/không thể xác minh, lời đồng ý không chuyển bước. AI nhắc kết quả và cách kiểm lại. Nói **kiểm tra lại**, **nhắc lại**, **giúp tôi**; **dừng lại / tắt camera** dừng camera và micro. Nút kiểm tay/kiểm ảnh luôn là lựa chọn thay thế khi nhận giọng không hỗ trợ.
-8. Tải lại mở đúng phiên/bước đã lưu. Camera, micro và đồng ý gửi ảnh đều tắt; phải bật lại. Bước đang thao tác chưa xác nhận không được coi đã xong. Đổi đầu vào/SOP làm phiên cũ stale; tạo phiên mới và giữ lịch sử. Nút đổi thiết lập tạo phiên riêng, không ghi đè phiên cũ.
+## Cách sử dụng
 
-## Dữ liệu và trạng thái
+1. **Tạo hồ sơ** tại /app/new, nhập tên. Mở /app/cases/:id/plant với thông số cây/chậu như trước.
+2. **Tải ảnh & nhận diện** hoặc **Chụp & nhận diện**. Camera có preview/chụp/đóng và dừng tracks sau chụp, rời màn hình hoặc ẩn tab. Ảnh được chuẩn hóa/private upload rồi tự tạo job nhận diện Gemini. Chi tiết nhà cung cấp trong mục thu gọn.
+3. AI tự điền tên/nhóm cây, vật liệu chậu, độ dễ hư khi có gợi ý. Chỉ đọc số từ nhãn/thước/cân nhìn rõ, không suy cm/kg từ pixel. Không ghi đè dữ liệu đã xác nhận, số đã nhập hoặc thay đổi trong lúc job chạy. Kiểm/sửa sáu số đo/cân và xác nhận. AI lỗi/chưa cấu hình vẫn nhập tay.
+4. **Xem hướng dẫn đóng gói** lưu hồ sơ, mở /instructions với 5 ảnh/bước nguyên chậu. FOLIAGE dùng ảnh AI mẫu gần ảnh chụp, nhóm khác dùng sơ đồ; không là ảnh kiện thật. Nguồn/phạm vi thu gọn. Vật tư/hành trình vẫn dùng cho phương án vận chuyển đầy đủ nhưng không bắt buộc trước màn hướng dẫn.
+5. **Bắt đầu với AI** tạo phiên REFERENCE pin owner/case/input hash/SOP/version/revision, mở /guide?session=:id. Camera, quyền kiểm ảnh và micro bật riêng. Đọc đúng speech_vi/kiểm tay/remedy theo SOP; giọng thiết bị tiếng Việt hoặc Gemini sau thao tác bật giọng AI.
+6. Làm xong nói **“Đã xong bước này”**, **“Tiếp tục bước tiếp theo”**, hoặc bấm nút. Manual ghi self-report. Visual cần ảnh đạt hoặc kiểm tay có lý do ≥10 ký tự. Chưa có ảnh kiểm: nhắc vị trí/đếm ngược 3 giây → lấy ảnh → chuyển đúng một bước sau kết quả đạt và server commit. Ảnh lỗi/không rõ giữ bước.
+7. Bật quyền kiểm ảnh cũng bật kiểm định kỳ khoảng 12 giây ở bước visual, chỉ khi hình thay đổi/màn đang hiện. Lỗi được hiện/đọc khi nhận; monitoring không tự chuyển bước. **“Tôi gặp lỗi”** ghi lỗi/tạm dừng, xóa pass cũ. **“Tôi đã xử lý lỗi”** giải quyết manual; visual cần ảnh mới đạt hoặc kiểm tay có lý do. Resolve riêng không tăng bước.
+8. “Nhắc lại”, “giúp tôi”, “kiểm tra lại”, “dừng lại” điều khiển bước đang làm. Reload giữ tiến độ/lỗi, camera/micro/consent đều tắt. Ẩn tab/dừng camera/rời màn hình hủy lượt chờ/media. Input/SOP đổi làm phiên stale, cần phiên mới.
 
-`guidance` là document private theo owner và case. Lưu input hash, ID/version SOP, context loài/phạm vi, revision, bước hiện tại, checks đã validate, records và phương thức/thời điểm xác nhận. Không lưu ảnh/video/audio hoặc nguyên văn transcript. JSON biên bản có ID hồ sơ/phiên, version và từng kết quả, không có media.
+Kiểm định kỳ không là video analytics liên tục hoặc phát hiện mọi lỗi. Không suy độ chắc, số lớp ẩn hoặc độ ẩm bằng ảnh. Người dùng kiểm trực tiếp trước xác nhận. Copy ngắn; provider/privacy, nguồn/review trong các mục thu gọn.
 
-API đều xác thực/CSRF theo contract chung:
+## Contract
 
-| Endpoint | Nội dung |
+Base /api/v1, mọi resource theo owner, mutation cần Origin/CSRF, private/no-store.
+
+| Endpoint | Payload / kết quả |
 | --- | --- |
-| `GET /api/v1/cases/:id/guidance` | Các phiên của đúng chủ hồ sơ, đánh dấu stale khi input/SOP đổi |
-| `POST /api/v1/cases/:id/guidance` | `case_version`, `sop_id`, `sop_version`, `context`, `approved_for_trial:true`; cần Idempotency-Key |
-| `PATCH /api/v1/cases/:id/guidance/:session` | `expected_revision`, `step_id`, `action:CONFIRM/MANUAL/SKIP`, `method:BUTTON/VOICE`, `manual_checked:true`, `note` |
-| `POST /api/v1/live-packing/check` | Payload checkpoint cũ cộng `case_id`, `session_id`, `session_revision`; ba trường phải cùng có hoặc cùng vắng |
+| POST /cases/:id/plant-analysis | upload_ids, consent_id AI_ANALYSIS; job VISION, vision-v1 thêm plant_details optional |
+| GET /cases/:id/guidance | Phiên của owner, có stale flag |
+| POST /cases/:id/guidance | case_version, sop_id/version, mode:REFERENCE, reference_ack:true, context khớp cây đã xác nhận; Idempotency-Key |
+| PATCH /cases/:id/guidance/:session | expected_revision, step_id, action CONFIRM/MANUAL/SKIP/REPORT_ISSUE/RESOLVE_ISSUE, method BUTTON/VOICE, note; advance cần manual_checked:true |
+| POST /live-packing/check | Bound case_id/session_id/session_revision, SOP/context/step, consent:true, image, reference_guidance:true; kết quả + guidance đã lưu |
 
-Check ràng buộc phiên phải khớp đúng owner/case/context/SOP/version/bước/revision trước khi gọi provider và lúc lưu kết quả. Lượt kiểm lại xóa pass cũ trước khi gọi; provider lỗi không làm hồi sinh pass cũ. Kết quả trễ sau chuyển bước/đổi input bị từ chối. Server không nhận kết quả AI do client khai trong PATCH. CHECK_REQUIRED chặn thiếu/không đạt; xung đột revision giữ bước hiện tại và yêu cầu tải lại. Khóa nhận dạng đồng bộ, khóa mutation và revision chống lệnh lặp chuyển nhiều bước.
+TRIAL cũ tương thích approved_for_trial:true nhưng chỉ local. Production REFERENCE cần PLANTCARE_REFERENCE_GUIDE_ENABLED=true; không đổi production_enabled/approval catalog. Terminal case không mở/advance hướng dẫn.
 
-Phiên `ACTIVE` chuyển `FINISHED` khi đủ bước xác nhận, hoặc `REVIEW_REQUIRED` nếu có bỏ qua. Các trạng thái này **không phải** case PACKED/SHIPPED/RECEIVED, không select/start/complete plan và không trừ kho. Workflow hồ sơ vận chuyển vẫn kiểm readiness, plan version, FAIL/STALE, checklist và completion transaction riêng.
+Vision plant_details.readings có field, positive value, cm/kg, origin VISIBLE_LABEL_OR_SCALE và evidence; chỉ fill field trống/đúng unit, không tự confirm. Output cũ không có details vẫn đọc được. Prompt vision-autofill-v3.
 
-## Tri thức mới
+Checkpoint recheck owner/case/context/SOP/version/bước/revision trước provider và trong transaction. Xóa pass trước recheck/REPORT_ISSUE; không nhận client AI result trong PATCH. Lệnh lặp/sự kiện mic cũ bị khóa, chỉ chuyển sau commit. Override giữ kết quả AI cũ; skip kết thúc REVIEW_REQUIRED, đủ xác nhận là FINISHED. Không sửa plan/case completion/kho.
 
-Version `plantcare-evidence-20261018-v3`: 19 nguồn đăng ký, 19 ghi chú có thể tra cứu; chỉ ghi chú của nguồn READ trong đúng scope được retrieval. Hai giáo trình và landing FloraHolland là metadata; không cấp claim kỹ thuật. FAO nằm scope NURSERY riêng; USDA có giới hạn theo loài/giống/xe lạnh/acclimatization. Không nhập bảng nhiệt hoặc kích thước thương mại thành ngưỡng sinh học/fit chung.
+## Lưu trữ, giọng nói và giới hạn
 
-Giữ lời đọc cố định/guard từ dev-nam `b920625`, tích hợp vào controller theo phiên; xác nhận lưu trên server thay vì chỉ RAM. Nhánh mới `POTTED-FEDEX-GENERAL`, version `2026.10-trial.2`, thêm 5 bước; 6 nhánh cũ giữ version/nội dung. Tổng 7 nhánh/40 bước. Đây là tóm tắt tham khảo và tiêu chí thị giác do SE đề xuất **DRAFT/UNREVIEWED**, không là phê duyệt của hãng/chuyên gia. Không fine-tune trọng số hoặc index toàn văn/ảnh chưa có quyền.
+Guidance private lưu mode/input hash/context/revision/index/status/checks/records/currentIssue, phương thức/thời gian xác nhận; không raw transcript/media camera giám sát. Ảnh nhận diện là upload riêng của hồ sơ, có thể xóa. JSON biên bản không có media/base64 và không xác nhận transport_safe.
 
-Review nguồn, vị trí và quyền: [tiêu chuẩn/USDA](research/nursery-standards-review.md), [logistics](research/nursery-logistics-review.md), [giáo trình Việt Nam](research/vietnamese-textbooks-review.md). Chưa kiểm hình trong brochure FedEx Canada; đã đọc text. AmericanHort có xung đột ngày trên bìa/landing được ghi lại; không tự hợp nhất.
+TTS chuẩn hóa deterministic: khoảng, số âm/thập phân, so sánh, cm/mm/kg/°C/SOP/AI; không thay catalog. Giọng thiết bị/Gemini dùng cùng chuẩn hóa; cloud phải trả WAV PCM hợp lệ, cache có version từ điển.
 
-## Kiểm chứng và giới hạn
+Tri thức plantcare-evidence-20261018-v3 giữ 19 nguồn/19 ghi chú, metadata-only không cấp claim kỹ thuật. Catalog 7 nhánh/40 bước DRAFT; UI mặc định nguyên chậu FedEx 5 bước. RAG/nguồn tham khảo, không training trọng số. Review tại research/nursery-standards-review.md, nursery-logistics-review.md, vietnamese-textbooks-review.md.
 
-Unit/API/DB: owner, stale, revision/replay, giữ failed image khi manual override, xóa pass trước recheck, không trừ kho và không hoàn tất case. Browser: camera giả lập, giọng/nhận dạng/provider giả lập; nguồn không phải bằng chứng accuracy hoặc an toàn. Chưa đánh giá micro thật trong xưởng, ảnh cây thật có nhãn hoặc tỷ lệ Gemini kiểm đúng. Không gọi Gemini trả phí trong cập nhật này.
-
-Production SOP vẫn fail closed. Vercel còn các giới hạn lưu trữ/worker được ghi trong [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md); thay đổi này không tự triển khai hosting.
+Evidence tại .code/implementation.md; browser dùng camera/giọng/provider giả lập. Chưa đo accuracy ảnh cây/micro vật lý/hiệu quả vận chuyển. Deploy tách Vercel/Node theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).

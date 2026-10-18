@@ -71,3 +71,11 @@ AI evaluation: tối thiểu đề xuất 200 ảnh được chuyên gia label v
 ## Definition of release done
 
 Mỗi P0 có mapping và evidence; không lỗi mất dữ liệu/authorization/FAIL selectable; approval nội dung và providers thật; manual AI-off; PDF/share scope đúng; restore/alert; policy đã quyết. Full R1 thêm mọi P1 và regression phần P0 bị tác động. Review evidence giữ metadata cần thiết, không raw OTP/secret/ảnh người dùng chưa consent.
+
+## Kiểm flow nhận diện/AI và deploy tách — 18/10/2026
+
+Unit/API: plant-recognition giữ manual/late edits/confirmed, chỉ readings đúng unit/origin; guidance REFERENCE/issue/revision, parser phủ định và stale events; pronunciation/WAV; deployment fail-closed. Browser live dùng camera fake + nhận dạng/TTS/provider giả, private upload thực, kết quả/chụp/voice/done một lần/lỗi/resume/stale/fallback/cleanup và responsive. Workflow test cũ kiểm full plan/kho/export riêng.
+
+test:proxy kiểm external beforeFiles/body 3 MiB/cookie/CSRF/private cache/no frontend DB. test:container dùng volume riêng, seed user chỉ fixture test, kiểm production auth/ảnh/PDF/reference/engine gate/restart/idle job recovery và cleanup. Hai bài này không thay Vercel deployment/backup restore hoặc provider thật.
+
+Provider opt-in qua RUN_REAL_GEMINI=1 và playwright.gemini.config.ts: Vision schema/không bịa số trong ảnh trắng; blank frame guard trước quota; checkpoint ảnh minh họa không đo accuracy; RAG pin context/citations; TTS PCM decode/playback. Không bật trong npm test/test:e2e mặc định. Kết quả chạy và giới hạn ở implementation.md; chưa nhãn ảnh thật/micro xưởng/chuyên môn/pilot.

@@ -68,6 +68,7 @@ const articles=[
 ];
 
 export async function handle(req:NextRequest,parts:string[]):Promise<NextResponse>{
+  if(process.env.VERCEL==='1')return NextResponse.json({error:{code:'BACKEND_ROUTING_REQUIRED',message:'API chưa được kết nối tới backend.'}},{status:503,headers:{'Cache-Control':'no-store'}});
   try{return await route(req,parts);}catch(error){
     const e=error instanceof ApiError?error:new ApiError(500,'INTERNAL_ERROR','Không thể xử lý lúc này. Dữ liệu đã lưu vẫn được giữ.');
     if(!(error instanceof ApiError))console.error(JSON.stringify({event:'api_error',request_id:randomUUID(),type:error instanceof Error?error.name:'Unknown'}));
@@ -78,7 +79,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   const method=req.method,endpoint=parts.join('/');
   wakeWorker();
   if(endpoint==='health')return success({status:'ok',mode:development()?'development':'production-gated',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL),smsConfigured:!!process.env.SMS_ADAPTER_URL});
-  if(endpoint==='session'&&method==='GET'){const user=session(req);return success({user:user?{id:user.id,name:user.name,username:user.username,role:user.role}:null,csrf:user?.csrf||null,development:development(),aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL)});}
+  if(endpoint==='session'&&method==='GET'){const user=session(req);return success({user:user?{id:user.id,name:user.name,username:user.username,role:user.role}:null,csrf:user?.csrf||null,development:development(),referenceGuideEnabled:development()||process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED==='true',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL)});}
   if(parts[0]==='articles'&&method==='GET')return success(parts[1]?articles.find(a=>a.slug===parts[1])||null:articles);
   if(parts[0]==='shared'&&method==='GET'){
     const s=db().prepare('SELECT * FROM shares WHERE token_hash=? AND revoked=0 AND expires_at>?').get(sha(parts[1]||''),Date.now()) as {version_id:string;expires_at:number}|undefined;
@@ -266,12 +267,15 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   }
   if(parts[0]==='uploads'){
     if(parts.length===1&&method==='POST'){
-      const data=await req.formData(),file=data.get('file'),caseId=String(data.get('case_id')||''),purpose=String(data.get('purpose')||'PLANT');owned<CaseRecord>('case',caseId,user.id);
+      const maxBytes=12*1024*1024,reader=req.body?.getReader(),chunks:Uint8Array[]=[];let size=0;if(!reader)throw new ApiError(422,'INVALID_IMAGE','Chọn ảnh để tải lên.');
+      while(true){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>maxBytes){await reader.cancel();throw new ApiError(413,'UPLOAD_TOO_LARGE','Ảnh tải lên quá lớn.');}chunks.push(part.value);}
+      let data:FormData;try{data=await new Request(req.url,{method:'POST',headers:req.headers,body:Buffer.concat(chunks)}).formData();}catch{throw new ApiError(422,'INVALID_IMAGE','Dữ liệu ảnh chưa hợp lệ.');}
+      const file=data.get('file'),caseId=String(data.get('case_id')||''),purpose=String(data.get('purpose')||'PLANT'),target=owned<CaseRecord>('case',caseId,user.id);if(target.status==='DELETED')throw missing();
       if(!['PLANT','MATERIAL','CHECK','FEEDBACK'].includes(purpose))throw new ApiError(422,'UPLOAD_PURPOSE','Mục đích ảnh không hợp lệ.');
       if(!(file instanceof File)||file.size>10*1024*1024)throw new ApiError(413,'UPLOAD_TOO_LARGE','Mỗi ảnh tối đa 10 MB.');
       const existing=docs<Upload>('upload',user.id).filter(u=>u.caseId===caseId);if(existing.length>=12||(['PLANT','MATERIAL'].includes(purpose)&&existing.filter(u=>u.purpose===purpose).length>=6))throw new ApiError(422,'UPLOAD_LIMIT','Tối đa 6 ảnh cây, 6 ảnh vật tư và 12 ảnh/hồ sơ.');
       const bytes=Buffer.from(await file.arrayBuffer());let metadata:Metadata;try{metadata=await sharp(bytes,{limitInputPixels:30000000}).metadata();}catch{throw new ApiError(422,'INVALID_IMAGE','Ảnh không giải mã được hoặc vượt 30 MP.');}
-      if(!['jpeg','png','webp'].includes(metadata.format||''))throw new ApiError(422,'INVALID_IMAGE','Chỉ nhận JPEG, PNG và WebP.');
+      if(!['jpeg','png','webp'].includes(metadata.format||'')||(metadata.pages||1)>1)throw new ApiError(422,'INVALID_IMAGE','Chỉ nhận ảnh tĩnh JPEG, PNG và WebP.');
       let normalized:Buffer;
       try{normalized=await sharp(bytes,{limitInputPixels:30000000}).rotate().resize(2048,2048,{fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}
       catch{throw new ApiError(422,'INVALID_IMAGE','Ảnh bị lỗi hoặc không giải mã được.');}

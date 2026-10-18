@@ -20,4 +20,4 @@ Thư mục `.code` dùng để điều hành triển khai từ SRS ở mức sen
 
 Nhãn **SRS** là yêu cầu từ PDF; **Đề xuất** là thiết kế/ước lượng của kế hoạch; **OPEN** là chưa có quyết định/bằng chứng. Không suy ra việc được ghi trong tài liệu đồng nghĩa đã triển khai, kiểm thử hoặc được phê duyệt.
 
-Flow hồ sơ & camera hiện hành: [GUIDED_PACKING.md](../GUIDED_PACKING.md). Gồm API phiên private, xác nhận voice theo checkpoint, resume/consent và tri thức bổ sung 18/10/2026. Evidence chạy thực ở implementation.md.
+Flow hiện hành: tạo hồ sơ → thông số/nhận diện ảnh → ảnh hướng dẫn → AI từng bước, tại [GUIDED_PACKING.md](../GUIDED_PACKING.md). Gồm private session/voice/issue/resume, auto-fill giữ manual và phát âm Việt. Deploy tách Vercel/Node-volume tại [VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md); ADR/evidence trong implementation.md, không đóng acceptance chuyên môn hoặc FR/NFR gốc.

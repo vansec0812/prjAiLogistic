@@ -105,3 +105,9 @@ Context adapters trả source, fetched_at, valid_from/to, coverage và giá tr�
 Dev/staging/prod dùng data/secret/quota/bucket riêng. Dev OTP fake/rule draft được gắn nhãn và cấu hình cấm production. Health liveness không gọi provider; readiness kiểm dependencies lõi và migration. Log JSON correlation_id, metrics/error redacted, audit riêng append-only.
 
 Deploy web/API/worker tương thích schema bằng expand/contract. Canary/flag cho compare/expert/chat/AI images. Rollback binary/active rule pointer không sửa snapshot lịch sử. Có backup trước migration, restore drill và runbook: SMS outage, AI budget stop, queue lease stuck, DB/storage unavailable, leaked secret rotation, purge thất bại.
+
+## Runtime tách đã triển khai — 18/10/2026
+
+Người dùng chọn Vercel frontend + Node persistent backend. Next.js beforeFiles external rewrite /api/v1 tới origin HTTPS tin cậy, browser gọi cùng origin; backend giữ auth/CSRF/owner/jobs/SQLite/files. Vercel handler local fail trước DB; API private/no-store và tắt rewrite caching. Docker Node24/Linux một replica, volume /data, font tiếng Việt, stable secret env, startup + 5 giây dispatcher dùng lease/outbox cũ. Không migration serverless hoặc scale replicas với DB riêng. [Deploy](../VERCEL_DEPLOYMENT.md), ADR-004 và implementation.md có bằng chứng/giới hạn.
+
+Flow mới plant → instructions → guide tách auto-fill khỏi USER confirmation và tách reference coaching khỏi plan eligibility/completion/inventory. Camera đọc frame để kiểm, không lưu video/transcript. REFERENCE flag không publish rules/SOP. UI gọi API theo revision; issue/resolve không làm mất checkpoint hoặc tự tăng bước.

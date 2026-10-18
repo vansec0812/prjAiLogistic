@@ -1,18 +1,22 @@
 import { test, expect } from '@playwright/test';
+import { sopCatalog } from '../../apps/web/src/lib/live-packing';
 test('real Vietnamese audio plays through Web Audio without an installed Vietnamese voice', async ({ page }) => {
-  test.skip(process.env.RUN_REAL_GEMINI !== '1', 'Opt in: one real TTS call.'); test.setTimeout(90000);
+  test.skip(process.env.RUN_REAL_GEMINI !== '1', 'Opt in: one real TTS call.'); test.setTimeout(180000);
   await page.addInitScript(() => { if (window.speechSynthesis) Object.defineProperty(window.speechSynthesis, 'getVoices', { value: () => [] }); });
   const origin = 'http://127.0.0.1:3109';
   const auth = await page.request.post(origin + '/api/v1/auth/dev', { headers: { Origin: origin }, data: {} }); expect(auth.status()).toBe(200);
-  await page.goto('/app/live-packing');
+  const session=(await (await page.request.get('/api/v1/session')).json()).data,headers={Origin:origin,'x-csrf-token':session.csrf};
+  const c=(await (await page.request.post('/api/v1/cases',{headers,data:{name:'Real TTS smoke',sample:true}})).json()).data,sop=sopCatalog.sops.find(s=>s.plant==='potted')!;
+  const responseStart=await page.request.post(`/api/v1/cases/${c.id}/guidance`,{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,sop_id:sop.id,sop_version:sop.version,mode:'REFERENCE',reference_ack:true,context:{species:c.input.plant.name,shop_scope_confirmed:true,pot_cm:c.input.plant.potDiameter,height_cm:c.input.plant.height,packed_kg:null}}});expect(responseStart.status()).toBe(201);
+  const g=(await responseStart.json()).data;await page.goto(`/app/cases/${c.id}/guide?session=${g.id}`);await page.getByText('Âm thanh',{exact:true}).click();
   const waiting = page.waitForResponse(r => r.url().endsWith('/api/v1/live-packing/speech'), { timeout: 60000 });
-  await page.getByRole('button', { name: 'Bật âm thanh và đọc bước hiện tại', exact: true }).click();
+  await page.getByRole('button', { name: 'Dùng giọng AI', exact: true }).click();
   const response = await waiting; expect(response.status()).toBe(200);
   const audio = (await response.json()).data;
   const bytes = Buffer.from(audio.audio_base64, 'base64'); expect(bytes.subarray(0, 4).toString()).toBe('RIFF'); expect(bytes.length).toBeGreaterThan(10000);
   const decoded = await page.evaluate(async (base64: string) => { const context = new AudioContext(); const data = Uint8Array.from(atob(base64), c => c.charCodeAt(0)); const audio = await context.decodeAudioData(data.buffer); const samples = audio.getChannelData(0); let energy = 0; for (const x of samples) energy += x * x; const result = { duration: audio.duration, rms: Math.sqrt(energy / samples.length) }; await context.close(); return result; }, audio.audio_base64);
   expect(decoded.rms).toBeGreaterThan(0.001); expect(decoded.duration).toBeGreaterThan(1);
-  await expect(page.getByText('Âm thanh: Đang phát giọng Việt AI', { exact: true })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText('Âm thanh: Đã đọc xong', { exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText('Đang phát giọng Việt AI', { exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('Đã đọc xong', { exact: true })).toBeVisible({ timeout: 120000 });
   console.log(JSON.stringify({ ttsHttpStatus: response.status(), waveBytes: bytes.length, ...decoded, browserPlaybackCompleted: true }));
 });

@@ -3,14 +3,14 @@ import sharp from 'sharp';
 import { z } from 'zod';
 import type { CaseRecord } from '@plantcare/domain';
 import { ownedGuidance, guidanceSop, saveGuidanceCheck, clearGuidanceCheck } from './guidance';
-import { checkpointPrompt, checkpointSchema, contextIssues, contextSchema, sopCatalog, validateResult } from '../lib/live-packing';
+import { checkpointPrompt, checkpointSchema, contextIssues, contextSchema, sopCatalog, validateResult, type CheckpointResult } from '../lib/live-packing';
 import { ApiError, rateLimit, requireUser, checkMutation } from './security';
 import { db, doc, development, transaction } from './db';
 
 const invalid = () => new ApiError(422, 'INVALID_CHECKPOINT', 'Ảnh hoặc checkpoint không hợp lệ. Chọn ảnh JPEG/PNG/WebP tối đa 2 MB.');
 export async function checkLivePacking(req: NextRequest) {
   const user = requireUser(req); checkMutation(req, user);
-  if (!development()) throw new ApiError(409, 'SOP_NOT_APPROVED', 'Kho SOP hiện chỉ cho kiểm thử local, chưa được duyệt chuyên môn để vận hành.');
+  if (!development()&&process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED!=='true') throw new ApiError(409, 'SOP_NOT_APPROVED', 'Trợ lý hướng dẫn chưa được bật.');
   rateLimit('live-packing:' + user.id, 10, 60000);
   const key = process.env.GEMINI_API_KEY, model = process.env.GEMINI_VISION_MODEL;
   const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS || 30000);
@@ -21,15 +21,17 @@ export async function checkLivePacking(req: NextRequest) {
   const chunks: Uint8Array[] = []; let size = 0;
   while (true) { const { done, value } = await reader.read(); if (done) break; size += value.length; if (size > 2900000) { await reader.cancel(); throw new ApiError(413, 'IMAGE_TOO_LARGE', 'Ảnh vượt giới hạn.'); } chunks.push(value); }
   let raw: unknown; try { raw = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw invalid(); }
-  const parsed = z.object({ sop_id: z.string().max(80), step_id: z.string().max(40), sop_version: z.string().max(40), shipping_form: z.enum(['POTTED', 'BARE_ROOT']), context: contextSchema, approved_for_trial: z.literal(true), consent: z.literal(true), image: z.string().max(2800000), case_id:z.string().optional(),session_id:z.string().optional(),session_revision:z.number().int().positive().optional() }).strict().safeParse(raw);
+  const parsed = z.object({ sop_id: z.string().max(80), step_id: z.string().max(40), sop_version: z.string().max(40), shipping_form: z.enum(['POTTED', 'BARE_ROOT']), context: contextSchema, approved_for_trial: z.literal(true), reference_guidance:z.literal(true).optional(),consent: z.literal(true), image: z.string().max(2800000), case_id:z.string().optional(),session_id:z.string().optional(),session_revision:z.number().int().positive().optional() }).strict().safeParse(raw);
   if (!parsed.success) throw invalid();
   const data = parsed.data, sop = sopCatalog.sops.find(s => s.id === data.sop_id);
   const bound=[data.case_id,data.session_id,data.session_revision].filter(x=>x!==undefined).length;
   if(bound!==0&&bound!==3)throw invalid();
+  if(!development()&&(!bound||!data.reference_guidance))throw new ApiError(409,'SOP_NOT_APPROVED','Cần mở phiên hướng dẫn theo hồ sơ.');
   const caseRecord=bound?doc<CaseRecord>('case',data.case_id!,user.id):undefined;
   if(bound){
     if(!caseRecord)throw new ApiError(404,'NOT_FOUND','Không tìm thấy hồ sơ.');
     const g=ownedGuidance(user.id,caseRecord,data.session_id!,data.session_revision),currentSop=guidanceSop(g);
+    if(!development()&&g.mode!=='REFERENCE')throw new ApiError(409,'SOP_NOT_APPROVED','Phiên thử nghiệm không được chạy trên production.');
     if(g.status!=='ACTIVE'||g.sopId!==data.sop_id||g.sopVersion!==data.sop_version||currentSop.steps[g.index]?.id!==data.step_id||JSON.stringify(g.context)!==JSON.stringify(data.context))throw new ApiError(409,'CHECKPOINT_MISMATCH','Đầu vào không khớp phiên hướng dẫn hiện tại.');
   }
   if (!sop || sop.version !== data.sop_version) throw new ApiError(409, 'SOP_VERSION_MISMATCH', 'SOP đã thay đổi hoặc không được hỗ trợ. Tải lại trang.');
@@ -40,6 +42,15 @@ export async function checkLivePacking(req: NextRequest) {
   const bytes = Buffer.from(match[2], 'base64'); if (bytes.length > 2 * 1024 * 1024) throw invalid();
   let image: Buffer;
   try { const decoder = sharp(bytes, { limitInputPixels: 12000000 }); const meta = await decoder.metadata(); if (!['jpeg', 'png', 'webp'].includes(meta.format || '') || (meta.pages || 1) > 1) throw invalid(); image = await decoder.rotate().resize(1280, 1280, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer(); } catch { throw invalid(); }
+  // Uniform frames contain no evidence of a plant or packing, regardless of model output.
+  const stats=await sharp(image).stats();
+  if(stats.channels.every(c=>c.max-c.min<=1)){
+    const reason='Ảnh không có đủ chi tiết. Đưa cây và vùng đang đóng gói vào camera rồi kiểm tra lại.';
+    const result:CheckpointResult={step_id:step.id,observed:'Khung hình gần như một màu.',status:'unverifiable',reason,manual_check_required:true,criterion_results:step.criteria.map(c=>({criterion_id:c.id,status:'unverifiable',observation:reason}))};
+    requireUser(req);
+    if(caseRecord){const guidance=saveGuidanceCheck(user.id,caseRecord,data.session_id!,data.session_revision!,step.id,result);return {...result,guidance};}
+    return result;
+  }
   const max = Number(process.env.AI_DAILY_CALL_LIMIT || 20); if (!Number.isInteger(max) || max < 1 || max > 1000) throw new ApiError(503, 'AI_CONFIG', 'Hạn mức AI chưa hợp lệ.');
   const id = crypto.randomUUID(), day = new Date().toISOString().slice(0, 10);
   transaction(() => { const count = db().prepare('SELECT COUNT(*) AS n FROM ai_calls WHERE day=?').get(day) as { n: number }; if (count.n >= max) throw new ApiError(429, 'AI_QUOTA', 'Hết hạn mức AI hôm nay. Tiếp tục thủ công.'); db().prepare('INSERT INTO ai_calls VALUES(?,?,?,?,?,?)').run(id, user.id, day, 'RESERVED', '{}', new Date().toISOString()); });

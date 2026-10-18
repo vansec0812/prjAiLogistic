@@ -3,14 +3,14 @@ import { createContext, useContext, useEffect, useState, useRef, type ReactNode 
 import { Leaf, ArrowRight, AlertCircle, CheckCircle2, LoaderCircle, X, ShieldCheck, Sprout } from 'lucide-react';
 import Link from 'next/link';
 
-export interface Session {user:{id:string;name:string;username:string;role:string}|null;csrf:string|null;development:boolean;aiConfigured:boolean;}
+export interface Session {user:{id:string;name:string;username:string;role:string}|null;csrf:string|null;development:boolean;aiConfigured:boolean;referenceGuideEnabled?:boolean;}
 export class ClientError extends Error {constructor(message:string,public status:number,public code:string,public fields?:Record<string,string>){super(message);}}
 export const SessionContext=createContext<{session:Session;refresh:()=>Promise<void>;toast:(message:string)=>void}>({session:{user:null,csrf:null,development:false,aiConfigured:false},refresh:async()=>{},toast:()=>{}});
 export const useSession=()=>useContext(SessionContext);
 export async function api<T>(url:string,options:RequestInit={},csrf?:string|null):Promise<T>{
   const headers=new Headers(options.headers);if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json');if(csrf)headers.set('x-csrf-token',csrf);
   let response:Response;try{response=await fetch('/api/v1/'+url,{...options,headers,cache:'no-store'});}catch{throw new ClientError('Mất kết nối. Nội dung tại trang được giữ; hãy thử lại.',0,'OFFLINE');}
-  const value=await response.json();if(!response.ok)throw new ClientError(value.error?.message||'Không thể xử lý yêu cầu.',response.status,value.error?.code||'ERROR',value.error?.field_errors);return value.data as T;
+  let value;try{value=await response.json();}catch{throw new ClientError(response.status===413?'Ảnh quá lớn. Chọn ảnh nhỏ hơn.':'Dịch vụ phản hồi không hợp lệ. Thử lại sau.',response.status,'INVALID_RESPONSE');}if(!response.ok)throw new ClientError(value.error?.message||'Không thể xử lý yêu cầu.',response.status,value.error?.code||'ERROR',value.error?.field_errors);return value.data as T;
 }
 export function useLoad<T>(url:string){
   const [data,setData]=useState<T|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true);

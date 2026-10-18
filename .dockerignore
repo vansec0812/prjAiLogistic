@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.next*
+**/.env*
+.data
+output
+test-results
+playwright-report
+**/*.tsbuildinfo
+**/next-env.d.ts
+*.pdf
+*.docx

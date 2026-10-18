@@ -2,9 +2,10 @@ import type { CheckpointResult, SopContext, StepRecord, LiveStep } from './live-
 import { guidedDecision } from './guided-packing';
 
 export interface GuidanceSession {
-  id:string;caseId:string;inputHash:string;sopId:string;sopVersion:string;context:SopContext;
+  id:string;caseId:string;inputHash:string;sopId:string;sopVersion:string;context:SopContext;mode?:'TRIAL'|'REFERENCE';
   revision:number;index:number;status:'ACTIVE'|'FINISHED'|'REVIEW_REQUIRED';records:Record<string,StepRecord>;
   checks:Record<string,CheckpointResult>;createdAt:string;updatedAt:string;stale?:boolean;
+  currentIssue?:{stepId:string;note:string;at:string};
 }
 
 export function confirmationDecision(step:LiveStep,record:StepRecord|undefined):'CONFIRM'|'CHECK'|'REPAIR'{

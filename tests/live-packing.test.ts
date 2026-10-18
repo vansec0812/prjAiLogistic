@@ -17,7 +17,7 @@ let payload: Record<string, unknown>;
 beforeEach(async () => {
   vi.clearAllMocks(); vi.unstubAllGlobals(); mocks.get.mockReturnValue({ n: 0 }); mocks.development.mockReturnValue(true);
   process.env.GEMINI_API_KEY = 'test-key'; process.env.GEMINI_VISION_MODEL = 'test-model'; process.env.AI_DAILY_CALL_LIMIT = '20';
-  const bytes = await sharp({ create: { width: 10, height: 10, channels: 3, background: 'white' } }).png().toBuffer();
+  const bytes = await sharp(Buffer.from(Array.from({length:300},(_,i)=>(i*37)%256)),{raw:{width:10,height:10,channels:3}}).png().toBuffer();
   payload = { sop_id: sop.id, step_id: step.id, sop_version: sop.version, shipping_form: sop.shipping_form, context, approved_for_trial: true, consent: true, image: 'data:image/png;base64,' + bytes.toString('base64') };
 });
 describe('SOP catalog and decision boundary', () => {
@@ -57,6 +57,10 @@ describe('SOP catalog and decision boundary', () => {
   });
 });
 describe('checkpoint API privacy and failure paths', () => {
+  it('rejects detail-free frames as unverifiable without spending provider quota',async()=>{
+    const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);const blank=await sharp({create:{width:320,height:240,channels:3,background:'white'}}).jpeg().toBuffer();
+    expect(await checkLivePacking(request({...payload,image:'data:image/jpeg;base64,'+blank.toString('base64')}))).toMatchObject({status:'unverifiable',manual_check_required:true});expect(fetcher).not.toHaveBeenCalled();expect(mocks.run).not.toHaveBeenCalled();
+  });
   it('rejects incomplete session binding and cross-owner cases before consuming provider quota',async()=>{
     await expect(checkLivePacking(request({...payload,case_id:'other'}))).rejects.toMatchObject({status:422});
     mocks.doc.mockReturnValueOnce(null);await expect(checkLivePacking(request({...payload,case_id:'other',session_id:'session',session_revision:1}))).rejects.toMatchObject({status:404});expect(mocks.doc).toHaveBeenCalledWith('case','other','owner');expect(mocks.run).not.toHaveBeenCalled();

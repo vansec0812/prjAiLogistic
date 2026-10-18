@@ -14,6 +14,7 @@ export function canonical(value:unknown):string{
 }
 export const inputHash=(value:unknown)=>sha(canonical(value));
 function pepper(){
+  if(process.env.PLANTCARE_OTP_SECRET){if(process.env.PLANTCARE_OTP_SECRET.length<32)throw new Error('OTP secret is too short.');return process.env.PLANTCARE_OTP_SECRET;}
   mkdirSync(dataDir(),{recursive:true});const file=path.join(dataDir(),'otp-secret');
   if(!existsSync(file))writeFileSync(file,randomBytes(32).toString('hex'),{flag:'wx',mode:0o600});
   return readFileSync(file,'utf8');

@@ -15,6 +15,10 @@ function setup() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Vietnamese packing commands', () => {
+  it.each(['Đã xong bước này','Tôi đã xong bước này','Tiếp tục bước tiếp theo','Chuyển sang bước tiếp theo'])('confirms the current step with %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
+  it.each(['Tôi gặp lỗi','Tôi làm sai','Tôi gặp vấn đề'])('pauses on a problem report %s',text=>expect(packingIntent(text)).toBe('ISSUE'));
+  it.each(['Tôi đã xử lý lỗi','Đã khắc phục'])('recognizes resolution without step completion %s',text=>expect(packingIntent(text)).toBe('RESOLVED'));
+  it.each(['Chưa xong bước này','Đừng tiếp tục bước tiếp theo','Tôi chưa xử lý lỗi'])('does not accept negated workflow command %s',text=>expect(packingIntent(text)).toBeNull());
   it.each(['đồng ý','Dạ vâng!','OK','được, tiếp tục đi','tôi xác nhận','tôi hiểu rồi'])('recognizes explicit agreement %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
   it.each(['không đồng ý','chưa kiểm tra','tôi không đồng ý','bạn ấy đồng ý','có nhưng chưa xong','đừng chuyển bước'])('never takes negation or third-person agreement %s',text=>expect(packingIntent(text)).toBeNull());
   it('supports scoped help, repeat and stop commands',()=>{expect(packingIntent('nhắc lại')).toBe('REPEAT');expect(packingIntent('giúp tôi')).toBe('HELP');expect(packingIntent('tắt camera')).toBe('STOP');});

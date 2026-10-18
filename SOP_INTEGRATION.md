@@ -15,12 +15,12 @@ Các số có trong catalog được gắn nguồn, là tham chiếu chờ thẩ
 
 ## Hành vi
 
-1. Tạo hồ sơ tại Hồ sơ & camera, rồi chọn nhóm cây, nguyên chậu/rễ trần, nhập loài và xác nhận phạm vi cho phiên thử. Trầu bà cần số đo/cân trong phạm vi nguồn; thiếu hoặc ngoài phạm vi không bắt đầu. Máy chủ kiểm lại đầu vào.
-2. Xem SOP, nguồn và trạng thái duyệt, đồng ý phiên thử. Đây không phải quyền xuất bản SOP. Catalog hiện mọi nhánh DRAFT, reviewer/approved_at=null; backend chặn thực hiện ở production.
+1. Tạo hồ sơ → thông số cây → upload/chụp tự nhận diện/fill → kiểm/sửa số đo và xác nhận → ảnh hướng dẫn → Bắt đầu với AI. UI mặc định cây nguyên chậu chung FedEx; không tự chọn nhánh loài/rễ trần từ ảnh. Các nhánh cũ giữ trong catalog/API với context/scope guard, không tự áp dụng cho cây ngoài nguồn.
+2. Nguồn/phạm vi/trạng thái review nằm trong mục thu gọn. REFERENCE production cần PLANTCARE_REFERENCE_GUIDE_ENABLED=true và profile đã xác nhận. Không đổi DRAFT/reviewer/approved_at/production_enabled; TRIAL vẫn bị chặn production, không cấp quyền publish hoặc hoàn tất kiện.
 3. Bước manual-only không có nút gửi ảnh và API từ chối nếu cố gửi. Kiểm độ khô/chuẩn bị rễ/chọn chậu do người phụ trách xác nhận. Không ép AI báo đạt từ ảnh.
-4. Bước visual: người dùng nhấn xong → lời nhắc camera → đếm ngược → lấy một khung hình. Không xem video liên tục, không quay/lưu video, không cần micro. Mỗi bước có vùng cần thấy; kiểm các mặt bị che bằng tay. Không suy số lớp ẩn, độ chắc hoặc độ ẩm.
+4. Bước visual: nói “Đã xong bước này”/“Tiếp tục bước tiếp theo” hoặc bấm nút → nhắc camera → đếm ngược → kiểm ảnh và xác nhận khi đạt. Quyền kiểm ảnh cũng bật kiểm định kỳ khoảng 12 giây khi hình thay đổi, chỉ báo lỗi/không auto advance. Không quay/lưu video, micro bật riêng. Không suy phần bị che, số lớp ẩn, độ chắc hoặc độ ẩm.
 5. JSON giữ step_id, observed, status, reason, manual_check_required; bổ sung criterion_results với đủ mã tiêu chí. Server từ chối mã lạ/thiếu/trùng; tổng hợp trạng thái từ tiêu chí. Một kết quả chưa xác minh không tự thành đạt vì phần tổng kết AI ghi passed.
-6. Bước tiếp cần hoàn tất kiểm tay và kiểm ảnh đạt, hoặc người dùng xác nhận thay thế có ghi lý do tối thiểu 10 ký tự. Kết quả AI cũ được giữ trong biên bản. Bỏ qua ghi chưa đạt; kết thúc thử không đồng nghĩa kiện đạt an toàn.
+6. Bước tiếp cần xác nhận kiểm trực tiếp và ảnh đạt, hoặc kiểm tay có lý do ≥10 ký tự. “Tôi gặp lỗi” lưu lỗi/xóa pass; resolve riêng không tăng bước. Kết quả AI cũ giữ trong override. Bỏ qua ghi chưa hoàn tất; kết thúc hướng dẫn không xác nhận kiện an toàn.
 7. Khi xong có thể tải JSON biên bản không ảnh/video. Không tự lưu media hoặc upload bộ ảnh. Kết quả và tiến độ lưu trong phiên private của hồ sơ; tải lại cần bật lại camera/micro/consent. Không nối vào hồ sơ hoàn tất/trừ kho.
 
 ## Kiểm thử và đánh giá

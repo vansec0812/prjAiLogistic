@@ -1,45 +1,87 @@
-# Kiểm tra trước khi deploy Vercel
+# Deploy frontend Vercel và backend Node có ổ lưu trữ
 
-Ngày kiểm tra: 18/10/2026. Mã `dev-nam` được tích hợp cùng bản RAG/report hiện có. **Chưa sẵn sàng vận hành toàn bộ ứng dụng trên Vercel nguyên trạng.** Task này merge/kiểm mã, không tạo deployment hoặc dịch vụ ngoài.
+Cập nhật 18/10/2026 theo lựa chọn của người dùng. Repo có Docker backend, cấu hình Vercel và proxy API. Chưa tạo hosting hoặc domain; điền SMS, Gemini và hai origin HTTPS thật trước khi chạy trên Internet.
 
-## Điểm chặn runtime
+## Kiến trúc
 
-| Thành phần hiện tại | Việc cần xử lý |
+Trình duyệt → Next.js trên Vercel → HTTPS backend Node 24 → volume /data chứa SQLite, ảnh private và exports. Backend là một process sống lâu, có dispatcher khởi động và mỗi 5 giây.
+
+Browser luôn gọi /api/v1 cùng origin frontend. Rewrite **beforeFiles** chạy trước Route Handlers, giữ cookie, Origin, CSRF, query và body. Backend kiểm APP_ORIGIN/owner/version, cookie Secure/HttpOnly/SameSite=Lax. API trả private, no-store và x-vercel-enable-rewrite-caching: 0, kể cả ảnh/PDF/TTS/lỗi. Không mở CORS wildcard hoặc cache API private. Nguồn: [Vercel rewrites](https://vercel.com/docs/routing/rewrites).
+
+Nếu API lọt tới Vercel Function, handler trả 503 BACKEND_ROUTING_REQUIRED trước khởi tạo DB. Build Vercel thiếu PLANTCARE_BACKEND_URL sẽ fail. Không đặt SQLite/files trong /tmp hoặc bật demo để deploy.
+
+## 1. Backend
+
+Chọn host Docker có **persistent volume**, HTTPS ingress và outbound SMS/Gemini. Dùng một replica, không filesystem tạm hoặc service kết thúc process sau response. Scale/HA cần DB/queue khác.
+
+Từ root repo, chỉ tạo env nếu chưa có:
+
+    Copy-Item deploy/backend.env.example .env.backend.local
+    # Điền giá trị thật trước khi chạy.
+    docker compose up -d --build
+    docker compose ps
+
+Không ghi đè env đã điền. File secret bị Git/Docker build bỏ qua; dùng secret manager của host khi có.
+
+| Biến backend | Giá trị |
 | --- | --- |
-| `server/db.ts`: SQLite local trong `.data`, chứa users/sessions/jobs/quota | DB bền vững dùng chung qua network và adapter/migration; giữ transaction/idempotency/owner/lease/quota. Chỉ thêm DATABASE_URL không đổi được SQLite đồng bộ hiện tại. |
-| Upload/export và OTP HMAC secret ghi filesystem | Object storage private và secret OTP ổn định dùng chung. `/tmp` không thay storage bền vững. |
-| `jobs.ts`: worker `setTimeout(...).unref()` trong process | Worker/queue hoặc execution model được hỗ trợ, kiểm lease/retry/cancel/restart; không dựa vào process sống sau response. |
-| PDF tìm Arial Windows/DejaVu Linux trên máy | Bundle font tiếng Việt có quyền phân phối phù hợp; kiểm tracing và runtime đọc font. |
-| SMS/rule/SOP gates | SMS adapter thật, origin/secrets; production tiếp tục chặn rule/SOP chưa duyệt. Không bật demo hoặc đổi NODE_ENV để lách gate. |
+| APP_ORIGIN | Origin frontend HTTPS cố định, không slash cuối/path; ví dụ https://ten-du-an.vercel.app. Domain preview khác cần backend staging riêng. |
+| PLANTCARE_OTP_SECRET | Chuỗi ngẫu nhiên riêng ≥32 ký tự, giữ ổn định giữa restart/đổi image. |
+| GEMINI_API_KEY, GEMINI_VISION_MODEL | Key/model đã được cấp quyền, chỉ backend. |
+| GEMINI_TTS_MODEL | Mẫu gemini-3.8-flash-lite-tts; kiểm quyền trên project trước khi dùng. |
+| AI_DAILY_CALL_LIMIT | Tổng calls/day deployment gồm Vision/TTS/RAG; mẫu 200, điều chỉnh theo ngân sách. Kiểm ảnh định kỳ tiêu thụ quota này. |
+| SMS_ADAPTER_URL, SMS_ADAPTER_TOKEN | HTTPS adapter nhận JSON phone/code/purpose/request_id và Bearer token. Không log OTP/key. |
+| PLANTCARE_DATA_DIR | Compose đặt /data, volume plantcare-data lưu DB/ảnh/export. |
+| PLANTCARE_DEPLOYMENT_TARGET | Compose đặt backend, bật kiểm env startup và dispatcher phục hồi job. |
+| PLANTCARE_REFERENCE_GUIDE_ENABLED | Compose đặt true để bật hướng dẫn tham khảo theo hồ sơ. Không publish rule/SOP hoặc complete case. |
 
-Vercel xác nhận SQLite local không có storage bền vững dùng chung giữa function instances: [SQLite trên Vercel](https://vercel.com/kb/guide/is-sqlite-supported-in-vercel). Functions có execution duration hữu hạn: [Function duration](https://vercel.com/docs/functions/configuring-functions/duration). Build qua không loại bỏ các điểm chặn này; `vercel.json`/tăng timeout không thay adapter DB/storage/worker.
+Compose bind 127.0.0.1:3004. Cấu hình HTTPS ingress của host chuyển tới cổng này, có origin backend riêng. Giữ Set-Cookie/Origin/CSRF, tắt cache API và cho phép thời gian gọi AI. Không đặt PLANTCARE_BACKEND_URL trên backend.
 
-## Cấu hình build tham khảo sau khi xử lý runtime
+Health tại /api/v1/health. Image chạy user node, có healthcheck, DejaVu Sans tiếng Việt. Thiếu cấu hình bắt buộc dừng startup. Đăng ký chỉ ACTIVE sau OTP đúng, production không có demo auth.
 
-Repo đặt package.json/lockfile ở root, Next app tại `apps/web`, shared source tại `packages`. Với **Root Directory `apps/web`**, chọn preset **Next.js**, Node **24.x**, bật **Include source files outside of the Root Directory in the Build Step**. Install Command có thể override `cd ../.. && npm ci`, Build Command `cd ../.. && npm run build`; output `.next` trong app root. Chưa kiểm bằng Vercel deployment thực tế; sau chuyển backend phải kiểm tracing/assets/font trên môi trường Linux.
+Backend cap multipart tổng 12 MiB; file gốc 10 MiB/30 MP; client chuẩn hóa ảnh cây ≤1920 px/3 MiB. Kiểm lại giới hạn upload/timeout của cả host và Vercel trên deployment thật; smoke local không chứng minh giới hạn hạ tầng ngoài.
 
-Nguồn: [monorepo root/source](https://vercel.com/docs/monorepos/monorepo-faq), [Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions). Không static export app hiện cần auth/API/private storage.
+## 2. Vercel
 
-Env production: APP_ORIGIN đúng domain HTTPS, PLANTCARE_MODE=production, SMS adapter và secrets tương ứng; Gemini keys/models chỉ phía server, không NEXT_PUBLIC. `.env.example` là mẫu development. Env DB/storage/queue mới chỉ có tác dụng sau khi viết adapter tương ứng.
+Import repo, production branch main:
 
-## Kiểm bản gộp local
+| Thiết lập | Giá trị |
+| --- | --- |
+| Framework | Next.js |
+| Root Directory | apps/web |
+| Include source files outside Root Directory | Bật, vì shared source/lockfile ở root |
+| Node | 24.x |
+| Install Command | cd ../.. && npm ci |
+| Build Command | cd ../.. && npm run build -- --webpack |
+| Output Directory | .next |
 
-```powershell
-npm.cmd run typecheck
-npm.cmd test
-npm.cmd run build
-npm.cmd run test:e2e
-npm.cmd run test:e2e:live
-npm.cmd run test:production
-```
+apps/web/vercel.json chứa install/build/output. apps/web/package.json giúp nhận diện framework/runtime; cài dependency vẫn dùng root lockfile. Không tạo lockfile thứ hai. Nguồn: [monorepo](https://vercel.com/docs/monorepos/monorepo-faq), [Node runtime](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions).
 
-Workflow dùng port 3001; SOP/camera/voice giả lập dùng riêng 3107. Provider thật trong `playwright.gemini.config.ts` cần opt-in và có thể tốn quota; không chạy trong task merge. Local pass không thay kiểm Vercel/Linux, provider thật, micro vật lý hoặc approval chuyên môn.
+Đặt env theo deploy/vercel.env.example:
 
-Kết quả/trace tách tại `test-results/workflow`, `test-results/live`, `test-results/gemini` để không xóa artifact của bộ khác. Bộ camera/voice có timeout test 90 giây cho luồng nhiều bước và cold compilation dev trên Windows; không thay timeout provider hoặc ngưỡng nghiệp vụ, không là bằng chứng đạt mục tiêu performance production.
+    PLANTCARE_BACKEND_URL=https://backend-domain
+    APP_ORIGIN=https://ten-du-an.vercel.app
 
-## Hướng triển khai cần chốt
+APP_ORIGIN khớp backend và URL người dùng mở. Không đưa Gemini/SMS key hoặc storage vào Vercel. Đổi upstream cần redeploy vì rewrite được tạo lúc build. Đổi domain frontend phải cập nhật cả hai deployment.
 
-- Toàn bộ backend serverless: migrate DB/network, object storage, secrets và worker; staging kiểm auth/session giữa instance, upload/export private, job recovery và concurrent completion trước production.
-- Giữ backend Node trên host có persistent volume/worker: cần thiết kế frontend Vercel gọi backend HTTPS, routing/cookies/origin/CSRF. Repo chưa có cấu hình tách backend đó.
+## 3. Kiểm tra
 
-Không tự chọn dịch vụ, bật billing hoặc migrate dữ liệu thật trong task merge.
+    npm.cmd run typecheck
+    npm.cmd test
+    npm.cmd run test:e2e
+    npm.cmd run test:e2e:live
+    npm.cmd run test:proxy
+    docker build -f deploy/Dockerfile -t plantcare-backend:flow-v2 .
+    npm.cmd run test:container
+
+Proxy smoke dùng upstream giả, kiểm body 3 MiB, cookie/CSRF/query/cache và không có frontend DB. Container smoke dùng container/volume riêng: Linux auth/ảnh/guidance/PDF/restart/session/job recovery rồi xóa đúng tài nguyên test. Không dùng dữ liệu hiện có hoặc provider thật. Truyền tag khác: npm run test:container -- <tag>.
+
+Trên URL Vercel thật: đăng ký/OTP → đăng nhập → tạo hồ sơ → upload/chụp → AI tự điền → xác nhận số đo → ảnh hướng dẫn → AI từng bước. Kiểm camera/micro điện thoại HTTPS, phủ định/lệnh hoàn tất, lỗi ảnh, thu hồi quyền, reload, private ảnh giữa hai owner và PDF. Kiểm queued job sau restart; không chỉ xem health/build xanh. Gọi Vision/TTS thật có thể tính phí, dùng ít calls và theo dõi quota. Đã smoke Gemini từ local; chưa kiểm SMS và URL Vercel thật.
+
+## Vận hành và phạm vi
+
+Giữ volume khi cập nhật image: docker compose up -d --build. **Không dùng docker compose down -v với dữ liệu cần giữ.** Sao lưu nhất quán toàn bộ /data và secret trước cập nhật, giữ DB/WAL/files cùng snapshot; thử restore trên staging. Restart smoke không thay backup/restore drill hoặc đo RPO/RTO.
+
+Worker phục hồi QUEUED/RUNNING hết lease bằng logic hiện có. Theo dõi disk, health/5xx, queue age, SMS/Gemini và AI usage. Scale/HA, purge/retention và alert đầy đủ vẫn cần vận hành riêng.
+
+REFERENCE hướng dẫn và ghi nhận bước theo nguồn; ảnh chỉ kiểm phần nhìn thấy. SOP/rule vẫn DRAFT/UNREVIEWED, TRIAL vẫn bị chặn production. Engine trả NEEDS_EXPERT với rules chưa duyệt. FINISHED không đổi case thành PACKED hoặc trừ kho. Triển khai kỹ thuật không thay approval chuyên môn/release gates của plan.md.
