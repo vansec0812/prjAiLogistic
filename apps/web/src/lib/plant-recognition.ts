@@ -49,7 +49,7 @@ export function plantProfileIssues(plant:PlantInput):string[]{
   if(plant.height!==null&&plant.potHeight!==null&&plant.height<plant.potHeight)issues.push('Chiều cao tổng phải bao gồm chậu.');
   if(measuredFields.some(k=>plant[k]===null||plant[k]!<=0))issues.push('Bổ sung số đo và khối lượng cây, chậu.');
   if(!plant.confirmed)issues.push('Kiểm tra và xác nhận thông tin cây.');
-  if(Object.values(plant.fieldEvidence||{}).some(e=>e?.status==='NEED_INPUT'))issues.push('Nhập tay các trường AI chưa đủ tin cậy.');
+  if(Object.values(plant.fieldEvidence||{}).some(e=>e?.status==='NEED_INPUT'))issues.push('Bổ sung thông tin còn thiếu.');
   return issues;
 }
 
@@ -58,7 +58,7 @@ export function applyMvpRecognition(current:PlantInput,start:PlantInput,result:P
   if(current.confirmed)return current;
   const suggested=applyPlantRecognition(current,start,result),next:PlantInput={...current,confirmed:false,fieldEvidence:{...current.fieldEvidence}},candidate=result.plant_candidates.find(c=>c.group!=='UNKNOWN');
   for(const key of profileFields){
-    if(current.fieldEvidence?.[key]?.source==='USER'||current[key]!==start[key]||start[key]!==null&&start[key]!==''&&start[key]!=='UNKNOWN'&&start.fieldEvidence?.[key]?.source!=='AI'&&!(key==='potMaterial'&&start[key]==='Nhựa'))continue;
+    if(current.fieldEvidence?.[key]?.source==='USER'||current[key]!==start[key]||start[key]!==null&&start[key]!==''&&start[key]!=='UNKNOWN'&&!['AI','DEMO'].includes(start.fieldEvidence?.[key]?.source||'')&&!(key==='potMaterial'&&start[key]==='Nhựa'))continue;
     const confidence=result.schema_version==='vision-v3'?result.field_confidences[key].confidence:null;
     const evidence=result.schema_version==='vision-v3'?result.field_confidences[key].evidence:'Kết quả cũ không có mức tin cậy từng trường.';
     const value=result.schema_version==='vision-v3'?(key==='name'?candidate?.name:key==='group'?candidate?.group:key==='fragility'?result.plant_details.fragility:key==='potMaterial'?result.plant_details.pot_material:result.plant_details.readings.find(r=>r.field===key)?.value):suggested[key],good=result.schema_version==='vision-v3'&&result.image_quality==='CLEAR'&&confidence!==null&&confidence>=threshold&&value!==undefined&&value!==null&&value!==''&&value!=='UNKNOWN';

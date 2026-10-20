@@ -8,6 +8,7 @@ import { ApiError, rateLimit, requireUser, checkMutation } from './security';
 import { db, doc, development, transaction } from './db';
 import { newPostCheck, postCheckStep, savePostCheckAi } from './mvp';
 import type { GuidanceSession } from '../lib/guidance';
+import { packingReferenceParts } from './packing-reference';
 
 const invalid = () => new ApiError(422, 'INVALID_CHECKPOINT', 'Ảnh hoặc checkpoint không hợp lệ. Chọn ảnh JPEG/PNG/WebP tối đa 2 MB.');
 export async function checkLivePacking(req: NextRequest) {
@@ -63,9 +64,10 @@ export async function checkLivePacking(req: NextRequest) {
   transaction(() => { const count = db().prepare('SELECT COUNT(*) AS n FROM ai_calls WHERE day=?').get(day) as { n: number }; if (count.n >= max) throw new ApiError(429, 'AI_QUOTA', 'Hết hạn mức AI hôm nay. Tiếp tục thủ công.'); db().prepare('INSERT INTO ai_calls VALUES(?,?,?,?,?,?)').run(id, user.id, day, 'RESERVED', '{}', new Date().toISOString()); });
   try {
     requireUser(req);
+    const referenceParts=await packingReferenceParts(step);
     if(caseRecord&&!data.post_check)clearGuidanceCheck(user.id,caseRecord,data.session_id!,data.session_revision!,step.id);
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, signal: AbortSignal.timeout(timeoutMs), body: JSON.stringify({
-      contents: [{ parts: [{ text: checkpointPrompt(sop, step, data.context) }, { inlineData: { mimeType: 'image/jpeg', data: image.toString('base64') } }] }],
+      contents: [{ parts: [{ text: checkpointPrompt(sop, step, data.context) }, ...referenceParts, ...(referenceParts.length?[{text:'ẢNH THỰC HIỆN HIỆN TẠI của người dùng: chỉ lấy bằng chứng đạt hoặc lỗi từ ảnh này.'}]:[]), { inlineData: { mimeType: 'image/jpeg', data: image.toString('base64') } }] }],
       generationConfig: { responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: z.toJSONSchema(checkpointSchema) } }, maxOutputTokens: 1500 }
     }) });
     if (!response.ok) {

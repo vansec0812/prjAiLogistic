@@ -129,3 +129,11 @@ Người dùng chọn Vercel giao diện + Node có persistent storage. Đã th�
 ## 14. PRD MVP đã chốt — 19/10/2026
 
 Yêu cầu mới thay flow ở mục 13 bằng cây → hành trình → PA1/PA2 từ danh mục quản trị → chọn → hướng dẫn đúng phương án → hậu kiểm → lưu. Có confidence/nguồn từng trường, OTP login, cấu hình versioned và review độc lập. Ma trận nguồn, quyết định, API/test và release gates tại [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md). Các mục lịch sử phía trên không định nghĩa flow hiện hành; không đóng NFR/chuyên môn chỉ vì triển khai phần mềm đã chạy.
+
+## 15. Demo ảnh mẫu — 20/10/2026
+
+Theo yêu cầu hardcode: PA1 6 bước thùng xốp, PA2 8 bước ống carton từ `source/pa1` và `source/pa2`. Local dùng hai ví dụ sau xác nhận đầu vào; ảnh đầy đủ và lời đọc theo đúng bước, Vision đối chiếu ảnh mẫu riêng với ảnh thực hiện. Không ghi đè lịch sử/cấu hình được duyệt. Bản demo và phạm vi kiểm tại [.code/packing-photo-demo.md](.code/packing-photo-demo.md); workflow thống nhất tại agent.md.
+
+Điều chỉnh tiếp theo: mỗi bước tự đọc số bước và lời theo ảnh, bỏ lời nhắc nói đã xong; nhận “Đã xong”/“Xong rồi” như xác nhận bước, vẫn chặn lỗi và thiếu kiểm tra. Ngữ nghĩa tại [VOICE_COMMANDS.md](VOICE_COMMANDS.md).
+
+Demo Phú quý: upload `source/cayphuquy.jpg` điền bộ mẫu user cung cấp (50/40/40/20/25 cm, 5 kg, HIGH, gốm/sứ), không hiện badge AI/phần trăm/Cần nhập tay. Nhận ảnh local theo fingerprint kể cả nén/resize, giữ checkbox và dữ liệu manual. Xác nhận hành trình → hai phương án ảnh 6/8 bước đã chuẩn bị. Chi tiết/giới hạn và kiểm tại [.code/packing-photo-demo.md](.code/packing-photo-demo.md).

@@ -21,8 +21,8 @@ describe('guided automatic progress', () => {
     expect(guidedDecision(sop.steps[0], undefined, false)).toBe('await_manual');
     expect(guidedDecision(sop.steps[0], undefined, true)).toBe('advance');
   });
-  it('distinguishes done from a physical-check confirmation and rejects negation', () => {
-    expect(packingCommand('đã xong')).toBe('check');
+  it('recognizes completion without a prompt and still rejects negation', () => {
+    expect(packingCommand('đã xong')).toBe('confirm_manual');
     expect(packingCommand('Tôi đã kiểm tra trực tiếp')).toBe('confirm_manual');
     expect(packingCommand('đã xong và đã kiểm tra trực tiếp')).toBe('confirm_manual');
     expect(packingCommand('tôi chưa kiểm tra trực tiếp')).toBeNull();

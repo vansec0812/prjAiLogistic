@@ -168,3 +168,42 @@ Artifact test/ảnh dùng scratch DB, output/qa và test-results ignored. Real p
 File `.env.example` có chỉnh sửa riêng trước task, giữ ngoài commit; không xuất secret/log ảnh. Phần Docker/Linux và restart volume được bổ sung bằng kết quả smoke khi hoàn tất, không coi build đơn thuần là deploy.
 
 Docker/Linux bổ sung: build webpack trong image Node24 PASS; smoke API production + Secure/HttpOnly/SameSite cookie/private upload + REFERENCE legacy + gate draft MVP/legacy + operator CLI + PDF tiếng Việt PASS. Restart disposable persistent volume PASS: case/ảnh private/checkpoint/session và idle lease recovery tồn tại sau restart. Image local `plantcare-backend:prd-mvp`, không publish registry hoặc provision hosting.
+
+## Demo theo ảnh người dùng — 20/10/2026
+
+Đã đọc đủ source/pa1 bước 1..6 và source/pa2 bước 1..8, tạo 14 WebP giữ nguyên khung/chú thích (941 × 1672), tổng 2.627.020 byte. Manifest có hash ảnh gốc và WebP. Hardcode bộ demo version riêng, mặc định UI local chọn demo sau input confirmation; hồ sơ cũ có CTA đổi trước Bắt đầu. Không sửa rule/config đã duyệt hoặc bundle lịch sử, không thay ảnh gốc người dùng. BOM theo ảnh, đơn giá null. Chi tiết tại [packing-photo-demo.md](packing-photo-demo.md).
+
+Gallery và phiên dùng cùng ảnh/bước/lời đọc. Server Vision gửi đúng ảnh mẫu đã kiểm checksum + frame thực hiện riêng, chỉ xét frame làm bằng chứng. Phiên pin threshold, nguồn và ảnh. Hậu kiểm 7 mục mỗi PA, fixation bắt buộc kiểm tay. Production chặn bộ demo; API không có demo:true giữ engine thường. Bổ sung guard không tạo demo mới khi đang đóng gói.
+
+Kiểm thực chạy:
+
+- `npm.cmd test`: **172 PASS / 17 files**, gồm payload hai ảnh qua fetch mock, sai hash/path, input/confidence, không mutate và production gate.
+- `npm.cmd run test:e2e:mvp`: **7 PASS**, đi hết 6/8 bước và hậu kiểm/lưu, ảnh đúng bước trên desktop/mobile, chuyển bộ cũ giữ lịch sử, OTP/quyền/revision/cấu hình/khôi phục offline.
+- `npm.cmd run test:e2e:live`: **13 PASS**, gồm tạo hồ sơ đến demo PA2 8 bước và các regression camera/voice/consent/lỗi/nhận lệnh.
+- `npm.cmd run typecheck`: PASS. `npm.cmd run build`: PASS, gồm TypeScript và production routes. Không chạy build đồng thời Next E2E vì các artifact type được tái tạo có thể gây TS6053; build tuần tự sau E2E đã đạt.
+- E2E phát hiện phản hồi RESUME đến muộn có thể bật active sau sự kiện offline. Đã guard theo generation + online/visibility và xóa thông báo mất mạng khi có mạng; chạy lại toàn bộ 7 bài MVP PASS, không đổi kỳ vọng để che lỗi.
+- Kiểm trực quan `output/qa/demo-pa1-guide.png` và `demo-pa2-guide.png`: ảnh đủ khung/caption; E2E kiểm không tràn 390/1440 px, ảnh tải đủ 941 × 1672. Gallery và ảnh guide tại output/qa/demo-pa*-*.png (ignored).
+- Local chạy webpack dev ở http://127.0.0.1:3000 với `.next-preview`; health trả OK/development, aiConfigured=true. Đây là trạng thái cấu hình, không chứng minh key/provider hoạt động.
+
+Không gọi Gemini thật hoặc kiểm camera/micro vật lý trong task demo này. Không có fine-tuning, approval chuyên môn, đo accuracy hoặc deploy hosting. Nguồn gốc người dùng cung cấp không tự chứng minh quyền sử dụng để training. File .env.example có sửa riêng được giữ nguyên, không xuất nội dung; source PNG giữ nguyên, delivery WebP dùng độc lập trên web.
+
+## Lời đọc theo ảnh và xác nhận tự nhiên — 20/10/2026
+
+Theo yêu cầu tiếp theo: packingNarration chỉ ghép “Bước N.” + speech_vi đã pin theo ảnh. Bỏ đoạn nhắc nói đã xong để chuyển bước, bỏ câu nhắc sau ảnh đạt và hint lặp trên UI. Không sửa speech_vi/snapshot cũ; các yêu cầu kiểm trực tiếp vẫn hiện trên màn hình. Các câu “Đã xong”, “Xong rồi”, “Tôi đã làm xong” là CONFIRM thay CHECK; yêu cầu “Kiểm tra” giữ CHECK, không tự chuyển. Vẫn chặn lỗi/unknown, giữ kiểm tay có lý do, không tự bật micro.
+
+Kiểm thực chạy: `npm.cmd test` **177 PASS / 17 files**; `npm.cmd run test:e2e:live` **15 PASS**, gồm hai bài mới PA1/PA2 xác minh tự đọc đúng speech_vi + ảnh ở bước 1–3, hiểu câu hoàn tất ngắn để kiểm rồi chuyển, phủ định giữ bước và không có lời nhắc trong text thực gửi SpeechSynthesis; `npm.cmd run build` **PASS** gồm TypeScript. E2E dùng camera/nhận giọng/Vision giả lập, không thay kiểm thiết bị/provider thật. Các kiểm toàn bộ bước ảnh, ownership/revision và media lifecycle tiếp tục đạt trong unit/E2E; không sửa quy tắc eligibility hoặc trạng thái chuyên môn.
+
+## Preset Phú quý và bỏ badge nguồn — 20/10/2026
+
+Đã xem ảnh `source/cayphuquy.jpg` và nối preset đúng yêu cầu: Cây phú quý lá đỏ / FOLIAGE / cao tổng 50 cm / dài tán 40 cm / rộng tán 40 cm / đường kính chậu 20 cm / cao chậu 25 cm / 5 kg / HIGH / Gốm / sứ. Hash nguồn và fixture cùng `b2baee7d230508e523bd2c11f9a625f81ad7b6613cdd0715af6c35f5a2279fed`; source gốc không đổi. Bản chạy nhận fingerprint tĩnh, không cần đọc thư mục source lúc runtime. Không xem số mẫu là kết quả AI đo/cân.
+
+Endpoint private development kiểm upload owner/case/purpose và khớp ảnh qua decode/nén/resize; trả sampleId, không gọi Gemini hoặc tạo job. UI điền mẫu trước nhánh AI-config, source=DEMO/confidence=null; bỏ mọi badge nguồn/phần trăm/Cần nhập tay, vẫn giữ validation và checkbox. USER/late edit/confirmed được bảo vệ; scan ảnh khác có thể thay gợi ý DEMO chưa sửa. Giữ nguyên HIGH và gốm/sứ trong case/bundle; demo có cả PA1/PA2, engine thường vẫn NEEDS_EXPERT. Mobile chuyển form về một cột để đọc đầy đủ tên và mức dễ hư. Workflow theo agent.md và [packing-photo-demo.md](packing-photo-demo.md).
+
+Kiểm thực chạy:
+
+- `npm.cmd test`: **182 PASS / 18 files**, gồm fixture hash, JPEG→WebP/resize 380/757/1200 px, ảnh trắng/sai/ảnh khác, đủ 10 trường, phân biệt DEMO/AI/USER, không tự xác nhận và HIGH giữ gate thường.
+- `npm.cmd run typecheck`: **PASS**. `npm.cmd run build`: **PASS**, gồm TypeScript/production routes.
+- `npm.cmd run test:e2e:mvp`: **10 PASS** ở lần chạy cuối, gồm upload ảnh thực từ browser, điền đúng toàn bộ trường mà không cần Gemini, checkbox, snapshot HIGH, cả PA1/PA2, không còn badge, owner/case/CSRF/nonmatch và regression hướng dẫn/hậu kiểm/lịch sử. Lần đầu có một ECONNRESET khi test đọc guidance; chạy lại cùng kiểm/assertions không sửa, cả 10 đạt.
+- Sau chỉnh mobile, chạy lại hai bài `--grep 'Phu quy sample'`: **2 PASS**, xem trực quan output/qa/phu-quy-pa1-profile.png và phu-quy-pa2-profile.png. Source/fixture giữ nguyên; không tràn hoặc cắt tên/độ dễ hư trên mobile.
+- Regression upload/chụp thường: `playwright test --config playwright.live.config.ts --grep 'PRD create|camera capture uploads'`: **2 PASS**, nhánh ảnh khác vẫn nhận diện/gợi ý và giữ manual/checkbox.
+- Local `/app/new` trả HTTP200, web tiếp tục ở http://127.0.0.1:3000. Không chạy Gemini thật/camera/micro vật lý hoặc deploy/publish trong task này; các kiểm AI dùng mock. Không thay env riêng người dùng hoặc ghi approval chuyên môn.

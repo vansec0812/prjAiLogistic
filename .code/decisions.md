@@ -81,3 +81,13 @@ Yêu cầu mới: AI quét đủ tên/nhóm cây và sáu trường số; bỏ m
 ## ADR-006: Flow theo PRD MVP đã chốt — 19/10/2026
 
 User cung cấp PRD Word và yêu cầu xây lại flow, push main. Áp dụng flow cây → hành trình → hai phương án từ catalog → chọn → hướng dẫn → hậu kiểm → lưu, thay ADR-004/005 ở tương tác MVP. Nguồn/confidence AI dưới ngưỡng phải NEED_INPUT, nhập tay và xác nhận. Hai đoạn auth mâu thuẫn được dung hòa bằng OTP login và giữ password login/registration. Giữ engine/API SRS riêng cho dữ liệu legacy; không dùng kho cá nhân trong đề xuất danh mục MVP. Chỉ chuyên gia độc lập duyệt cấu hình version mới, admin kích hoạt có reauth; REFERENCE không vượt MVP gate. Ví dụ giá/ngưỡng/mùa vẫn draft. Xem [ma trận và giới hạn](prd-mvp-20261019.md).
+
+## ADR-007: Hai phương án ảnh mẫu để demo — 20/10/2026
+
+User yêu cầu hardcode theo source mới. Chọn bộ demo local riêng, bật qua `demo:true` do UI gửi; không sửa mặc định Rule Engine hoặc tự publish cấu hình. Cả hai ví dụ hiển thị sau xác nhận đầu vào, không tuyên bố chúng phù hợp mọi hành trình. PA1 6 bước, PA2 8 bước, giữ bản ảnh gốc và checksum; gallery và phiên dùng cùng ảnh/lời đọc, Vision nhận reference riêng. Hồ sơ cũ có nút tạo bộ demo trước Bắt đầu; lịch sử vẫn bất biến. Chi tiết và giới hạn tại [packing-photo-demo.md](packing-photo-demo.md).
+
+Yêu cầu tiếp theo cùng ngày: bỏ lời nhắc “nói đã xong để chuyển bước”, đọc tự động số bước và speech_vi theo ảnh. Các câu hoàn tất ngắn “Đã xong”/“Xong rồi” chuyển từ CHECK sang CONFIRM, qua cùng điều kiện kiểm ảnh/kiểm tay; yêu cầu “Kiểm tra” vẫn không tự chuyển. Giữ phần kiểm trực tiếp trên UI, không thay snapshot, quyền micro hay bypass lỗi. [VOICE_COMMANDS.md](../VOICE_COMMANDS.md) mô tả ngữ nghĩa mới.
+
+## ADR-008: Nhận ảnh Phú quý để điền bộ thông số mẫu — 20/10/2026
+
+User cung cấp `source/cayphuquy.jpg`, yêu cầu bỏ badge AI/phần trăm/Cần nhập tay và hardcode đúng bộ số để demo. Dùng fingerprint ảnh local thay vì prompt ép Gemini trả số mẫu. Chỉ ảnh này hoặc bản nén/resize khớp mới gợi ý preset; không dùng tên file hay gán số cho mọi cây. Giữ dữ liệu với source=DEMO, confidence=null, chờ xác nhận, không ghi đè USER/late edits. Các gợi ý DEMO chưa sửa có thể bị scan thật tiếp theo thay thế. Giữ fragility HIGH và gốm/sứ; demo chỉ xem cả PA1/PA2 theo source đã có, eligibility thường không đổi. [Chi tiết](packing-photo-demo.md).

@@ -8,6 +8,7 @@ import { startGuidance, advanceGuidance, ownedGuidance, listGuidance, saveGuidan
 import { confirmationDecision } from '../apps/web/src/lib/guidance';
 import { selectSop, type CheckpointResult } from '../apps/web/src/lib/live-packing';
 import { sampleInput } from '../apps/web/src/server/seed';
+import { propose } from '../apps/web/src/server/mvp';
 const directory=mkdtempSync(path.join(tmpdir(),'plantcare-guidance-'));
 const sop=selectSop('potted','POTTED'),context={species:'Cây shop xác nhận',shop_scope_confirmed:true as const,pot_cm:null,height_cm:null,packed_kg:null};
 let c:CaseRecord;
@@ -17,6 +18,7 @@ afterAll(()=>{db().close();delete (globalThis as {plantcareDb?:unknown}).plantca
 const begin=()=>transaction(()=>startGuidance('a',c,{case_version:1,sop_id:sop.id,sop_version:sop.version,context,approved_for_trial:true}));
 const confirm=(revision:number,step_id:string,extra={})=>({expected_revision:revision,step_id,action:'CONFIRM',method:'VOICE',manual_checked:true,...extra});
 describe('case-bound instructor confirmations',()=>{
+  it('rejects explicitly requested photo demos in production before creating a bundle',()=>{process.env.PLANTCARE_MODE='production';expect(()=>propose('a',c,true)).toThrow('Bộ ảnh demo chỉ dùng trong chế độ phát triển.');expect(doc('case',c.id,'a')).toMatchObject({status:'DRAFT'});});
   it('persists a reported problem and blocks acknowledgement until a manual issue is resolved',()=>{
     let g=begin();g=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id,{action:'REPORT_ISSUE',manual_checked:false,note:'Chậu bị nứt khi thao tác.'}));expect(g.currentIssue?.stepId).toBe(sop.steps[0].id);expect(g.index).toBe(0);expect(()=>advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id))).toThrow();g=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id,{action:'RESOLVE_ISSUE',manual_checked:false}));g=advanceGuidance('a',c,g.id,confirm(g.revision,sop.steps[0].id));expect(g.index).toBe(1);expect(g.currentIssue).toBeUndefined();
   });

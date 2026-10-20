@@ -1,0 +1,114 @@
+[
+  {
+    "alternative": "PA1",
+    "step": 1,
+    "source": "source/pa1/bước 1.png",
+    "image": "/photos/packing-demo/v1/pa1/step-1.webp",
+    "sourceSha256": "fa71bf96615fba879b4e57d6bae4898dce90e642264df5b9bfd56dbb3c81b8f2",
+    "sha256": "32e94ad680094e596b481353858a54d4e9e41ad1395bc17fa3367efceb872ba3"
+  },
+  {
+    "alternative": "PA1",
+    "step": 2,
+    "source": "source/pa1/bước 2.png",
+    "image": "/photos/packing-demo/v1/pa1/step-2.webp",
+    "sourceSha256": "7d5289c459521ecdda611acc4c23f9223d051a646774748201b9bdb4500f4f36",
+    "sha256": "0c5a795cd262582af332904612ba76d4dd69978162ff9ab639c1bcf1189c8039"
+  },
+  {
+    "alternative": "PA1",
+    "step": 3,
+    "source": "source/pa1/bước 3.png",
+    "image": "/photos/packing-demo/v1/pa1/step-3.webp",
+    "sourceSha256": "9259a955d8992b1a747672fc4ce51c45d0325c94314d6c6cd2507e00a279f37d",
+    "sha256": "4967883a7134b277e3daad412b7b7f68ff1c4b2f494992f9458f97868c35e3ff"
+  },
+  {
+    "alternative": "PA1",
+    "step": 4,
+    "source": "source/pa1/bước 4.png",
+    "image": "/photos/packing-demo/v1/pa1/step-4.webp",
+    "sourceSha256": "95e5f2ef7ae21c2853b2c163aca64801d36c5524c485f0c4751ea3ce4a29e868",
+    "sha256": "ea620fae325bf7137257a82d46cce61f83b2a2712c3f3903a60aeb629285009d"
+  },
+  {
+    "alternative": "PA1",
+    "step": 5,
+    "source": "source/pa1/bước 5.png",
+    "image": "/photos/packing-demo/v1/pa1/step-5.webp",
+    "sourceSha256": "1964f3fb8c4fc6fe06c01f12bcaee59c786560a647b7bf83b277e79459ca44c2",
+    "sha256": "3f27894e695ea5f242ada644a153432a42248f430aea6a6180c21dcf35b11692"
+  },
+  {
+    "alternative": "PA1",
+    "step": 6,
+    "source": "source/pa1/bước 6.png",
+    "image": "/photos/packing-demo/v1/pa1/step-6.webp",
+    "sourceSha256": "efb7414743b6c6ad86d6563f0e3307da102df4065c7c2de381a4846bce8ce97a",
+    "sha256": "fe089293b9b0561170b23538081deebe3cddae0051ebeae4bb74110b75ec24ae"
+  },
+  {
+    "alternative": "PA2",
+    "step": 1,
+    "source": "source/pa2/bước 1.png",
+    "image": "/photos/packing-demo/v1/pa2/step-1.webp",
+    "sourceSha256": "dd322365eb005bc6e2f6b38b2b4d57047dda72a1160e0be3f015e3218e920413",
+    "sha256": "009c9f19feed19daef4213692773cbf3224061e4143de563ad384414e9c64b28"
+  },
+  {
+    "alternative": "PA2",
+    "step": 2,
+    "source": "source/pa2/bước 2.png",
+    "image": "/photos/packing-demo/v1/pa2/step-2.webp",
+    "sourceSha256": "148cf9e1acda6dd0642034547a0d4dbff8fc15e5deaec993cb6a27a4f713f6d4",
+    "sha256": "d4c321bbb567c6430c6cd470bf05706e73b18f60344b47978df0e99e3a3b28bc"
+  },
+  {
+    "alternative": "PA2",
+    "step": 3,
+    "source": "source/pa2/bước 3.png",
+    "image": "/photos/packing-demo/v1/pa2/step-3.webp",
+    "sourceSha256": "68774185b26c93a7114f10d1ab709792481bdd52b31805652162ee449ffed17b",
+    "sha256": "0123b0f9810d4aaa3c3e7fdc7df4ea0ba52b630d5d67d06b1a74a737fcad5f89"
+  },
+  {
+    "alternative": "PA2",
+    "step": 4,
+    "source": "source/pa2/bước 4.png",
+    "image": "/photos/packing-demo/v1/pa2/step-4.webp",
+    "sourceSha256": "ae10cafa1dd731eebff7433a8e383e71d14520e741b7b9a30e7c85d2b050855e",
+    "sha256": "fbcc9ee6ecb6af310b84252a79235e530b5f6662d8f046446436e20b72ca1706"
+  },
+  {
+    "alternative": "PA2",
+    "step": 5,
+    "source": "source/pa2/bước 5.png",
+    "image": "/photos/packing-demo/v1/pa2/step-5.webp",
+    "sourceSha256": "6a1ec959170eb20812474ec9195b30100a2f496ab8e3061fc4c95ed7e3191d5e",
+    "sha256": "f32544bf1268fc3d911e3873578c8d94c878f2d77f4a2aa3216b089a392df54d"
+  },
+  {
+    "alternative": "PA2",
+    "step": 6,
+    "source": "source/pa2/bước 6.png",
+    "image": "/photos/packing-demo/v1/pa2/step-6.webp",
+    "sourceSha256": "e67f7c25a9d875d151256aac9e6801d319ed29ee41db29f5ef8b339ed0cb319b",
+    "sha256": "7a8070608da766ac781c3fd23d13f1edfaf3be11ac26ecda9b065a3fb8aa2b45"
+  },
+  {
+    "alternative": "PA2",
+    "step": 7,
+    "source": "source/pa2/bước 7.png",
+    "image": "/photos/packing-demo/v1/pa2/step-7.webp",
+    "sourceSha256": "c8d92bfbf1fc892e75a68d42dc0135987e99b45257faa97e66704e5cb8866472",
+    "sha256": "10c69502bd21adb7a82814edca5cb29b5e0dd9b8dab5583956872c33d799d4e9"
+  },
+  {
+    "alternative": "PA2",
+    "step": 8,
+    "source": "source/pa2/bước 8.png",
+    "image": "/photos/packing-demo/v1/pa2/step-8.webp",
+    "sourceSha256": "ca951afbd18399baa89568e19c96675f6ce685859326b3f8b35402e970ffbb0e",
+    "sha256": "1ee592725103552a3302d8c91ec4aef57a30b2a3f8299b5462c64db1fcae014d"
+  }
+]

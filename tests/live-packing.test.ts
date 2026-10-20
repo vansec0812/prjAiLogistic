@@ -9,6 +9,10 @@ vi.mock('../apps/web/src/server/security', () => ({
 }));
 vi.mock('../apps/web/src/server/db', () => ({ development: mocks.development, doc:mocks.doc, db: () => ({ prepare: () => ({ get: mocks.get, run: mocks.run }) }), transaction: (fn: () => void) => fn() }));
 import { checkLivePacking } from '../apps/web/src/server/live-packing';
+import * as guidanceServer from '../apps/web/src/server/guidance';
+import { demoAlternatives, demoPhotoByPath, packingDemoVersion } from '../apps/web/src/lib/demo-packing';
+import type { GuidanceSession } from '../apps/web/src/lib/guidance';
+import type { CaseRecord } from '../packages/domain/src/index';
 const sop = selectSop('succulent', 'POTTED'), step = sop.steps[2];
 const context = { species: 'Echeveria shop xác nhận', shop_scope_confirmed: true as const, pot_cm: null, height_cm: null, packed_kg: null };
 const result = { step_id: step.id, observed: 'Thấy lớp phủ.', status: 'passed', reason: 'Chỉ đánh giá phần nhìn thấy.', manual_check_required: false, criterion_results: step.criteria.map(c => ({ criterion_id: c.id, status: 'passed', observation: 'Vùng cần kiểm rõ.' })) };
@@ -76,6 +80,19 @@ describe('checkpoint API privacy and failure paths', () => {
     const options = (fetcher.mock.calls as unknown as [string, RequestInit][])[0][1], sent = JSON.parse(String(options.body));
     expect(sent.generationConfig.responseFormat.text.mimeType).toBe('APPLICATION_JSON'); expect(sent.contents[0].parts[0].text).toContain(step.criteria[0].visible_fail);
     expect(sent.contents[0].parts[1].inlineData.mimeType).toBe('image/jpeg'); expect(sent.contents[0].parts[1].inlineData.data).not.toBe(String(payload.image).split(',')[1]);
+  });
+  it('sends a pinned sample and the current camera frame as separately labeled images for a demo session',async()=>{
+    const demo=demoAlternatives[1].steps[4],photo=demoPhotoByPath.get(demo.image)!,demoStep={...step,id:demo.id,title:demo.title,instruction:demo.instruction,speech_vi:demo.speech,criteria:demo.criteria,reference_image:{path:photo.image,sha256:photo.sha256}},boundSop={...sop,id:'mvp-demo-PA2',version:packingDemoVersion,steps:[demoStep]};
+    const g={id:'demo-session',caseId:'demo-case',mode:'MVP',status:'ACTIVE',executionState:'RUNNING',revision:1,index:0,sopId:boundSop.id,sopVersion:boundSop.version,context,confidenceThreshold:70} as GuidanceSession;
+    mocks.doc.mockReturnValueOnce({id:g.caseId} as CaseRecord);
+    const spies=[vi.spyOn(guidanceServer,'ownedGuidance').mockReturnValue(g),vi.spyOn(guidanceServer,'guidanceSop').mockReturnValue(boundSop),vi.spyOn(guidanceServer,'clearGuidanceCheck').mockImplementation(()=>{}),vi.spyOn(guidanceServer,'saveGuidanceCheck').mockReturnValue({...g,revision:2})];
+    try{
+      const output={...result,step_id:demoStep.id,confidence:90,criterion_results:demoStep.criteria.map(c=>({criterion_id:c.id,status:'passed',observation:'Thấy cây đặt thẳng trong ống.'}))};
+      const fetcher=vi.fn(async()=>Response.json({candidates:[{content:{parts:[{text:JSON.stringify(output)}]}}]}));vi.stubGlobal('fetch',fetcher);
+      const checked=await checkLivePacking(request({...payload,sop_id:boundSop.id,sop_version:boundSop.version,step_id:demoStep.id,case_id:g.caseId,session_id:g.id,session_revision:1}));expect(checked.status).toBe('passed');
+      const sent=JSON.parse(String((fetcher.mock.calls as unknown as [string,RequestInit][])[0][1].body)),parts=sent.contents[0].parts;
+      expect(parts).toHaveLength(5);expect(parts[1].text).toContain('ẢNH MẪU');expect(parts[2].inlineData.mimeType).toBe('image/webp');expect(parts[3].text).toContain('ẢNH THỰC HIỆN');expect(parts[4].inlineData.mimeType).toBe('image/jpeg');expect(parts[2].inlineData.data).not.toBe(parts[4].inlineData.data);expect(guidanceServer.saveGuidanceCheck).toHaveBeenCalledWith('owner',expect.anything(),g.id,1,demoStep.id,expect.objectContaining({status:'passed',manual_check_required:true}));
+    }finally{spies.forEach(s=>s.mockRestore());}
   });
   it.each([[400, 'AI_REQUEST_INVALID'], [403, 'AI_AUTH_FAILED'], [404, 'AI_MODEL_UNAVAILABLE'], [429, 'AI_PROVIDER_QUOTA'], [503, 'AI_PROVIDER_UNAVAILABLE']])('distinguishes provider HTTP %s without raw errors', async (status, code) => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('sensitive provider detail', { status: Number(status) })));

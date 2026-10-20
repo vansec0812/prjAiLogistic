@@ -4,12 +4,12 @@ Tạo hồ sơ → thông tin cây → ảnh hướng dẫn → **Bắt đầu v
 
 | Câu nói | Hành động |
 | --- | --- |
-| “Đã xong bước này”, “Tiếp tục bước tiếp theo” | Xác nhận manual; visual kiểm ảnh và chuyển đúng một bước khi đạt |
+| “Đã xong”, “Xong rồi”, “Đã xong bước này”, “Tiếp tục bước tiếp theo” | Xác nhận manual; visual kiểm ảnh và chuyển đúng một bước khi đạt, không cần AI nhắc câu lệnh trước |
 | “Đồng ý”, “Dạ vâng”, “OK”, “Tôi xác nhận” | Cùng điều kiện xác nhận, không bỏ qua lỗi/ảnh chưa đạt |
-| “Kiểm tra”, “Kiểm tra lại”, “Đã xong rồi” | Kiểm ảnh, không tự xác nhận visual từ lượt kiểm riêng |
+| “Kiểm tra”, “Kiểm tra lại” | Kiểm ảnh, không tự xác nhận visual từ lượt kiểm riêng |
 | “Tôi gặp lỗi”, “Tôi làm sai” | Ghi lỗi, xóa pass cũ, tạm dừng bước |
 | “Tôi đã xử lý lỗi”, “Đã khắc phục” | Resolve manual; visual cần ảnh mới đạt; không tăng bước |
-| “Nhắc lại”, “Giúp tôi” | Đọc bước/kiểm tay hoặc remedy theo SOP |
+| “Nhắc lại”, “Giúp tôi” | Đọc lại bước hoặc giải thích cách xử lý lỗi theo SOP |
 | “Dừng lại”, “Tắt camera” | Dừng camera, nghe lệnh, kiểm ảnh |
 
 Chỉ nhận toàn bộ câu cho phép sau chuẩn hóa dấu/khoảng trắng, final transcript của phiên hiện tại. “Chưa xong bước này”, “Đừng tiếp tục bước tiếp theo”, câu kể người khác không xác nhận. Khóa đồng bộ trước TTS/check/mutation, bỏ sự kiện mic cũ, mở nghe sau 800 ms khi đủ điều kiện. Có nút thay thế; nhận giọng thật vẫn có thể sai.
@@ -18,7 +18,7 @@ Bật **Cho AI kiểm tra hình ảnh** mặc định kiểm khoảng 12 giây k
 
 ## Lời đọc SOP
 
-packingNarration lấy speech_vi và kiểm tay cố định của đúng SOP/version/bước. vietnameseSpeechText chỉ đổi cách phát âm: 18 cm → “18 xen ti mét”, 3,2 kg → “3 phẩy 2 ki lô gam”, 10–32 °C → “10 đến 32 độ C”, -5 °C → “âm 5 độ C”; giữ nghĩa so sánh/độ chính xác thập phân. Không để LLM viết lại chỉ dẫn hoặc thêm ngưỡng.
+packingNarration tự đọc “Bước N.” và speech_vi của đúng SOP/version/bước; demo PA1/PA2 dùng lời đã hardcode theo ảnh. Không đọc lời nhắc nói đã xong để chuyển bước, không ghép thêm hướng dẫn câu lệnh vào lời đọc. Các yêu cầu kiểm trực tiếp vẫn hiển thị trên màn hình và được kiểm trước chuyển bước. vietnameseSpeechText chỉ đổi cách phát âm: 18 cm → “18 xen ti mét”, 3,2 kg → “3 phẩy 2 ki lô gam”, 10–32 °C → “10 đến 32 độ C”, -5 °C → “âm 5 độ C”; giữ nghĩa so sánh/độ chính xác thập phân. Không để LLM viết lại chỉ dẫn hoặc thêm ngưỡng.
 
 Ưu tiên voice vi-VN trên thiết bị, không dùng voice ngoại ngữ đọc tiếng Việt. **Dùng giọng AI** mở audio device trong thao tác người dùng và gửi text chuẩn hóa tới Gemini TTS; server quota/cache/timeout, xác minh WAV PCM playable trước trả. TTS/Vision dùng quota chung; không gửi transcript mic.
 

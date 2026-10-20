@@ -6,11 +6,9 @@ describe('fixed SOP narration', () => {
   it('reads the selected step in order and preserves its exact supplied instruction', () => {
     for (const sop of sopCatalog.sops) for (const [i, step] of sop.steps.entries()) {
       const text = packingNarration(sop, i);
-      expect(text.startsWith(`Bước ${i + 1} trên ${sop.steps.length}. ${step.title}. ${step.speech_vi}`)).toBe(true);
-      expect(text).not.toContain('Xin chào');
+      expect(text).toBe(`Bước ${i + 1}. ${step.speech_vi}`);
+      expect(text).not.toMatch(/Xin chào|nói.*đã xong|để (tiếp tục|chuyển)/i);
       expect(text.length).toBeLessThanOrEqual(3000);
-      if (step.mode === 'visual') expect(text).toContain(step.camera_prompt_vi);
-      else { expect(text).toContain('Bước này cần kiểm tra trực tiếp'); expect(text).not.toContain('nhấn nút Kiểm tra'); }
     }
   });
   it('replays deterministically without changing progress or checklist data', () => {

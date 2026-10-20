@@ -6,6 +6,10 @@ Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đ
 
 Repository: [vansec0812/prjAiLogistic](https://github.com/vansec0812/prjAiLogistic).
 
+**Demo ảnh mẫu 20/10/2026:** local dùng sẵn PA1 thùng xốp **6 bước** và PA2 ống carton **8 bước** từ ảnh bạn cung cấp. Xác nhận cây/hành trình → chọn PA → xem ảnh → Bắt đầu hướng dẫn. Với hồ sơ cũ chưa bắt đầu, chọn **Dùng ảnh mẫu PA1/PA2**. AI đối chiếu ảnh mẫu đúng bước với camera; vẫn cần xác nhận để chuyển bước. Bộ demo chỉ chạy local, giá chưa có; [chi tiết](.code/packing-photo-demo.md).
+
+Upload đúng `source/cayphuquy.jpg` sẽ điền **Cây phú quý lá đỏ / Cây lá / 50–40–40–20–25 cm / 5 kg / Cao - cần chuyên gia / Gốm/sứ**. Đây là bộ mẫu do bạn cung cấp, nhận ảnh local không gọi Gemini; xác nhận rồi nhập hành trình để chọn PA1 hoặc PA2. Form bỏ các badge AI/phần trăm/Cần nhập tay.
+
 Deploy theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md): backend giữ DB/ảnh/jobs trên volume, Vercel proxy API cùng origin. Cần domain backend HTTPS và SMS/Gemini thật; không chạy SQLite trên Vercel Functions.
 
 ## Mục lục

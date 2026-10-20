@@ -22,6 +22,8 @@ import { createJob, wakeWorker, type Job, type Upload } from './jobs';
 import { draftRulePack } from '@plantcare/rule-engine';
 import { retrieveKnowledge, KNOWLEDGE_VERSION, sources as knowledgeSources } from '../../../../packages/knowledge/src/index';
 import { exportMetadata } from './export';
+import { matchesDemoPlantPhoto } from './demo-plant';
+import { demoPlantId } from '../lib/demo-plant-profile';
 
 interface Inventory extends MaterialInput {stock:number;version:number;updatedAt:string;}
 interface Challenge {id:string;user_id:string;purpose:string;code_hash:string;expires_at:number;attempts:number;used:number;sent_at:number;}
@@ -184,10 +186,10 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
     const c=owned<CaseRecord>('case',parts[1],user.id);if(c.status==='DELETED')throw missing();
     if(parts[2]==='mvp'){
       if(parts.length===3&&method==='GET')return success({bundles:docs<MvpBundle>('mvp-bundle',user.id).filter(b=>b.caseId===c.id).map(b=>({...b,stale:b.inputHash!==inputHash(c.input)})),selection:selectionFor(user.id,c),guidance:listGuidance(user.id,c).filter(g=>g.mode==='MVP'&&!g.stale),postchecks:docs<MvpPostCheck>('mvp-postcheck',user.id).filter(p=>p.caseId===c.id)});
-      if(parts[3]==='proposals'&&method==='POST'){const v=parse(z.object({case_version:z.number().int().positive()}).strict(),await body(req));if(v.case_version!==c.version)throw new ApiError(409,'VERSION_CONFLICT','Hồ sơ đã đổi.');return success(idempotent(req,user.id,endpoint,v,()=>propose(user.id,owned<CaseRecord>('case',c.id,user.id))),201);}
+      if(parts[3]==='proposals'&&method==='POST'){const v=parse(z.object({case_version:z.number().int().positive(),demo:z.boolean().optional()}).strict(),await body(req));if(v.case_version!==c.version)throw new ApiError(409,'VERSION_CONFLICT','Hồ sơ đã đổi.');return success(idempotent(req,user.id,endpoint,v,()=>propose(user.id,owned<CaseRecord>('case',c.id,user.id),v.demo===true)),201);}
       if(parts[3]==='selection'&&method==='POST'){const v=parse(z.object({bundle_id:z.string(),alternative_id:z.enum(['PA1','PA2']),expected_revision:z.number().int().min(0)}).strict(),await body(req));return success(transaction(()=>selectMvp(user.id,owned<CaseRecord>('case',c.id,user.id),v.bundle_id,v.alternative_id,v.expected_revision)));}
       if(parts[3]==='postcheck'){
-        const v=method==='GET'?{guidance_id:req.nextUrl.searchParams.get('guidance_id')||''}:parse(z.object({guidance_id:z.string(),expected_revision:z.number().int().positive().optional(),items:z.array(z.object({id:z.string(),status:z.enum(['passed','needs_adjustment','unverifiable']),note:z.string().min(5).max(500)}).strict()).max(4).optional()}).strict(),await body(req));
+        const v=method==='GET'?{guidance_id:req.nextUrl.searchParams.get('guidance_id')||''}:parse(z.object({guidance_id:z.string(),expected_revision:z.number().int().positive().optional(),items:z.array(z.object({id:z.string(),status:z.enum(['passed','needs_adjustment','unverifiable']),note:z.string().min(5).max(500)}).strict()).max(10).optional()}).strict(),await body(req));
         const g=owned<GuidanceSession>('guidance',v.guidance_id,user.id);if(g.caseId!==c.id)throw missing();
         if(method==='GET')return success(transaction(()=>newPostCheck(user.id,c,g)));
         if(method==='PATCH')return success(transaction(()=>{bundleFor(user.id,c,g.bundleId!);const p=newPostCheck(user.id,c,g);if(p.completedAt||p.revision!==v.expected_revision)throw new ApiError(409,'VERSION_CONFLICT','Hậu kiểm đã đổi. Tải lại kết quả.');if(!v.items?.length||new Set(v.items.map(i=>i.id)).size!==v.items.length||v.items.some(i=>!p.items.some(x=>x.id===i.id)))throw new ApiError(422,'INVALID_CHECK','Tiêu chí không thuộc phương án.');p.items=p.items.map(i=>{const update=v.items?.find(x=>x.id===i.id);return update?{...i,status:update.status,reason:update.note,source:'USER'}:i;});p.revision++;p.updatedAt=new Date().toISOString();updateDoc('mvp-postcheck',p.id,user.id,p);return p;}));
@@ -225,6 +227,15 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       const job=idempotent(req,user.id,endpoint,value,()=>{
         const existing=docs<Job>('job',user.id).find(j=>j.caseId===c.id&&j.type==='PLAN'&&j.inputHash===inputHash(c.input)&&['QUEUED','RUNNING'].includes(j.status));return existing||createJob(user.id,c,'PLAN');
       });wakeWorker();return success({job_id:job.id,status:job.status},202);
+    }
+    if(parts[2]==='plant-demo'&&method==='POST'){
+      if(!development())throw new ApiError(409,'DEMO_LOCAL_ONLY','Ảnh mẫu chỉ dùng trong chế độ demo local.');
+      if(['PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất.');
+      const value=parse(z.object({upload_id:z.string()}).strict(),await body(req)),upload=owned<Upload>('upload',value.upload_id,user.id);
+      if(upload.caseId!==c.id||upload.purpose!=='PLANT')throw missing();
+      const matched=await matchesDemoPlantPhoto(readFileSync(path.join(dataDir(),'uploads',upload.file)));
+      if(matched)audit(user.id,'DEMO_PLANT_MATCHED',c.id);
+      return success({sampleId:matched?demoPlantId:null});
     }
     if(parts[2]==='plant-analysis'||parts[2]==='material-analysis'){
       if(method!=='POST')throw missing();const value=parse(z.object({upload_ids:z.array(z.string()).min(1).max(parts[2]==='plant-analysis'?1:6),consent_id:z.string()}),await body(req));

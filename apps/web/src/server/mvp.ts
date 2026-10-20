@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { AlternativeId, CaseRecord, MvpBundle, MvpConfig, MvpSelection, MvpPostCheck } from '@plantcare/domain';
 import { inferJourney, proposeMvp } from '../../../../packages/rule-engine/src/mvp';
 import { defaultMvpConfig } from '../lib/mvp-config';
+import { proposePackingDemo, demoPhotoByPath, packingDemoSource } from '../lib/demo-packing';
 import { doc, docs, insertDoc, updateDoc, audit, development } from './db';
 import { ApiError, inputHash } from './security';
 import type { GuidanceSession } from '../lib/guidance';
@@ -11,9 +12,12 @@ import type { LiveSop, LiveStep, CheckpointResult } from '../lib/live-packing';
 export const configOwner='plantcare-system';
 export function mvpConfigs(){return [defaultMvpConfig,...docs<MvpConfig>('mvp-config')].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));}
 export function activeMvpConfig(){const active=doc<{version:string}>('mvp-active','current');return mvpConfigs().find(c=>c.version===active?.version)||defaultMvpConfig;}
-export function propose(owner:string,c:CaseRecord){
+export function propose(owner:string,c:CaseRecord,demo=false){
   if(['PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất. Tạo bản nháp mới.');
-  const bundle:MvpBundle={...proposeMvp(c.input,activeMvpConfig(),development()),id:randomUUID(),caseId:c.id,inputHash:inputHash(c.input),createdAt:new Date().toISOString()};
+  if(demo&&!development())throw new ApiError(409,'DEMO_LOCAL_ONLY','Bộ ảnh demo chỉ dùng trong chế độ phát triển.');
+  if(demo&&selectionFor(owner,c)?.started)throw new ApiError(409,'PACKING_STARTED','Kết thúc phiên hiện tại trước khi tạo bộ demo mới.');
+  const config=activeMvpConfig(),proposal=demo?proposePackingDemo(c.input,config.confidenceThreshold):proposeMvp(c.input,config,development());
+  const bundle:MvpBundle={...proposal,confidenceThreshold:config.confidenceThreshold,id:randomUUID(),caseId:c.id,inputHash:inputHash(c.input),createdAt:new Date().toISOString()};
   insertDoc('mvp-bundle',bundle.id,owner,bundle,bundle.outcome);const status=bundle.outcome==='READY'?'PLAN_READY':bundle.outcome==='NEED_INPUT'?'NEEDS_INPUT':'NEEDS_EXPERT';updateDoc('case',c.id,owner,{...c,flow:'MVP',status},status);audit(owner,bundle.outcome==='NEED_INPUT'?'MVP_NEED_INPUT':'MVP_PROPOSED',bundle.id);return bundle;
 }
 export function bundleFor(owner:string,c:CaseRecord,id:string,allowCompleted=false){
@@ -35,12 +39,18 @@ export function selectMvp(owner:string,c:CaseRecord,bundleId:string,alternativeI
 export function selectedMvp(owner:string,c:CaseRecord,allowCompleted=false){const s=selectionFor(owner,c);if(!s)throw new ApiError(422,'SELECTION_REQUIRED','Chọn một phương án trước.');const b=bundleFor(owner,c,s.bundleId,allowCompleted),a=b.alternatives.find(a=>a.id===s.alternativeId);if(!a)throw new ApiError(409,'SELECTION_CHANGED','Phương án không còn khớp.');return {s,b,a};}
 export function mvpSop(owner:string,c:CaseRecord):LiveSop{
   const {b,a}=selectedMvp(owner,c,true);const review=mvpConfigs().find(x=>x.version===b.configVersion)?.expertReview;
-  return {id:'mvp-'+b.id+'-'+a.id,plant:'potted',shipping_form:'POTTED',title:a.title,version:b.configVersion,status:b.developmentOnly?'DRAFT':'PUBLISHED',published:!b.developmentOnly,production_enabled:!b.developmentOnly,reviewer:review?.by||null,approved_at:review?.at||null,validation_status:b.developmentOnly?'NOT_EVALUATED':'EXPERT_REVIEWED',completeness:'PRD fixed selected alternative',supersedes_research:'',source_ids:['PRD-MVP-20261019'],scope:'Một cây nguyên chậu theo nhóm đã xác nhận',limits:null,steps:a.steps.map(s=>({id:s.id,title:s.title,instruction:s.instruction,speech_vi:s.speech,manual:s.manual,source_id:'PRD-MVP-20261019',source_locator:'Tính năng 5–8; mẫu cấu hình '+b.configVersion,mode:s.mode,camera_prompt_vi:'Đưa vùng đang đóng gói vào camera, giữ máy đủ sáng và rõ.',criteria:s.criteria,unverifiable:['Độ chắc và phần bị che kín phải kiểm tra trực tiếp.'],remedy_vi:s.remedy,criterion_origin:b.configVersion}))};
+  const source=b.demo?packingDemoSource:'PRD-MVP-20261019';
+  return {id:'mvp-'+b.id+'-'+a.id,plant:'potted',shipping_form:'POTTED',title:a.title,version:b.configVersion,status:b.developmentOnly?'DRAFT':'PUBLISHED',published:!b.developmentOnly,production_enabled:!b.developmentOnly,reviewer:review?.by||null,approved_at:review?.at||null,validation_status:b.developmentOnly?'NOT_EVALUATED':'EXPERT_REVIEWED',completeness:b.demo?'User supplied photo demonstration':'PRD fixed selected alternative',supersedes_research:'',source_ids:[source],scope:b.demo?'Demo theo ảnh mẫu người dùng cung cấp':'Một cây nguyên chậu theo nhóm đã xác nhận',limits:null,steps:a.steps.map(s=>{
+    const photo=b.demo?demoPhotoByPath.get(s.image):undefined;
+    return {id:s.id,title:s.title,instruction:s.instruction,speech_vi:s.speech,manual:s.manual,image:s.image,...(photo?{reference_image:{path:photo.image,sha256:photo.sha256}}:{}),source_id:source,source_locator:photo?.source||'Tính năng 5–8; mẫu cấu hình '+b.configVersion,mode:s.mode,camera_prompt_vi:'Đưa vùng đang đóng gói vào camera, giữ máy đủ sáng và rõ.',criteria:s.criteria,unverifiable:['Độ chắc, kích thước và phần bị che kín phải kiểm tra trực tiếp.'],remedy_vi:s.remedy,criterion_origin:b.configVersion};
+  })};
 }
 export function newPostCheck(owner:string,c:CaseRecord,g:GuidanceSession){
-  const {s,b}=selectedMvp(owner,c,true);if(g.bundleId!==b.id||g.alternativeId!==s.alternativeId||g.status!=='FINISHED')throw new ApiError(409,'GUIDANCE_INCOMPLETE','Hoàn tất đủ các bước trước khi hậu kiểm.');
+  const {s,b,a}=selectedMvp(owner,c,true);if(g.bundleId!==b.id||g.alternativeId!==s.alternativeId||g.status!=='FINISHED')throw new ApiError(409,'GUIDANCE_INCOMPLETE','Hoàn tất đủ các bước trước khi hậu kiểm.');
   const old=doc<MvpPostCheck>('mvp-postcheck',g.id,owner);if(old)return old;
-  const p:MvpPostCheck={id:g.id,caseId:c.id,bundleId:b.id,alternativeId:s.alternativeId,guidanceId:g.id,revision:1,items:[{id:'fixation',title:'Chậu cố định, không xê dịch',remedy:'Mở thùng và cố định lại chậu; kiểm tra bằng tay.'},...(s.alternativeId==='PA1'?[{id:'padding',title:'Chèn đủ quanh chậu',remedy:'Mở thùng, bổ sung vật liệu chèn quanh chậu, không ép tán.'}]:[]),{id:'wrap',title:'Bọc kín và đúng vị trí',remedy:'Kiểm tra lại vật liệu bọc giữ đất quanh miệng chậu.'},{id:'closure',title:'Dán kín thùng và nhãn dễ vỡ',remedy:'Dán lại các mép hở và bổ sung nhãn hướng kiện.'}].map(i=>({...i,status:'unverifiable',reason:'Chưa kiểm tra.',source:'PENDING'})),completedAt:null,updatedAt:new Date().toISOString()};insertDoc('mvp-postcheck',p.id,owner,p);return p;
+  const fixation={id:'fixation',title:'Chậu cố định, không xê dịch',remedy:'Mở kiện và kiểm tra độ cố định bằng tay.'};
+  const items=b.demo?[fixation,...a.steps.filter(x=>!['fix','tube'].includes(x.id)).map(x=>({id:x.id,title:x.title,remedy:x.remedy}))]:[fixation,...(s.alternativeId==='PA1'?[{id:'padding',title:'Chèn đủ quanh chậu',remedy:'Mở thùng, bổ sung vật liệu chèn quanh chậu, không ép tán.'}]:[]),{id:'wrap',title:'Bọc kín và đúng vị trí',remedy:'Kiểm tra lại vật liệu bọc giữ đất quanh miệng chậu.'},{id:'closure',title:'Dán kín thùng và nhãn dễ vỡ',remedy:'Dán lại các mép hở và bổ sung nhãn hướng kiện.'}];
+  const p:MvpPostCheck={id:g.id,caseId:c.id,bundleId:b.id,alternativeId:s.alternativeId,guidanceId:g.id,revision:1,items:items.map(i=>({...i,status:'unverifiable',reason:'Chưa kiểm tra.',source:'PENDING'})),completedAt:null,updatedAt:new Date().toISOString()};insertDoc('mvp-postcheck',p.id,owner,p);return p;
 }
 export function postCheckStep(p:MvpPostCheck):LiveStep{return {id:'postcheck',title:'Hậu kiểm kiện',instruction:'Kiểm các phần nhìn thấy của kiện sau đóng gói.',speech_vi:'Kiểm tra kiện sau đóng gói.',manual:'Độ cố định và các phần kín phải mở kiểm trực tiếp.',source_id:'PRD-MVP-20261019',source_locator:'Tính năng 8',mode:'visual',camera_prompt_vi:'Chụp rõ kiện, băng keo và nhãn.',criteria:p.items.map(i=>({id:i.id,visible_pass:i.id==='fixation'?'Không thể xác minh độ cố định chỉ bằng ảnh.':i.title,visible_fail:'Chỉ báo lỗi khi nhìn thấy rõ: '+i.remedy})),unverifiable:['Độ chắc bên trong và phần bị che khuất luôn cần kiểm tay.'],remedy_vi:'Chụp lại phần cần kiểm, hoặc mở kiện để kiểm trực tiếp.',criterion_origin:'PRD-MVP-20261019'};}
 export function savePostCheckAi(owner:string,c:CaseRecord,g:GuidanceSession,expected:number,result:CheckpointResult){

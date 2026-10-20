@@ -110,3 +110,9 @@ Bổ sung auto-fill đầy đủ 18/10/2026 (FR-10..17, TC-02): plant-recognitio
 ## Overlay PRD MVP 19/10/2026
 
 Thay đổi luồng UI/FR liên quan theo tài liệu Word mới được user chỉ định; giữ truy vết SRS gốc để không mất lịch sử. 10 tính năng, main/exception flow và phạm vi loại trừ được map từng locator → code → test trong [prd-mvp-20261019.md](prd-mvp-20261019.md). Overlay không phải nghiệm thu accuracy, SLA hoặc approval chuyên môn.
+
+Overlay demo ảnh 20/10/2026 (FR-18..21/26, TC-06/07/13/14): hardcode PA1/PA2 6/8 bước theo ảnh user, gallery và Vision pin cùng ảnh/step, test allowlist/checksum và payload hai ảnh tại packing-demo.test.ts/live-packing.test.ts; E2E mvp.spec.ts đi hết hai phương án và chuyển hồ sơ cũ sang demo mà giữ bundle cũ. Production gate tại guidance.test.ts. Mọi kết quả/provider thực và giới hạn tại implementation.md; không đóng release gate chuyên môn.
+
+Điều chỉnh lời đọc/lệnh cùng ngày (FR-18..21/26, TC-06/07/13): packingNarration chỉ đọc số bước + speech_vi, không nhắc câu lệnh hoàn tất. packing-voice-commands.test.ts và guided-packing.test.ts phân biệt câu hoàn tất ngắn với kiểm ảnh riêng, chặn phủ định/câu kể; packing-demo.test.ts kiểm lời cho đủ 14 bước. Hai bài PA1/PA2 mới trong live-packing.spec.ts kiểm lời tự đọc và ảnh đúng bước 1–3, nói “Xong rồi”/“Đã xong” kiểm rồi chuyển một bước, không cần AI nhắc trước; nhận giọng/camera/provider trong E2E là giả lập.
+
+Demo Phú quý theo yêu cầu mới (FR-10..17/18..21/26, TC-02/06/07/13/14): tests/demo-plant.test.ts kiểm cùng ảnh qua JPEG/WebP/resize, loại ảnh khác, đủ bộ số mẫu không giả confidence, giữ USER/late edit/confirmation và HIGH không vượt engine thường. Ba bài thêm ở e2e/mvp.spec.ts kiểm upload thật qua browser vào cả PA1/PA2, checkbox chặn bước, không gọi Gemini và không còn badge, owner/case/CSRF/nonmatch. Tài liệu/copy/contract ở packing-photo-demo.md và api-contracts.md. Kết quả thực và giới hạn tại implementation.md.

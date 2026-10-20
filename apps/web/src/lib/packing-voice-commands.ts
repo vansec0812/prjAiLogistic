@@ -4,10 +4,10 @@ export function packingIntent(transcript: string): PackingIntent|null {
     .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   // Whole utterances only: never accept substrings of negations or conversation.
   if(['toi da kiem tra truc tiep','da kiem tra truc tiep','da xong va da kiem tra truc tiep'].includes(text))return 'MANUAL_CONFIRM';
-  if(['da xong buoc nay','toi da xong buoc nay','xong buoc nay','tiep tuc buoc tiep theo','chuyen sang buoc tiep theo','sang buoc tiep theo','toi da hoan thanh buoc nay'].includes(text))return 'CONFIRM';
+  if(['da xong buoc nay','toi da xong buoc nay','xong buoc nay','tiep tuc buoc tiep theo','chuyen sang buoc tiep theo','sang buoc tiep theo','toi da hoan thanh buoc nay','toi da lam xong','da xong roi','xong roi','da xong','minh lam xong roi','toi lam xong roi','xong buoc nay roi','hoan thanh roi'].includes(text))return 'CONFIRM';
   if(['toi gap loi','co loi','bi loi','sai roi','toi lam sai','can kiem tra lai','cay bi hu','toi gap van de'].includes(text))return 'ISSUE';
   if(['da xu ly loi','toi da xu ly loi','da sua xong loi','da khac phuc'].includes(text))return 'RESOLVED';
-  if(['plantmove kiem tra','plant move kiem tra','kiem tra','kiem tra lai','kiem tra giup toi','kiem tra buoc nay','toi da lam xong','da xong roi','xong roi','da xong','minh lam xong roi'].includes(text))return 'CHECK';
+  if(['plantmove kiem tra','plant move kiem tra','kiem tra','kiem tra lai','kiem tra giup toi','kiem tra buoc nay'].includes(text))return 'CHECK';
   if(['dong y','toi dong y','dong y roi','vang','da','da vang','co','u','uh','dung roi','duoc','duoc roi','ok','oke','okay','toi xac nhan','toi da kiem tra','da kiem tra xong','toi da kiem tra truc tiep','da kiem tra truc tiep','da xong va da kiem tra truc tiep','toi hieu roi','tiep tuc','tiep tuc di','duoc tiep tuc di','chuyen buoc','sang buoc tiep','qua buoc tiep theo'].includes(text))return 'CONFIRM';
   if(['nhac lai','noi lai','doc lai','huong dan lai'].includes(text))return 'REPEAT';
   if(['giup toi','can giup do','toi chua hieu','toi khong biet lam','lam the nao'].includes(text))return 'HELP';

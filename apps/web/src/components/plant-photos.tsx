@@ -4,6 +4,7 @@ import { Camera, Upload, X, ScanLine } from 'lucide-react';
 import type { PlantInput } from '@plantcare/domain';
 import { api, useLoad, useSession, Alert } from './common';
 import { visionSchema, type PlantRecognition } from '../lib/plant-recognition';
+import { demoPlantId } from '../lib/demo-plant-profile';
 
 /** Bound client uploads also fit comfortably through a deployment proxy. */
 async function preparePhoto(file:File):Promise<File>{
@@ -17,13 +18,13 @@ async function preparePhoto(file:File):Promise<File>{
     if(!blob||blob.size>3*1024*1024)throw new Error('Ảnh còn quá lớn, chọn ảnh nhỏ hơn.');return new File([blob],'plant.jpg',{type:'image/jpeg'});
   }finally{bitmap.close();}
 }
-export function PlantPhotos({caseId,plant,onResult,onPhotoChange,onBusyChange}:{caseId:string;plant:PlantInput;onPhotoChange?:()=>void;onBusyChange?:(busy:boolean)=>void;onResult:(result:PlantRecognition,snapshot:PlantInput)=>void}){
+export function PlantPhotos({caseId,plant,onResult,onSample,onPhotoChange,onBusyChange}:{caseId:string;plant:PlantInput;onPhotoChange?:()=>void;onBusyChange?:(busy:boolean)=>void;onResult:(result:PlantRecognition,snapshot:PlantInput)=>void;onSample?:(snapshot:PlantInput)=>void}){
   const {session}=useSession(),{data,reload}=useLoad<{id:string;purpose:string}[]>('uploads?case_id='+caseId);
   const [accepted,setAccepted]=useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   useEffect(()=>{onBusyChange?.(busy);return()=>onBusyChange?.(false);},[busy,onBusyChange]);
   const [camera,setCamera]=useState(false),[opening,setOpening]=useState(false),video=useRef<HTMLVideoElement|null>(null),stream=useRef<MediaStream|null>(null),cameraSerial=useRef(0);
-  const alive=useRef(true),serial=useRef(0),controller=useRef<AbortController|null>(null),latest=useRef({plant,onResult});latest.current={plant,onResult};
+  const alive=useRef(true),serial=useRef(0),controller=useRef<AbortController|null>(null),latest=useRef({plant,onResult,onSample});latest.current={plant,onResult,onSample};
   function stopCamera(){cameraSerial.current++;stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;if(video.current)video.current.srcObject=null;if(alive.current){setCamera(false);setOpening(false);}}
   useEffect(()=>{alive.current=true;const hidden=()=>{if(document.hidden)stopCamera();};document.addEventListener('visibilitychange',hidden);return()=>{alive.current=false;serial.current++;controller.current?.abort();stopCamera();document.removeEventListener('visibilitychange',hidden);};},[]);
   useEffect(()=>{if(camera&&video.current){video.current.srcObject=stream.current;void video.current.play().catch(()=>{});}},[camera]);
@@ -37,6 +38,11 @@ export function PlantPhotos({caseId,plant,onResult,onPhotoChange,onBusyChange}:{
   }
   const photos=(data||[]).filter(p=>p.purpose==='PLANT');
   async function recognize(ids:string[],snapshot:PlantInput,token:number){
+    if(session.development&&latest.current.onSample){
+      const sample=await api<{sampleId:string|null}>(`cases/${caseId}/plant-demo`,{method:'POST',signal:controller.current?.signal,body:JSON.stringify({upload_id:ids[0]})},session.csrf);
+      if(!alive.current||token!==serial.current)return;
+      if(sample.sampleId===demoPlantId){latest.current.onSample(snapshot);setNotice('Đã điền thông số mẫu. Kiểm tra và xác nhận.');return;}
+    }
     if(!session.aiConfigured){setNotice('AI chưa kết nối. Bạn có thể nhập thông tin bên dưới.');return;}
     const consent=await api<{id:string}>('consents',{method:'POST',body:JSON.stringify({purpose:'AI_ANALYSIS',accepted:true}),signal:controller.current?.signal},session.csrf);
     const job=await api<{job_id:string}>(`cases/${caseId}/plant-analysis`,{method:'POST',signal:controller.current?.signal,body:JSON.stringify({upload_ids:ids,consent_id:consent.id})},session.csrf);
@@ -47,7 +53,7 @@ export function PlantPhotos({caseId,plant,onResult,onPhotoChange,onBusyChange}:{
       if(value.status==='SUCCEEDED'){
         const result=visionSchema.parse(value.result);latest.current.onResult(result,snapshot);
         const readings=result.plant_details?.readings||[],hasEstimates=readings.some(r=>r.origin==='VISUAL_ESTIMATE');
-        setNotice(result.schema_version==='vision-v3'?(result.image_quality==='CLEAR'?'AI đã quét ảnh. Kiểm tra thông tin và bổ sung các trường cần nhập tay.':'Chụp lại rõ toàn cây và chậu ở nơi đủ sáng, hoặc nhập tay.'):!result.plant_candidates.some(c=>c.group!=='UNKNOWN')&&!readings.some(r=>r.value!==null)?'Chưa nhìn rõ cây và chậu. Chụp lại toàn cây hoặc nhập tay.':hasEstimates?'AI đã điền thông tin và ước tính thông số. Kiểm tra lại trước khi xác nhận.':'Đã tự điền thông tin nhận diện. Kiểm tra số đo rồi xác nhận.');return;
+        setNotice(result.schema_version==='vision-v3'?(result.image_quality==='CLEAR'?'Kiểm tra và bổ sung thông tin.':'Chụp lại rõ toàn cây và chậu ở nơi đủ sáng, hoặc nhập tay.'):!result.plant_candidates.some(c=>c.group!=='UNKNOWN')&&!readings.some(r=>r.value!==null)?'Chưa nhìn rõ cây và chậu. Chụp lại toàn cây hoặc nhập tay.':hasEstimates?'AI đã điền thông tin và ước tính thông số. Kiểm tra lại trước khi xác nhận.':'Đã tự điền thông tin nhận diện. Kiểm tra số đo rồi xác nhận.');return;
       }
       if(['FAILED','CANCELLED'].includes(value.status))throw new Error('Chưa nhận diện được ảnh. Chụp rõ toàn cây và chậu rồi thử lại, hoặc nhập tay.');
       await new Promise(resolve=>setTimeout(resolve,800));
@@ -64,6 +70,6 @@ export function PlantPhotos({caseId,plant,onResult,onPhotoChange,onBusyChange}:{
     {photos.map(p=><div className="upload-preview" key={p.id}><img src={'/api/v1/uploads/'+p.id} alt="Ảnh cây đã tải"/><button className="icon-button" aria-label="Xóa ảnh cây" disabled={busy} onClick={async()=>{try{await api('uploads/'+p.id,{method:'DELETE'},session.csrf);await reload();}catch(e){setError((e as Error).message);}}}><X size={15}/></button></div>)}</div>
     {camera&&<div className="plant-camera"><video ref={video} autoPlay muted playsInline aria-label="Camera chụp cây"/><div className="button-row"><button className="button primary" disabled={busy} onClick={()=>void capture()}>Chụp ảnh này</button><button className="button secondary" onClick={stopCamera}>Đóng camera</button></div></div>}
     {busy&&<p role="status" className="recognition-status">Đang quét ảnh và tự điền…</p>}{notice&&<Alert kind="info">{notice}</Alert>}{error&&<Alert kind="error">{error}</Alert>}
-    {!!photos.length&&<button className="button secondary small" disabled={busy||!session.aiConfigured||!accepted} onClick={()=>void retry()}>Nhận diện lại</button>}
+    {!!photos.length&&<button className="button secondary small" disabled={busy||!session.aiConfigured&&!session.development||!accepted} onClick={()=>void retry()}>Nhận diện lại</button>}
   </section>;
 }

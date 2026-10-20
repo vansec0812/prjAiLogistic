@@ -15,7 +15,7 @@ function setup() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Vietnamese packing commands', () => {
-  it.each(['Đã xong bước này','Tôi đã xong bước này','Tiếp tục bước tiếp theo','Chuyển sang bước tiếp theo'])('confirms the current step with %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
+  it.each(['Đã xong bước này','Tôi đã xong bước này','Tiếp tục bước tiếp theo','Chuyển sang bước tiếp theo','Đã xong','Xong rồi','Đã xong rồi.','DA XONG ROI','Tôi đã làm xong','Mình làm xong rồi','Hoàn thành rồi'])('confirms the current step with %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
   it('distinguishes explicit physical inspection from generic agreement',()=>{expect(packingIntent('Tôi đã kiểm tra trực tiếp')).toBe('MANUAL_CONFIRM');expect(packingIntent('Tôi chưa kiểm tra trực tiếp')).toBeNull();});
   it.each(['Tôi gặp lỗi','Tôi làm sai','Tôi gặp vấn đề'])('pauses on a problem report %s',text=>expect(packingIntent(text)).toBe('ISSUE'));
   it.each(['Tôi đã xử lý lỗi','Đã khắc phục'])('recognizes resolution without step completion %s',text=>expect(packingIntent(text)).toBe('RESOLVED'));
@@ -23,8 +23,8 @@ describe('Vietnamese packing commands', () => {
   it.each(['đồng ý','Dạ vâng!','OK','được, tiếp tục đi','tôi xác nhận','tôi hiểu rồi'])('recognizes explicit agreement %s',text=>expect(packingIntent(text)).toBe('CONFIRM'));
   it.each(['không đồng ý','chưa kiểm tra','tôi không đồng ý','bạn ấy đồng ý','có nhưng chưa xong','đừng chuyển bước'])('never takes negation or third-person agreement %s',text=>expect(packingIntent(text)).toBeNull());
   it('supports scoped help, repeat and stop commands',()=>{expect(packingIntent('nhắc lại')).toBe('REPEAT');expect(packingIntent('giúp tôi')).toBe('HELP');expect(packingIntent('tắt camera')).toBe('STOP');});
-  it.each(['PlantMove, kiểm tra!', 'Plant Move kiểm tra', 'Đã xong rồi.', 'xong rồi', 'đã xong', 'DA XONG ROI'])('accepts explicit command %s', text => expect(isPackingCheckCommand(text)).toBe(true));
-  it.each(['chưa xong', 'Chưa xong rồi', 'không kiểm tra', 'đừng kiểm tra', 'tôi chưa xong rồi', 'khi nào xong rồi thì kiểm tra', 'bạn ấy đã xong rồi', 'chưa xong. Đã xong rồi', 'PlantMove đừng kiểm tra', ''])('rejects negation or surrounding conversation %s', text => expect(isPackingCheckCommand(text)).toBe(false));
+  it.each(['PlantMove, kiểm tra!', 'Plant Move kiểm tra', 'kiểm tra', 'kiểm tra lại'])('checks without advancing with %s', text => expect(isPackingCheckCommand(text)).toBe(true));
+  it.each(['chưa xong', 'Chưa xong rồi', 'không kiểm tra', 'đừng kiểm tra', 'tôi chưa xong rồi', 'khi nào xong rồi thì kiểm tra', 'bạn ấy đã xong rồi', 'chưa xong. Đã xong rồi', 'PlantMove đừng kiểm tra', ''])('never checks or advances on negation or surrounding conversation %s', text => expect(['CHECK','CONFIRM','MANUAL_CONFIRM']).not.toContain(packingIntent(text)));
   it('accepts only final speech and locks synchronously against repeated and stale events', () => {
     const s = setup(); s.listener.enable(); const r = s.instances[0], receive = r.onresult!;
     expect(r.lang).toBe('vi-VN'); expect(r.interimResults).toBe(false);

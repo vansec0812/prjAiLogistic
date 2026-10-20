@@ -14,6 +14,7 @@ Thư mục `.code` dùng để điều hành triển khai từ SRS ở mức sen
 | [test-strategy.md](test-strategy.md) | TC-01..14, fixtures, fault/concurrency, performance và release evidence |
 | [decisions.md](decisions.md) | Baseline đề xuất, lệch SRS, quyết định cần owner và gate production |
 | [implementation.md](implementation.md) | ADR local, source/runtime thực, evidence kiểm thử và giới hạn chưa nghiệm thu |
+| [packing-photo-demo.md](packing-photo-demo.md) | Bộ ảnh mẫu PA1/PA2, thứ tự 6/8 bước, pin ảnh cho Vision và kiểm thử demo |
 | [../research/README.md](../research/README.md) | Review nguồn/RAG, scope/license, dữ liệu regression và giới hạn training |
 
 Đọc theo thứ tự: `../agent.md` -> `../plan.md` -> `source-index.md` -> `decisions.md` -> hồ sơ của task -> row truy vết. Chỉ dẫn hành vi thuộc `agent.md`, lộ trình thuộc `plan.md`; tránh sao chép làm lệch nguồn.
