@@ -2,6 +2,10 @@
 
 Ngày khởi tạo 11/10/2026. **Tất cả quyết định dưới đây còn OPEN hoặc PROPOSED**, chưa có xác nhận từ chủ sản phẩm/chuyên gia. Tài liệu là đề xuất review được, không quyết định production thay người sở hữu.
 
+## ADR-009: Vercel Functions và Neon riêng — 21/10/2026
+
+Yêu cầu mới giao tự triển khai thành công trên Vercel, thay giới hạn chỉ chuẩn bị Node-volume của ADR-004 trong deployment này. Chọn Neon integration đã có, tạo project PlantCare riêng ở Singapore/gói Free, chỉ nối Production. Dùng PostgreSQL cho hồ sơ/session/outbox và tệp private; SQLite local giữ nguyên. Lớp tương thích synchronous/worker giữ API transaction hiện có, TLS xác minh và khóa advisory cho ghi giữa instance. Không đặt DB trong `/tmp`, không public ảnh, không chuyển dữ liệu local hay nâng gói. `after` xử lý job trên Functions, lease phục hồi khi có request; scheduler luôn chạy và tải lớn là giới hạn còn mở. SMS thiếu không tạo OTP giả, không tự duyệt SOP/demo production. Thực thi/rollback và hạn chế tại [hướng dẫn deploy](../VERCEL_DEPLOYMENT.md). Đây là quyết định triển khai theo yêu cầu user; không đóng các đề xuất nghiệp vụ/chuyên môn còn OPEN bên dưới.
+
 | ID | Vấn đề / nguồn | Đề xuất hoặc việc cần chốt | Owner / gate |
 | --- | --- | --- | --- |
 | D-01 | Stack không bị SRS khóa, p.40/114 | TypeScript/Next.js/NestJS/PostgreSQL/Redis/private S3, modular monolith + worker; validate versions/renderer ở M1 | SE + chủ sản phẩm; trước bootstrap stack |

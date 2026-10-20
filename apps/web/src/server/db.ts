@@ -2,12 +2,17 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { postgresDatabase, type Database } from './postgres';
 
 export const development = () => process.env.NODE_ENV !== 'production' && process.env.PLANTCARE_MODE !== 'production';
 export const dataDir = () => process.env.PLANTCARE_DATA_DIR || path.resolve(/* turbopackIgnore: true */ process.cwd(), process.cwd().endsWith(path.join('apps','web'))?'../../.data':'.data');
-const globalDb = globalThis as typeof globalThis & { plantcareDb?: DatabaseSync };
+const globalDb = globalThis as typeof globalThis & { plantcareDb?: Database };
 export function db(){
-  if(globalDb.plantcareDb)return globalDb.plantcareDb;
+  if(globalDb.plantcareDb&&!globalDb.plantcareDb.closed)return globalDb.plantcareDb;
+  if(process.env.PLANTCARE_STORAGE==='postgres'){
+    if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is required.');
+    return globalDb.plantcareDb=postgresDatabase(process.env.DATABASE_URL);
+  }
   mkdirSync(dataDir(),{recursive:true});
   const d=new DatabaseSync(path.join(dataDir(),'plantcare.sqlite'),{timeout:5000});
   d.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;

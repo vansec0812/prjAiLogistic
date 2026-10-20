@@ -1,4 +1,27 @@
-# Deploy frontend Vercel và backend Node có ổ lưu trữ
+# Deploy PlantCare lên Vercel
+
+## Runtime đang triển khai — 21/10/2026
+
+Theo yêu cầu tự triển khai mới, ứng dụng chạy trực tiếp trên Vercel Node 24 Functions tại `sin1`, dùng database Neon riêng `plantcare-production` trên gói Free. Root Directory là `apps/web`, bật include ngoài root; install/build/output lấy từ `apps/web/vercel.json`.
+
+Đặt `PLANTCARE_STORAGE=postgres`, `APP_ORIGIN=https://prj-ai-logistic.vercel.app` và secret `PLANTCARE_OTP_SECRET` ≥32 ký tự. Kết nối Neon chỉ Production để tự cấp `DATABASE_URL`; không dùng database của project khác, không gắn preview vào production. Không đặt `PLANTCARE_BACKEND_URL` trong mode này. Mẫu tại `deploy/vercel-cloud.env.example`. Gemini/SMS ở server env, không có prefix `NEXT_PUBLIC_`. Storage target là hằng build không bí mật, đổi target cần rebuild. `postbuild` kiểm mọi NFT trace và loại env/dữ liệu local khỏi artifact, kể cả trên Windows.
+
+Schema `plantcare` có cùng constraints, owner checks, version/idempotency và trigger bất biến. Ảnh chuẩn hóa và exports nằm trong `private_files` dạng BYTEA, chỉ đọc qua API có auth/owner; không có URL ảnh public. Không cần `/tmp` hoặc volume. Tệp tối đa 20 MiB; database Free có hạn mức, phù hợp dữ liệu MVP, cần theo dõi dung lượng trước khi tăng sử dụng.
+
+Lớp tương thích SQL dùng worker thread có một connection TLS xác minh chứng thư; callback transaction synchronous không bị tách giữa connection. PostgreSQL advisory transaction lock giữ semantics ghi của SQLite giữa instance. SQL chặn event loop trong thời gian round-trip: chấp nhận cho MVP hiện tại, chưa phù hợp tải lớn; bước tiếp theo là repository async và khóa theo resource sau khi có load evidence. Lỗi mạng/timeout không tự replay mutation. Dữ liệu local `.data` không được tự chuyển lên cloud.
+
+Vercel Route Handler dùng `after` và `maxDuration=300`; outbox/lease vẫn bền vững, request tiếp theo phục hồi job hết lease. Chưa có worker nền luôn chạy hoặc cron tần suất cao. Font Noto Sans kèm OFL được bundle để xuất PDF tiếng Việt.
+
+Kiểm thử database thật (file env bị Git bỏ qua):
+
+```powershell
+$env:PLANTCARE_POSTGRES_TEST='1'
+node --env-file=.env.cloud.local node_modules/vitest/vitest.mjs run tests/postgres.integration.test.ts
+```
+
+Fixture có UUID riêng và được dọn theo đúng owner; không đụng dữ liệu người dùng. Các kiểm tra hiện có cho SQLite vẫn phải qua. Khóa Gemini chỉ cấu hình trong Vercel Secret, không ghi vào repo. Thiếu SMS trả `SMS_UNAVAILABLE`, không sinh mã giả trong production. Demo ảnh/Phú quý vẫn local; cấu hình SOP chưa duyệt vẫn chặn production. Deploy kỹ thuật không thay phê duyệt chuyên môn hay kiểm thử SMS/load/restore.
+
+## Phương án Node có volume vẫn được hỗ trợ
 
 Cập nhật 18/10/2026 theo lựa chọn của người dùng. Repo có Docker backend, cấu hình Vercel và proxy API. Chưa tạo hosting hoặc domain; điền SMS, Gemini và hai origin HTTPS thật trước khi chạy trên Internet.
 

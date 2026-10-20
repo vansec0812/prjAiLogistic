@@ -1,5 +1,7 @@
 # Kiến trúc và luồng thực thi
 
+Runtime cloud hiện hành 21/10/2026: Vercel Node Functions tại Singapore → Neon project riêng → schema `plantcare` gồm hồ sơ, session, lease/outbox và BYTEA private files. Server owner/CSRF/version guards giữ nguyên, không có filesystem tạm làm dữ liệu bền vững. Worker package Node được nạp nguyên bản và bundle bằng file tracing, `after` giữ tác vụ trong vòng đời Function. Cấu hình/giới hạn throughput và scheduler tại [VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md), quyết định ADR-009. Phần Node-volume bên dưới là phương án lịch sử vẫn được hỗ trợ; local vẫn SQLite.
+
 Nguồn SRS: p.9-13, 33-39, 45-55, 114-115. Stack bên dưới là đề xuất phục vụ lập kế hoạch, không phải kết luận từ PDF.
 
 ## Baseline và cấu trúc repo dự kiến

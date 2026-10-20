@@ -12,7 +12,7 @@ export function publicAsset(asset:string){
     :path.join(process.cwd(),'apps/web/public',asset.slice(1));
 }
 export async function renderPdf(version:PlanVersion):Promise<Uint8Array>{
-  const fontPath=[process.env.PLANTCARE_PDF_FONT,'C:/Windows/Fonts/arial.ttf','/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'].find(p=>p&&existsSync(p));
+  const fontPath=[process.env.PLANTCARE_PDF_FONT,path.join(process.cwd(),process.cwd().endsWith(path.join('apps','web'))?'public/fonts/NotoSans.ttf':'apps/web/public/fonts/NotoSans.ttf'),'C:/Windows/Fonts/arial.ttf','/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'].find(p=>p&&existsSync(p));
   if(!fontPath)throw new Error('PDF_FONT_UNAVAILABLE');
   const pdf=await PDFDocument.create();pdf.registerFontkit(fontkit);
   const font=await pdf.embedFont(readFileSync(fontPath),{subset:true});

@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { backendOrigin } from '../apps/web/src/lib/deployment';
 import { validateBackendEnvironment } from '../apps/web/src/server/runtime';
 describe('split deployment configuration',()=>{
+  it('runs API on Vercel with cloud storage and rejects mixing cloud storage with a proxy',()=>{
+    expect(backendOrigin({VERCEL:'1',PLANTCARE_STORAGE:'postgres'})).toBeNull();
+    expect(()=>backendOrigin({PLANTCARE_STORAGE:'postgres',PLANTCARE_BACKEND_URL:'https://backend.test'})).toThrow();
+  });
   it('fails frontend build without upstream and rejects credentials, paths and proxy loops',()=>{
     expect(()=>backendOrigin({VERCEL:'1'})).toThrow();
     for(const url of ['http://backend.test','https://x:y@backend.test','https://backend.test/api','https://backend.test/?token=x'])expect(()=>backendOrigin({NODE_ENV:'production',PLANTCARE_BACKEND_URL:url})).toThrow();

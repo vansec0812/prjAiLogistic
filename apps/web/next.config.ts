@@ -4,9 +4,14 @@ const {backendOrigin}=require(path.join(__dirname,'deployment.cjs')) as typeof i
 const upstream=backendOrigin(process.env);
 const config: NextConfig = {
   distDir: process.env.PLANTCARE_BUILD_DIR || '.next',
+  // Non-secret build target, so the cloud bundle omits local filesystem branches.
+  env: { PLANTCARE_STORAGE: process.env.PLANTCARE_STORAGE || 'sqlite' },
   devIndicators: false,
   turbopack: { root: path.resolve(__dirname, '../..') },
-  serverExternalPackages: ['sharp', 'bcryptjs', 'pdf-lib', '@pdf-lib/fontkit'],
+  serverExternalPackages: ['sharp', 'bcryptjs', 'pdf-lib', '@pdf-lib/fontkit', 'pg', '@plantcare/postgres-store'],
+  outputFileTracingRoot: path.resolve(__dirname, '../..'),
+  outputFileTracingExcludes: {'/*':['../../.data/**/*','../../.env*','../../output/**/*','../../test-results/**/*','../../source/**/*','../../.git/**/*']},
+  outputFileTracingIncludes: {'/api/v1/*':['../../packages/postgres-store/**/*','../../node_modules/pg*/**/*','../../node_modules/postgres-*/**/*','../../node_modules/split2/**/*','../../node_modules/xtend/**/*','./public/fonts/**/*','./public/photos/**/*','./public/illustrations/**/*']},
   async rewrites(){return {beforeFiles:upstream?[{source:'/api/v1/:path*',destination:upstream+'/api/v1/:path*'}]:[],afterFiles:[],fallback:[]};},
   async headers() {
     return [{source:'/api/v1/:path*',headers:[{key:'Cache-Control',value:'private, no-store'},{key:'x-vercel-enable-rewrite-caching',value:'0'}]},{source:'/(.*)',headers:[

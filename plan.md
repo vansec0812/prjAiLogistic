@@ -132,6 +132,8 @@ Yêu cầu mới thay flow ở mục 13 bằng cây → hành trình → PA1/PA2
 
 ## 15. Demo ảnh mẫu — 20/10/2026
 
+Triển khai tiếp theo 21/10/2026: người dùng giao tự deploy lên Vercel. Runtime cloud dùng Vercel Functions + Neon riêng (Free/Singapore), giữ SQLite cho local. Auth/owner/version và gate chuyên môn giữ nguyên; `after` thay timer không bền trên Functions, hồ sơ/ảnh/export lưu PostgreSQL. Thiết lập, giới hạn throughput/queue và lệnh kiểm tại [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Không tự bật billing hay chuyển dữ liệu local; SMS thật, rule approval, tải và restore tiếp tục cần evidence.
+
 Theo yêu cầu hardcode: PA1 6 bước thùng xốp, PA2 8 bước ống carton từ `source/pa1` và `source/pa2`. Local dùng hai ví dụ sau xác nhận đầu vào; ảnh đầy đủ và lời đọc theo đúng bước, Vision đối chiếu ảnh mẫu riêng với ảnh thực hiện. Không ghi đè lịch sử/cấu hình được duyệt. Bản demo và phạm vi kiểm tại [.code/packing-photo-demo.md](.code/packing-photo-demo.md); workflow thống nhất tại agent.md.
 
 Điều chỉnh tiếp theo: mỗi bước tự đọc số bước và lời theo ảnh, bỏ lời nhắc nói đã xong; nhận “Đã xong”/“Xong rồi” như xác nhận bước, vẫn chặn lỗi và thiếu kiểm tra. Ngữ nghĩa tại [VOICE_COMMANDS.md](VOICE_COMMANDS.md).

@@ -5,10 +5,15 @@ import { evaluate, draftRulePack } from '../packages/rule-engine/src/index';
 import { retrieveKnowledge, KNOWLEDGE_VERSION, referenceContext } from '../packages/knowledge/src/index';
 import { sampleInput } from '../apps/web/src/server/seed';
 import { markdownReport, serializeReport } from '../apps/web/src/server/export';
-import { publicAsset } from '../apps/web/src/server/pdf';
+import { publicAsset, renderPdf } from '../apps/web/src/server/pdf';
 import { validateRagAnswer } from '../packages/knowledge/src/validation';
 
 describe('Readiness and evidence-bound detailed outputs',()=>{
+  it('renders Vietnamese PDF using the bundled font without a system font dependency',async()=>{
+    const input=sampleInput(),plan=evaluate(input,draftRulePack,true);
+    const bytes=await renderPdf({id:'font-fixture',caseId:'fixture',number:1,inputHash:'hash',snapshot:input,plan,createdAt:new Date().toISOString(),stale:false});
+    expect(Buffer.from(bytes).subarray(0,5).toString()).toBe('%PDF-');expect(bytes.byteLength).toBeGreaterThan(10000);
+  });
   it('requires measured inputs while leaving unknown prices optional',()=>{const input=sampleInput();input.materials.forEach(m=>m.price=null);expect(getReadiness(input).ready).toBe(true);input.plant.confirmed=false;expect(getReadiness(input).missing.map(m=>m.id)).toContain('plant-confirmed');});
   it('blocks expired departure and unknown load before the UI generate action',()=>{const input=sampleInput();input.shipment.departure=new Date(Date.now()-1000).toISOString();input.materials[0].maxLoad=null;expect(getReadiness(input).missing.map(m=>m.id)).toEqual(expect.arrayContaining(['route','box']));});
   it('attaches input-specific actions, stops, source scope and original asset fallback to six steps',()=>{const input=sampleInput(),plan=evaluate(input,draftRulePack,true);expect(plan.report?.schemaVersion).toBe('packing-report-v2');expect(plan.report?.knowledgeVersion).toBe(KNOWLEDGE_VERSION);for(const step of plan.steps){expect(step.actions!.length).toBeGreaterThanOrEqual(3);expect(step.checkpoints!.length).toBeGreaterThanOrEqual(2);expect(step.stopConditions!.length).toBeGreaterThan(0);expect(step.materialIds!.every(id=>plan.usedMaterialIds.includes(id))).toBe(true);expect(existsSync(publicAsset(step.illustration))).toBe(true);expect(existsSync(publicAsset(step.schematic!))).toBe(true);expect(step.illustrationNotice).toContain('không phải');}expect(plan.report?.references.every(r=>r.reviewStatus==='UNREVIEWED')).toBe(true);});

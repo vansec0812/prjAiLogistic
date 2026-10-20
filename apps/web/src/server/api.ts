@@ -7,14 +7,13 @@ import type { GuidanceSession } from '../lib/guidance';
 import { vietnameseTts } from './vietnamese-tts';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { compareSync, hashSync } from 'bcryptjs';
-import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'node:fs';
-import path from 'node:path';
+import { readPrivateFile, writePrivateFile, deletePrivateFile } from './private-files';
 import sharp, { type Metadata } from 'sharp';
 import Decimal from 'decimal.js';
 import { z } from 'zod';
 import type { CaseRecord, PlanVersion, MaterialInput, CaseInput } from '@plantcare/domain';
 import { emptyInput, getReadiness } from '@plantcare/domain';
-import { db, transaction, doc, docs, insertDoc, updateDoc, audit, development, dataDir } from './db';
+import { db, transaction, doc, docs, insertDoc, updateDoc, audit, development } from './db';
 import { ApiError, requireUser, session, checkOrigin, checkMutation, issueSession, sha, inputHash, otpHash, newOtp, equalHash, rateLimit, type User } from './security';
 import { parse, registerSchema, inputSchema } from './schemas';
 import { demoUser, sampleInput } from './seed';
@@ -79,7 +78,7 @@ const articles=[
 ];
 
 export async function handle(req:NextRequest,parts:string[]):Promise<NextResponse>{
-  if(process.env.VERCEL==='1')return NextResponse.json({error:{code:'BACKEND_ROUTING_REQUIRED',message:'API chưa được kết nối tới backend.'}},{status:503,headers:{'Cache-Control':'no-store'}});
+  if(process.env.VERCEL==='1'&&process.env.PLANTCARE_STORAGE!=='postgres')return NextResponse.json({error:{code:'BACKEND_ROUTING_REQUIRED',message:'API chưa được kết nối tới backend.'}},{status:503,headers:{'Cache-Control':'no-store'}});
   try{return await route(req,parts);}catch(error){
     const e=error instanceof ApiError?error:new ApiError(500,'INTERNAL_ERROR','Không thể xử lý lúc này. Dữ liệu đã lưu vẫn được giữ.');
     if(!(error instanceof ApiError))console.error(JSON.stringify({event:'api_error',request_id:randomUUID(),type:error instanceof Error?error.name:'Unknown'}));
@@ -89,7 +88,10 @@ export async function handle(req:NextRequest,parts:string[]):Promise<NextRespons
 async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   const method=req.method,endpoint=parts.join('/');
   wakeWorker();
-  if(endpoint==='health')return success({status:'ok',mode:development()?'development':'production-gated',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL),smsConfigured:!!process.env.SMS_ADAPTER_URL});
+  if(endpoint==='health'){
+    db().prepare('SELECT 1 AS ok').get();
+    return success({status:'ok',mode:development()?'development':'production-gated',storage:process.env.PLANTCARE_STORAGE==='postgres'?'postgres':'sqlite',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL),smsConfigured:!!process.env.SMS_ADAPTER_URL});
+  }
   if(endpoint==='session'&&method==='GET'){const user=session(req);return success({user:user?{id:user.id,name:user.name,username:user.username,role:user.role}:null,csrf:user?.csrf||null,development:development(),referenceGuideEnabled:development()||process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED==='true',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL)});}
   if(parts[0]==='articles'&&method==='GET')return success(parts[1]?articles.find(a=>a.slug===parts[1])||null:articles);
   if(parts[0]==='shared'&&method==='GET'){
@@ -233,7 +235,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       if(['PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất.');
       const value=parse(z.object({upload_id:z.string()}).strict(),await body(req)),upload=owned<Upload>('upload',value.upload_id,user.id);
       if(upload.caseId!==c.id||upload.purpose!=='PLANT')throw missing();
-      const matched=await matchesDemoPlantPhoto(readFileSync(path.join(dataDir(),'uploads',upload.file)));
+      const matched=await matchesDemoPlantPhoto(readPrivateFile('uploads',upload.file));
       if(matched)audit(user.id,'DEMO_PLANT_MATCHED',c.id);
       return success({sampleId:matched?demoPlantId:null});
     }
@@ -305,7 +307,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   }
   if(parts[0]==='exports'&&method==='GET'){
     const job=owned<Job>('job',parts[1],user.id);if(job.type!=='EXPORT'||job.status!=='SUCCEEDED')throw new ApiError(409,'EXPORT_PENDING','PDF chưa sẵn sàng.');
-    const meta=exportMetadata[job.exportFormat||'PDF'];return new NextResponse(readFileSync(path.join(dataDir(),'exports',job.id+'.'+meta.extension)),{headers:{'Content-Type':meta.mime,'Content-Disposition':`attachment; filename="PlantCare-${job.id.slice(0,8)}.${meta.extension}"`,'Cache-Control':'no-store'}});
+    const meta=exportMetadata[job.exportFormat||'PDF'];return new NextResponse(new Uint8Array(readPrivateFile('exports',job.id+'.'+meta.extension)),{headers:{'Content-Type':meta.mime,'Content-Disposition':`attachment; filename="PlantCare-${job.id.slice(0,8)}.${meta.extension}"`,'Cache-Control':'no-store'}});
   }
   if(parts[0]==='uploads'){
     if(parts.length===1&&method==='POST'){
@@ -323,15 +325,15 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       let normalized:Buffer;
       try{normalized=await sharp(bytes,{limitInputPixels:30000000}).rotate().resize(2048,2048,{fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}
       catch{throw new ApiError(422,'INVALID_IMAGE','Ảnh bị lỗi hoặc không giải mã được.');}
-      const id=randomUUID(),filename=id+'.webp';mkdirSync(path.join(dataDir(),'uploads'),{recursive:true});writeFileSync(path.join(dataDir(),'uploads',filename),normalized);
+      const id=randomUUID(),filename=id+'.webp';writePrivateFile('uploads',filename,normalized);
       const upload:Upload={id,caseId,purpose,file:filename,mime:'image/webp',size:normalized.length},removed:Upload[]=[];
-      try{transaction(()=>{const current=owned<CaseRecord>('case',caseId,user.id);if(current.status==='DELETED'||purpose==='PLANT'&&['PACKED','SHIPPED','RECEIVED'].includes(current.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã kết thúc.');insertDoc('upload',id,user.id,{...upload,...(purpose==='PLANT'?{storageConsent:{acceptedAt:new Date().toISOString(),purpose:'PLANT_PROFILE'}}:{})},'READY');if(purpose==='PLANT')for(const old of docs<Upload>('upload',user.id).filter(u=>u.caseId===caseId&&u.purpose==='PLANT'&&u.id!==id)){db().prepare("DELETE FROM documents WHERE kind='upload' AND id=? AND owner_id=?").run(old.id,user.id);removed.push(old);}});}catch(e){unlinkSync(path.join(dataDir(),'uploads',filename));throw e;}
-      for(const old of removed){const filePath=path.join(dataDir(),'uploads',old.file);if(existsSync(filePath))unlinkSync(filePath);}audit(user.id,'UPLOAD_READY',id);return success(upload,201);
+      try{transaction(()=>{const current=owned<CaseRecord>('case',caseId,user.id);if(current.status==='DELETED'||purpose==='PLANT'&&['PACKED','SHIPPED','RECEIVED'].includes(current.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã kết thúc.');insertDoc('upload',id,user.id,{...upload,...(purpose==='PLANT'?{storageConsent:{acceptedAt:new Date().toISOString(),purpose:'PLANT_PROFILE'}}:{})},'READY');if(purpose==='PLANT')for(const old of docs<Upload>('upload',user.id).filter(u=>u.caseId===caseId&&u.purpose==='PLANT'&&u.id!==id)){db().prepare("DELETE FROM documents WHERE kind='upload' AND id=? AND owner_id=?").run(old.id,user.id);removed.push(old);}});}catch(e){deletePrivateFile('uploads',filename);throw e;}
+      for(const old of removed)deletePrivateFile('uploads',old.file);audit(user.id,'UPLOAD_READY',id);return success(upload,201);
     }
     if(parts.length===1&&method==='GET'){const caseId=req.nextUrl.searchParams.get('case_id');if(caseId)owned<CaseRecord>('case',caseId,user.id);return success(docs<Upload>('upload',user.id).filter(u=>!caseId||u.caseId===caseId).map(({file,...u})=>u));}
     const u=owned<Upload>('upload',parts[1],user.id);
-    if(method==='GET'){const c=owned<CaseRecord>('case',u.caseId,user.id);if(c.status==='DELETED')throw missing();return new NextResponse(readFileSync(path.join(dataDir(),'uploads',u.file)),{headers:{'Content-Type':u.mime,'Cache-Control':'private,no-store'}});}
-    if(method==='DELETE'){db().prepare('DELETE FROM documents WHERE kind=? AND id=? AND owner_id=?').run('upload',u.id,user.id);if(existsSync(path.join(dataDir(),'uploads',u.file)))unlinkSync(path.join(dataDir(),'uploads',u.file));return success({deleted:true});}
+    if(method==='GET'){const c=owned<CaseRecord>('case',u.caseId,user.id);if(c.status==='DELETED')throw missing();return new NextResponse(new Uint8Array(readPrivateFile('uploads',u.file)),{headers:{'Content-Type':u.mime,'Cache-Control':'private,no-store'}});}
+    if(method==='DELETE'){transaction(()=>{db().prepare('DELETE FROM documents WHERE kind=? AND id=? AND owner_id=?').run('upload',u.id,user.id);deletePrivateFile('uploads',u.file);});return success({deleted:true});}
   }
   if(parts[0]==='materials'){
     if(method==='GET')return success(docs<Inventory>('material',user.id));

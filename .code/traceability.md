@@ -2,6 +2,8 @@
 
 Nguồn: SRS p.7-8 (UR), p.15-32 (FR), p.52-54 (NFR), p.59-108 (UI), p.109-113 (TC).
 
+Overlay deploy 21/10/2026 (auth, private media, durability; TC-01/02/06/13/14): `server/postgres.ts`, `packages/postgres-store`, `server/private-files.ts` và Route Handler `after` hỗ trợ Vercel/Neon. `tests/postgres.integration.test.ts` kiểm DB thật, rollback/immutability/version, private bytes qua connection mới, auth/cookie/CSRF/upload; `scripts/check-vercel.mjs` kiểm URL deployment bằng fixture riêng và tùy chọn một Vision call thật. `tests/report-knowledge.test.ts` kiểm PDF font bundle. Kết quả/giới hạn tại implementation.md; không dùng smoke để đóng NFR load/restore hay approval chuyên môn.
+
 Tất cả hàng **OPEN** về nghiệm thu đầy đủ/release. Website local đã có implementation/test evidence cho một phần luồng, ghi tại [implementation.md](implementation.md); chưa đủ điều kiện đóng các hàng vì provider, rule approval, policy và nhiều acceptance còn thiếu. Mốc là đề xuất kế hoạch; P0/P1, UR và acceptance theo PDF. TC trong cột test là truy vết gốc khi có; phần kiểm bổ sung là kế hoạch của SE. UI không có row riêng cho mọi modal/API.
 
 ## 53 yêu cầu chức năng

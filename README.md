@@ -2,15 +2,17 @@
 
 Website tiếng Việt giúp nhà vườn và người bán cây chuẩn bị đóng gói **một cây/chậu cho một hành trình**. Theo PRD MVP đã chốt: nhận diện/xác nhận cây → xác nhận hành trình → so sánh PA1 An toàn nhất và PA2 Tối ưu chi phí → chọn phương án → hướng dẫn từng bước bằng camera/giọng nói hoặc thủ công → hậu kiểm → lưu lịch sử. Rule Engine quyết định phương án; AI chỉ gợi ý và kiểm phần nhìn thấy.
 
-**Trạng thái:** frontend/backend hoạt động; có cấu hình triển khai **Vercel cho giao diện + Docker Node có persistent volume**. Quy tắc/SOP vẫn DRAFT, chưa duyệt chuyên môn; release gates R0/R1 chưa nghiệm thu đầy đủ. Chưa tạo hosting production.
+**Triển khai 21/10/2026:** ứng dụng hỗ trợ **Vercel Node Functions + Neon PostgreSQL riêng (Free, Singapore)**; dữ liệu hồ sơ, session, ảnh private và exports bền vững trên cloud. Local vẫn dùng SQLite. Quy tắc/SOP vẫn DRAFT, chưa duyệt chuyên môn; SMS thật, kiểm tải/restore và release gates R0/R1 chưa nghiệm thu đầy đủ. Xem [hướng dẫn triển khai](VERCEL_DEPLOYMENT.md).
 
 Repository: [vansec0812/prjAiLogistic](https://github.com/vansec0812/prjAiLogistic).
+
+Địa chỉ production: [prj-ai-logistic.vercel.app](https://prj-ai-logistic.vercel.app). Health/readiness tại `/api/v1/health`; kiểm tra cả kết nối PostgreSQL và trạng thái cấu hình provider. Tài khoản mới cần SMS thật để xác minh trước khi đăng nhập.
 
 **Demo ảnh mẫu 20/10/2026:** local dùng sẵn PA1 thùng xốp **6 bước** và PA2 ống carton **8 bước** từ ảnh bạn cung cấp. Xác nhận cây/hành trình → chọn PA → xem ảnh → Bắt đầu hướng dẫn. Với hồ sơ cũ chưa bắt đầu, chọn **Dùng ảnh mẫu PA1/PA2**. AI đối chiếu ảnh mẫu đúng bước với camera; vẫn cần xác nhận để chuyển bước. Bộ demo chỉ chạy local, giá chưa có; [chi tiết](.code/packing-photo-demo.md).
 
 Upload đúng `source/cayphuquy.jpg` sẽ điền **Cây phú quý lá đỏ / Cây lá / 50–40–40–20–25 cm / 5 kg / Cao - cần chuyên gia / Gốm/sứ**. Đây là bộ mẫu do bạn cung cấp, nhận ảnh local không gọi Gemini; xác nhận rồi nhập hành trình để chọn PA1 hoặc PA2. Form bỏ các badge AI/phần trăm/Cần nhập tay.
 
-Deploy theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md): backend giữ DB/ảnh/jobs trên volume, Vercel proxy API cùng origin. Cần domain backend HTTPS và SMS/Gemini thật; không chạy SQLite trên Vercel Functions.
+Deploy trực tiếp theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md): kết nối database Neon riêng vào Production, đặt `PLANTCARE_STORAGE=postgres`, `APP_ORIGIN` và các server secret. Không cần URL backend ngoài trong mode cloud. Phương án Docker Node/volume + Vercel proxy vẫn được hỗ trợ. Không chạy SQLite trên Vercel Functions; SMS chưa cấu hình sẽ chặn đăng ký/OTP theo đúng rule.
 
 ## Mục lục
 

@@ -2,7 +2,7 @@ import { randomBytes, createHash, createHmac, timingSafeEqual, randomInt } from 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
-import { db, dataDir, development } from './db';
+import { db, dataDir, development, transaction } from './db';
 
 export class ApiError extends Error {constructor(public status:number,public code:string,message:string,public fields?:Record<string,string>){super(message);}}
 export interface User {id:string;username:string;phone:string;name:string;status:string;role:string;}
@@ -15,6 +15,7 @@ export function canonical(value:unknown):string{
 export const inputHash=(value:unknown)=>sha(canonical(value));
 function pepper(){
   if(process.env.PLANTCARE_OTP_SECRET){if(process.env.PLANTCARE_OTP_SECRET.length<32)throw new Error('OTP secret is too short.');return process.env.PLANTCARE_OTP_SECRET;}
+  if(process.env.PLANTCARE_STORAGE==='postgres')throw new Error('PLANTCARE_OTP_SECRET is required.');
   mkdirSync(dataDir(),{recursive:true});const file=path.join(dataDir(),'otp-secret');
   if(!existsSync(file))writeFileSync(file,randomBytes(32).toString('hex'),{flag:'wx',mode:0o600});
   return readFileSync(file,'utf8');
@@ -41,7 +42,9 @@ export function issueSession(user:User,data:unknown){
   res.cookies.set('pc-session',token,{httpOnly:true,secure:!development(),sameSite:'lax',path:'/',maxAge:7*86400});return res;
 }
 export function rateLimit(bucket:string,max:number,windowMs:number){
-  const now=Date.now();const row=db().prepare('SELECT count,reset_at FROM limits WHERE bucket=?').get(bucket) as {count:number;reset_at:number}|undefined;
-  if(row&&row.reset_at>now&&row.count>=max)throw new ApiError(429,'RATE_LIMIT','Thử lại sau khi hết thời gian chờ.');
-  db().prepare('INSERT INTO limits VALUES(?,?,?) ON CONFLICT(bucket) DO UPDATE SET count=excluded.count,reset_at=excluded.reset_at').run(bucket,row&&row.reset_at>now?row.count+1:1,row&&row.reset_at>now?row.reset_at:now+windowMs);
+  transaction(()=>{
+    const now=Date.now();const row=db().prepare('SELECT count,reset_at FROM limits WHERE bucket=?').get(bucket) as {count:number;reset_at:number}|undefined;
+    if(row&&row.reset_at>now&&row.count>=max)throw new ApiError(429,'RATE_LIMIT','Thử lại sau khi hết thời gian chờ.');
+    db().prepare('INSERT INTO limits VALUES(?,?,?) ON CONFLICT(bucket) DO UPDATE SET count=excluded.count,reset_at=excluded.reset_at').run(bucket,row&&row.reset_at>now?row.count+1:1,row&&row.reset_at>now?row.reset_at:now+windowMs);
+  });
 }

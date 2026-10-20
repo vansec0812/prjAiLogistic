@@ -2,6 +2,12 @@
 
 Đây là bản ghi bổ sung cho task xây website theo PDF/MD, không thay đổi nội dung SRS hoặc xác nhận R0/R1 đã phát hành. Nguồn yêu cầu và trang vẫn nằm tại `source-index.md`/`traceability.md`; các quyết định còn OPEN tiếp tục có hiệu lực.
 
+## Vercel và dữ liệu cloud — 21/10/2026
+
+Theo yêu cầu tự triển khai: tạo Neon project riêng `plantcare-production` (Free/Singapore), kết nối Production, giữ dữ liệu local và env người dùng. Runtime Vercel Node24/`sin1` dùng PostgreSQL cho hồ sơ/session/jobs/private bytes. Adapter synchronous giới hạn tại MVP, transaction cùng connection/TLS/advisory lock; `after` và lease thay timer trên Functions. PDF có Noto Sans/OFL đi kèm. Đã phát hiện và sửa lỗi bundler đổi đường dẫn worker; kiểm file tracing phải loại `.data`, env và artifacts khỏi output.
+
+Kiểm thực trước deploy: 184 unit PASS; 4 PostgreSQL integration PASS với DB Neon thật; 6 workflow + 10 MVP + 15 camera/voice E2E PASS (provider/camera trong E2E là mock). Build production/TypeScript đã qua. HTTP smoke trên bản production đóng gói và Neon thật đã PASS auth/cookie/CSRF, tạo hồ sơ, owner isolation, private upload/read; không gọi AI trong lần này. Artifact kiểm đủ runtime/worker/pg/font và không còn tham chiếu `.data`/env sau postbuild. URL thật kiểm bằng `scripts/check-vercel.mjs` sau deployment; `--ai` kiểm thêm một Vision job thật qua `after`, giữ usage tính quota khi dọn fixture. SMS thật, rule/SOP approval, HA/load/restore và worker nền liên tục chưa có evidence; không có fake OTP hoặc tự publish cấu hình để làm smoke qua. Cấu hình/rollback tại [VERCEL_DEPLOYMENT.md](../VERCEL_DEPLOYMENT.md).
+
 ## ADR-001: runtime local không cần Docker
 
 **Quyết định trong phạm vi reversible local:** dùng Next.js 16.4.0 route handlers + React 19.3.0 + Node 24 `node:sqlite`, private filesystem và DB-backed job/outbox. Không cần cài Docker; máy hiện có Node 24.19.0. NestJS/PostgreSQL/Redis trong tài liệu gốc là baseline đề xuất, chưa được owner phê duyệt cho production. Chưa coi lựa chọn local này là chấp thuận đổi baseline production.
