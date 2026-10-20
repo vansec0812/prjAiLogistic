@@ -1,6 +1,7 @@
 import type { CaseInput, MvpAlternative, MvpBundle, MvpStep } from '@plantcare/domain';
 import { mvpInputIssues } from '../../../../packages/rule-engine/src/mvp';
 import photos from '../data/packing-demo-photos.json';
+import { alternativeNames } from './mvp-labels';
 
 export const packingDemoVersion='packing-photos-2026.10.20-v1';
 export const packingDemoSource='USER-PACKING-DEMO-20261020';
@@ -29,8 +30,8 @@ const pa2:MvpStep[]=[
 ];
 function material(id:string,name:string,image:string){return {id,name,image,unit:'bộ',price:null,active:true,quantity:1,subtotal:null};}
 export const demoAlternatives:MvpAlternative[]=[
-  {id:'PA1',title:'Thùng xốp',description:'6 bước theo bộ ảnh PA1 bạn cung cấp.',steps:pa1,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:['Ảnh mẫu demo · Thùng xốp · 6 bước.'],bom:[material('foam','Thùng xốp',pa1[1].image),material('padding','Vật liệu chèn lót',pa1[1].image),material('wrap','Màng co',pa1[0].image),material('tape','Băng keo',pa1[2].image),material('label','Tem hàng dễ vỡ',pa1[4].image),material('waybill','Vận đơn',pa1[5].image)]},
-  {id:'PA2',title:'Ống carton',description:'8 bước theo bộ ảnh PA2 bạn cung cấp.',steps:pa2,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:['Ảnh mẫu demo · Ống carton · 8 bước.'],bom:[material('wrap','Màng bọc',pa2[0].image),material('pot-protection','Carton bảo vệ chậu',pa2[2].image),material('tube','Ống carton',pa2[3].image),material('tape','Băng keo',pa2[5].image),material('direction','Bút ghi hướng lên',pa2[6].image),material('waybill','Vận đơn',pa2[7].image)]}
+  {id:'PA1',title:alternativeNames.PA1,description:'',steps:pa1,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:[],bom:[material('foam','Thùng xốp',pa1[1].image),material('padding','Vật liệu chèn lót',pa1[1].image),material('wrap','Màng co',pa1[0].image),material('tape','Băng keo',pa1[2].image),material('label','Tem hàng dễ vỡ',pa1[4].image),material('waybill','Vận đơn',pa1[5].image)]},
+  {id:'PA2',title:alternativeNames.PA2,description:'',steps:pa2,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:[],bom:[material('wrap','Màng bọc',pa2[0].image),material('pot-protection','Carton bảo vệ chậu',pa2[2].image),material('tube','Ống carton',pa2[3].image),material('tape','Băng keo',pa2[5].image),material('direction','Bút ghi hướng lên',pa2[6].image),material('waybill','Vận đơn',pa2[7].image)]}
 ];
 
 /** Explicit local demonstration; never an eligibility or safety decision for the shipment. */

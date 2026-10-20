@@ -101,6 +101,8 @@ Lời đọc theo yêu cầu tiếp theo 20/10/2026: khi vào bước, tự đ�
 
 Demo Phú quý theo yêu cầu tiếp theo: ảnh `source/cayphuquy.jpg` và bản nén/resize khớp fingerprint local điền bộ mẫu “Cây phú quý lá đỏ”, FOLIAGE, 50/40/40/20/25 cm, 5 kg, HIGH, Gốm / sứ. Ghi source=DEMO, confidence=null, chờ checkbox xác nhận; giữ manual/late edit. Không gọi Gemini hoặc dùng tên file để nhận mẫu. Không hiện badge nguồn/phần trăm/Cần nhập tay trên form; validation vẫn giữ. HIGH không bị hạ để demo PA1/PA2, engine thường vẫn cần chuyên gia. Không áp bộ số này cho ảnh khác; endpoint mẫu chỉ local. Xem [.code/packing-photo-demo.md](.code/packing-photo-demo.md).
 
+Tên hiển thị theo yêu cầu mới: PA1 = “Phương án an toàn nhất”, PA2 = “Phương án tối ưu chi phí nhất”. Không hiện mô tả/gợi chú demo kiểu “6 bước theo bộ ảnh bạn cung cấp”; giữ tên mới khi đọc hồ sơ cũ qua lớp trình bày, không sửa snapshot, mã phương án, ảnh hoặc thứ tự bước.
+
 Flow hiện hành theo PRD đã chốt: tạo → một ảnh/nhập cây → confidence từng trường, NEED_INPUT phải nhập tay → checkbox xác nhận → hành trình/kênh/ngày gửi → xác nhận → hai phương án PA1/PA2 + BOM/chi phí → chọn → ảnh/bước theo phương án → mở camera tùy chọn → Bắt đầu → xác nhận từng bước → hậu kiểm → lưu lịch sử. Không ép kho/ảnh vật tư vào wizard MVP. Chi tiết, fingerprint và ma trận 10 tính năng tại [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md).
 
 AI không đo/cân qua ảnh; gợi ý có nguồn AI/USER và confidence tự đánh giá, không phải xác suất đúng. Ngưỡng cấu hình mặc định 70%; thấp/unknown giữ null hoặc NEED_INPUT, người dùng phải nhập tay. Manual/confirmed không bị ghi đè. Đang nhận diện khóa xác nhận; thay ảnh hoặc sửa trường bỏ xác nhận. Không tự xác nhận hành trình hoặc lấy ví dụ PRD làm dự báo/giá thực.

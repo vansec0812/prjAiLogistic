@@ -15,6 +15,8 @@ Theo yêu cầu hardcode hai phương án để demo. Đã đọc trực quan đ
 
 `apps/web/src/lib/demo-packing.ts` là bộ nội dung cố định, version `packing-photos-2026.10.20-v1`. Lời đọc tiếng Việt pin theo bước, tiêu chí chỉ phần nhìn thấy; số đo, độ chắc và dữ liệu vận đơn kiểm trực tiếp. Không tự thêm nhiệt độ/thời gian/giá hoặc claim tiết kiệm. BOM mô tả một bộ vật tư, mọi giá chưa biết là null.
 
+Tên giao diện theo yêu cầu tiếp theo: PA1 “Phương án an toàn nhất”, PA2 “Phương án tối ưu chi phí nhất”. Bỏ mô tả/gợi chú “theo bộ ảnh bạn cung cấp”, thu gọn nhãn thành “Chế độ demo”/“Ảnh hướng dẫn”. `mvp-labels.ts` áp nhãn theo ID cho cả bundle cũ; không migrate hoặc ghi đè dữ liệu lịch sử. Tên là nhãn sản phẩm người dùng yêu cầu, không thay phê duyệt/đánh giá chi phí; giá chưa có tiếp tục null.
+
 Theo yêu cầu tiếp theo: vào bước tự đọc “Bước N.” + speech_vi đúng ảnh, không đọc thêm lời nhắc nói đã xong hoặc hướng dẫn câu lệnh. Sau kiểm ảnh đạt chỉ báo kết quả ngắn. “Đã xong”/“Xong rồi” là xác nhận hoàn tất bước như “Đã xong bước này”, khác “Kiểm tra” chỉ xem ảnh; không cần AI nhắc trước mới nhận lệnh. Vẫn giữ guard lỗi/unknown/kiểm tay và micro opt-in. Không sửa snapshot hoặc speech_vi của phiên cũ; thay cách ghép lời đọc tại packing-narration.ts.
 
 ## Hồ sơ mẫu Phú quý

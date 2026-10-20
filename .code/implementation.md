@@ -207,3 +207,7 @@ Kiểm thực chạy:
 - Sau chỉnh mobile, chạy lại hai bài `--grep 'Phu quy sample'`: **2 PASS**, xem trực quan output/qa/phu-quy-pa1-profile.png và phu-quy-pa2-profile.png. Source/fixture giữ nguyên; không tràn hoặc cắt tên/độ dễ hư trên mobile.
 - Regression upload/chụp thường: `playwright test --config playwright.live.config.ts --grep 'PRD create|camera capture uploads'`: **2 PASS**, nhánh ảnh khác vẫn nhận diện/gợi ý và giữ manual/checkbox.
 - Local `/app/new` trả HTTP200, web tiếp tục ở http://127.0.0.1:3000. Không chạy Gemini thật/camera/micro vật lý hoặc deploy/publish trong task này; các kiểm AI dùng mock. Không thay env riêng người dùng hoặc ghi approval chuyên môn.
+
+## Tên phương án và copy giao diện — 20/10/2026
+
+Theo yêu cầu mới: PA1 hiển thị “Phương án an toàn nhất”, PA2 hiển thị “Phương án tối ưu chi phí nhất”. Dùng nhãn theo ID ở lớp trình bày cho cả hồ sơ cũ; bộ đề xuất mới cũng lưu tên mới, bỏ mô tả và notes demo kiểu “6 bước theo bộ ảnh bạn cung cấp”. Thu gọn banner/chú thích thành “Chế độ demo”/“Ảnh hướng dẫn”, bỏ dòng giải thích nguồn ảnh ở bảng chi phí. Không đổi mã, ảnh, số/thứ tự bước, lời đọc hoặc snapshot lịch sử. `playwright test --config playwright.mvp.config.ts --grep 'Phu quy sample|old catalog results'`: **3 PASS**, có assert đúng hai tên và không còn câu nguồn thừa. `npm.cmd run build`: **PASS**, gồm TypeScript. Chỉnh sửa copy không tạo test unit mới hoặc chạy lại provider thật.
