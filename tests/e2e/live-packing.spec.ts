@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
 import { sopCatalog } from '../../apps/web/src/lib/live-packing';
+import { waveFixture } from '../fixtures/wave';
 const origin='http://127.0.0.1:3107';
 test.afterEach(async({page})=>page.unrouteAll({behavior:'ignoreErrors'}));
 async function login(page:Page,ai=true){
@@ -41,6 +42,85 @@ async function checkpoint(page:Page,status:'passed'|'needs_adjustment'|'unverifi
   await page.route('**/api/v1/cases/*/guidance/*',async route=>{const id=route.request().url().split('/').at(-1)!,g=sessions.get(id);if(!g)return route.continue();const d=route.request().postDataJSON();expect(d.expected_revision).toBe(g.revision);expect(d.manual_checked).toBe(true);expect(g.checks[d.step_id].status).toBe('passed');const next={...g,index:g.index+1,revision:g.revision+1,records:{...g.records,[d.step_id]:{kind:'ai',result:g.checks[d.step_id],confirmation:{method:d.method}}}};sessions.set(id,next);await route.fulfill({json:{data:next}});});
   return ()=>calls;
 }
+
+async function setupPhotoGuidance(page:Page){
+  const token=await csrf(page),headers={Origin:origin,'x-csrf-token':token},read=async(r:Awaited<ReturnType<typeof page.request.get>>)=>{expect(r.ok()).toBe(true);return (await r.json()).data;};
+  let c=await read(await page.request.post('/api/v1/cases',{headers,data:{name:'Camera speech regression',sample:true}}));
+  c.input.shipment={...c.input.shipment,channel:'DIRECT',distanceKm:35,departure:new Date(Date.now()+86400000).toISOString()};
+  c=await read(await page.request.patch('/api/v1/cases/'+c.id,{headers,data:{name:c.name,input:c.input,expected_version:c.version}}));
+  const root=`/api/v1/cases/${c.id}`,bundle=await read(await page.request.post(root+'/mvp/proposals',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,demo:true}}));
+  await read(await page.request.post(root+'/mvp/selection',{headers,data:{bundle_id:bundle.id,alternative_id:'PA1',expected_revision:0}}));
+  const g=await read(await page.request.post(root+'/guidance',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,mode:'MVP',bundle_id:bundle.id,alternative_id:'PA1'}}));
+  await page.goto(`/app/cases/${c.id}/guide?session=${g.id}`);return g;
+}
+
+test('Gemini speech quota shows the reset time and leaves the packing step unchanged',async({page})=>{
+  await browserSpeech(page,false);await login(page);
+  const message='Giọng Việt AI đã hết hạn mức Gemini trong ngày. Thử lại từ 14:00 22/10 (giờ Việt Nam).';
+  await page.route('**/api/v1/live-packing/speech',route=>route.fulfill({status:429,json:{error:{code:'TTS_PROVIDER_QUOTA',message}}}));
+  const g=await setupPhotoGuidance(page);await page.getByText('Âm thanh',{exact:true}).click();
+  await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();
+  await expect(page.getByText(message,{exact:true})).toBeVisible();
+  await expect(page.getByText('Chưa phát được âm thanh',{exact:true})).toBeVisible();
+  await expect(page.locator('.live-step h2')).toHaveText(g.boundSop.steps[0].title);
+  await expect(page.getByRole('button',{name:'Đã xong bước này',exact:true})).toBeEnabled();
+  expect(await page.evaluate(()=>(window as unknown as {spoken:string[]}).spoken)).toEqual([]);
+});
+
+for(const status of ['passed','needs_adjustment'] as const)test(`MVP camera ${status} result finishes cloud speech after the session revision changes`,async({page})=>{
+  await browserSpeech(page,false);await login(page);
+  const wave=Buffer.concat([waveFixture().subarray(0,44),Buffer.alloc(48000)]);wave.writeUInt32LE(wave.length-8,4);wave.writeUInt32LE(wave.length-44,40);
+  const spoken:string[]=[],failed:string[]=[];
+  page.on('requestfailed',request=>{if(request.url().endsWith('/live-packing/speech'))failed.push(request.failure()?.errorText||'failed');});
+  await page.route('**/api/v1/live-packing/speech',async route=>{
+    spoken.push(route.request().postDataJSON().text);await new Promise(resolve=>setTimeout(resolve,200));
+    await route.fulfill({json:{data:{audio_base64:wave.toString('base64'),mime_type:'audio/wav'}}});
+  });
+  const g=await setupPhotoGuidance(page);await page.getByText('Âm thanh',{exact:true}).click();
+  await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();await expect(page.getByText('Đã đọc xong',{exact:true})).toBeVisible();
+  await camera(page);await page.getByLabel('Cho AI kiểm tra hình ảnh').check();await page.getByText('Quyền riêng tư & chế độ kiểm tra',{exact:true}).click();await page.getByLabel('Kiểm ảnh định kỳ khi thao tác').uncheck();
+  const count=await checkpoint(page,status),expected=status==='passed'?'Phần nhìn thấy đạt.':'Cần sửa trước khi tiếp tục.';
+  const feedback=page.waitForRequest(request=>request.url().endsWith('/live-packing/speech')&&request.postDataJSON().text.startsWith(expected));
+  await page.getByRole('button',{name:'Kiểm tra ảnh',exact:true}).click();await feedback;
+  await expect(page.getByText('Đang phát giọng Việt AI',{exact:true})).toBeVisible();await expect(page.getByText('Đã đọc xong',{exact:true})).toBeVisible();
+  expect(failed).toEqual([]);expect(count()).toBe(1);expect(spoken.filter(text=>text.startsWith('Bước 1.'))).toHaveLength(1);
+  await expect(page.locator('.live-step h2')).toHaveText(g.boundSop.steps[0].title);
+  if(status==='needs_adjustment')await page.screenshot({path:'output/qa/camera-step-1-feedback.png',fullPage:true});
+});
+
+test('MVP camera service failure reads the specific error and keeps the current step',async({page})=>{
+  await browserSpeech(page);await login(page);const g=await setupPhotoGuidance(page);
+  await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();await camera(page);await page.getByLabel('Cho AI kiểm tra hình ảnh').check();
+  await page.getByText('Quyền riêng tư & chế độ kiểm tra',{exact:true}).click();await page.getByLabel('Kiểm ảnh định kỳ khi thao tác').uncheck();
+  const message='Gemini tạm quá tải hoặc không khả dụng. Thử lại sau hoặc xác nhận thủ công.';
+  await page.route('**/api/v1/live-packing/check',route=>route.fulfill({status:503,json:{error:{code:'AI_PROVIDER_UNAVAILABLE',message}}}));
+  await page.getByRole('button',{name:'Kiểm tra ảnh',exact:true}).click();
+  await expect(page.getByRole('alert').filter({hasText:message})).toBeVisible();await expect.poll(()=>page.evaluate(text=>(window as unknown as {spoken:string[]}).spoken.includes(text),message)).toBe(true);
+  await expect(page.locator('.live-step h2')).toHaveText(g.boundSop.steps[0].title);await expect(page.getByRole('button',{name:'Kiểm tra ảnh',exact:true})).toBeEnabled();
+});
+
+test('MVP start and resume play cloud narration without an installed Vietnamese voice',async({page})=>{
+  await browserSpeech(page,false);await login(page);
+  const token=await csrf(page),headers={Origin:origin,'x-csrf-token':token},read=async(r:Awaited<ReturnType<typeof page.request.get>>)=>{expect(r.ok()).toBe(true);return (await r.json()).data;};
+  let c=await read(await page.request.post('/api/v1/cases',{headers,data:{name:'Cloud narration start',sample:true}}));
+  c.input.shipment={...c.input.shipment,channel:'DIRECT',distanceKm:35,departure:new Date(Date.now()+86400000).toISOString()};
+  c=await read(await page.request.patch('/api/v1/cases/'+c.id,{headers,data:{name:c.name,input:c.input,expected_version:c.version}}));
+  const root=`/api/v1/cases/${c.id}`,bundle=await read(await page.request.post(root+'/mvp/proposals',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,demo:true}}));
+  await read(await page.request.post(root+'/mvp/selection',{headers,data:{bundle_id:bundle.id,alternative_id:'PA1',expected_revision:0}}));
+  const g=await read(await page.request.post(root+'/guidance',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,mode:'MVP',bundle_id:bundle.id,alternative_id:'PA1'}}));
+  const wave=Buffer.concat([waveFixture().subarray(0,44),Buffer.alloc(48000)]);wave.writeUInt32LE(wave.length-8,4);wave.writeUInt32LE(wave.length-44,40);
+  let calls=0;
+  await page.route('**/api/v1/live-packing/speech',async route=>{
+    calls++;const body=route.request().postDataJSON();expect(body.consent).toBe(true);expect(body.text).toContain('Bước 1.');
+    await route.fulfill({json:{data:{audio_base64:wave.toString('base64'),mime_type:'audio/wav'}}});
+  });
+  await page.goto(`/app/cases/${c.id}/guide?session=${g.id}`);await page.getByText('Âm thanh',{exact:true}).click();
+  expect(calls).toBe(0);await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();
+  await expect(page.getByText('Đã đọc xong',{exact:true})).toBeVisible();expect(calls).toBe(1);
+  await page.getByRole('button',{name:'Tạm dừng',exact:true}).click();await page.getByRole('button',{name:'Tiếp tục phiên',exact:true}).click();
+  await expect(page.getByText('Đã đọc xong',{exact:true})).toBeVisible();expect(calls).toBe(1);
+  expect(await page.evaluate(()=>(window as unknown as {spoken:string[]}).spoken)).toEqual([]);
+});
 
 for(const alternative of ['PA1','PA2'])test(`${alternative} automatically narrates its photo steps and understands completion without a spoken prompt`,async({page})=>{
   await browserSpeech(page);await login(page);const token=await csrf(page),headers={Origin:origin,'x-csrf-token':token},read=async(r:Awaited<ReturnType<typeof page.request.get>>)=>{expect(r.ok()).toBe(true);return (await r.json()).data;};

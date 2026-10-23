@@ -8,7 +8,7 @@ Repository: [vansec0812/prjAiLogistic](https://github.com/vansec0812/prjAiLogist
 
 Địa chỉ production: [prj-ai-logistic.vercel.app](https://prj-ai-logistic.vercel.app). Health/readiness tại `/api/v1/health`; kiểm tra cả kết nối PostgreSQL và trạng thái cấu hình provider. Tài khoản mới cần SMS thật để xác minh trước khi đăng nhập.
 
-**Demo ảnh mẫu 20/10/2026:** local dùng sẵn PA1 thùng xốp **6 bước** và PA2 ống carton **8 bước** từ ảnh bạn cung cấp. Xác nhận cây/hành trình → chọn PA → xem ảnh → Bắt đầu hướng dẫn. Với hồ sơ cũ chưa bắt đầu, chọn **Dùng ảnh mẫu PA1/PA2**. AI đối chiếu ảnh mẫu đúng bước với camera; vẫn cần xác nhận để chuyển bước. Bộ demo chỉ chạy local, giá chưa có; [chi tiết](.code/packing-photo-demo.md).
+**Demo ảnh mẫu 20/10/2026:** local dùng sẵn PA1 thùng xốp **6 bước** và PA2 ống carton **8 bước** từ ảnh bạn cung cấp. Xác nhận cây/hành trình → chọn PA → xem ảnh → Bắt đầu hướng dẫn. Với hồ sơ cũ chưa bắt đầu, chọn **Dùng ảnh mẫu PA1/PA2**. AI đối chiếu ảnh mẫu đúng bước với camera; vẫn cần xác nhận để chuyển bước. Bộ demo chỉ chạy local; giá vật liệu cố định cập nhật 22/10/2026 theo yêu cầu: **PA1 3.400đ**, **PA2 900đ**, có bảng so sánh cho cả demo cũ chưa có giá; [chi tiết](.code/packing-photo-demo.md).
 
 Upload đúng `source/cayphuquy.jpg` sẽ điền **Cây phú quý lá đỏ / Cây lá / 50–40–40–20–25 cm / 5 kg / Cao - cần chuyên gia / Gốm/sứ**. Đây là bộ mẫu do bạn cung cấp, nhận ảnh local không gọi Gemini; xác nhận rồi nhập hành trình để chọn PA1 hoặc PA2. Form bỏ các badge AI/phần trăm/Cần nhập tay.
 
@@ -156,7 +156,7 @@ SMS adapter nhận POST JSON `{phone, code, purpose, request_id}` với purpose 
 3. AI đánh giá đủ tên/nhóm, sáu số đo/khối lượng, độ dễ hư, vật liệu chậu và confidence từng trường. Ngưỡng mặc định 70%; trường thiếu/thấp phải nhập tay. Kiểm bằng thước/cân rồi tích **Tôi xác nhận thông số cây và chậu đã chính xác**. Sửa/thay ảnh bỏ xác nhận; đang quét khóa tiếp tục.
 4. Nhập nơi đi/nơi đến, kênh Shopee/TikTok Shop/trực tiếp/khác, ngày giờ tương lai. Ước tính hành trình, chỉnh khoảng cách/ETA/nhiệt độ/nguồn, xác nhận. Chưa có weather provider: giả định mùa được ghi rõ, địa danh chưa nhận ra cần nhập tay.
 5. Xem hai phương án và bảng BOM/chi phí. PA2 có thể bị ẩn kèm lý do. Giá thiếu hiển thị chưa có giá; không cộng thành giá 0. Chọn phương án, xem các hình/bước tương ứng.
-6. Chọn **Sử dụng camera AI** hoặc **Hướng dẫn thủ công**. Camera preview tùy chọn; bấm **Bắt đầu** mới chạy hướng dẫn. Bật nhận lệnh/kiểm ảnh riêng nếu dùng. Có tạm dừng/tiếp tục/kết thúc, lặp lại, mute/âm lượng.
+6. Chọn **Sử dụng camera AI**. Camera preview tùy chọn; bấm **Bắt đầu** mới chạy hướng dẫn. Bật nhận lệnh/kiểm ảnh riêng nếu dùng. Có tạm dừng/tiếp tục/kết thúc, lặp lại, mute/âm lượng.
 7. Nói “Đã xong bước này”/“Tiếp tục bước tiếp theo”; visual cần ảnh đạt hoặc kiểm tay. “Tôi đã kiểm tra trực tiếp” là xác nhận kiểm tay khi AI không quan sát được; lỗi đang thấy cần xử lý/kiểm lại. Nói “Tôi gặp lỗi”, “Nhắc lại”, “Dừng lại” khi cần.
 8. Hoàn tất bước → **Hậu kiểm kiện**. Chụp/scan tùy chọn hoặc kiểm tay từng tiêu chí. Độ cố định bên trong luôn cần USER kiểm tay. Đủ tiêu chí mới **Lưu hồ sơ đã đóng gói**; lịch sử giữ snapshot/chi phí/phiên bản/hậu kiểm. Không mặc định lưu ảnh hậu kiểm hoặc camera.
 
@@ -372,5 +372,7 @@ FR/NFR chưa nghiệm thu đầy đủ tiếp tục OPEN trong traceability. B�
 
 
 ## Hướng dẫn AI theo PRD MVP
+
+Demo sen đá: chạy web local, tạo hồ sơ rồi tải [ảnh sen đá mới](source/sen-da/plant.png). Form điền mẫu cao 13 cm, tán 12 × 12 cm, chậu 10 × 8 cm, 0,3 kg, nhựa/LOW; xác nhận rồi chọn ngày gửi thực tế. Hai phương án dùng bộ ảnh riêng, mỗi bộ 4 bước, giá 15.000đ/8.000đ. Chi tiết tại [.code/packing-photo-demo.md](.code/packing-photo-demo.md); tạo lại fingerprint và WebP bằng `node scripts/prepare-succulent-demo.mjs`. Demo Phú quý tiếp tục dùng ảnh và dữ liệu cũ.
 
 Flow và ma trận 10 tính năng: [.code/prd-mvp-20261019.md](.code/prd-mvp-20261019.md). API/phiên cũ giữ ở [GUIDED_PACKING.md](GUIDED_PACKING.md); yêu cầu đã cập nhật trong agent.md/plan.md. Quy tắc MVP production phải được EXPERT duyệt và ADMIN kích hoạt; flag REFERENCE chỉ dành phiên legacy. Deploy vẫn theo [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).

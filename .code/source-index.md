@@ -1,5 +1,13 @@
 # Chỉ mục nguồn và provenance
 
+## Nguồn demo sen đá cập nhật 23/10/2026
+
+- `D:\Bản sao của Cây vạn lộc (1).docx`, SHA-256 `d9c355bb8ae4332a192851df655869e447065b69b37ce18bf707891417c81694`: đã trích đọc toàn bộ đoạn/bảng Word và xem ảnh nhúng. Tên file là vạn lộc nhưng nội dung là sen đá. Ảnh mới `word/media/image1.png` → `source/sen-da/plant.png`, SHA-256 `1e637b58924241e9efec1a571cbd5c9cbecf8e5ecca65b53d0dd54abcfef9e4d`, 1254 × 1254. Đọc nội dung/ảnh không là kiểm layout từng trang Word.
+- `C:\Users\User\Downloads\phương án 1 - sen đá.rar`, SHA-256 `ab3782c6bcb1174b87174579bb1b58e71524cdc78def094702cf6a36d660d062` → `source/sen-da/pa1/1..4.png`.
+- `C:\Users\User\Downloads\Phương án 2 - sen đá.rar`, SHA-256 `b3b6e90c7e17eb8191242acf5686a539878e529222b07f8f54f8707f6a5c031c` → `source/sen-da/pa2/1..4.png`.
+- Hai RAR giống bản nhập đầu; đã xem đủ 8 ảnh gồm chú thích thứ tự. Hash từng file gốc/WebP tại `apps/web/src/data/succulent-demo-photos.json`; fingerprint ảnh cây tại `demo-succulent-photo-v2.json`.
+- Cập nhật trong chat sau file mới: cao tổng **13 cm**. Nhựa/LOW/8 cm theo Word mới thay Gốm/sứ/MEDIUM trong trả lời trước. Trường ngày 20/10 là ví dụ cũ, không tự chuyển thành lịch gửi thực tế. Bảng BOM/tổng 15.000đ/8.000đ lấy từ Word, không từ suy luận ảnh. [Nội dung triển khai](packing-photo-demo.md).
+
 Nguồn đã đọc: [PlantCare_SRS_ChiTiet_UI.pdf](../PlantCare_SRS_ChiTiet_UI.pdf), v1.0 ngày 11/10/2026, 116 trang, 392520 bytes.
 
 SHA-256: `faad5e43ab1ff91ed037807ebea39e811632071e10badee0bdcf1f737469b171`

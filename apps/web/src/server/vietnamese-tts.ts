@@ -7,6 +7,14 @@ import { validWav } from '../lib/wav';
 const cache = new Map<string, { expires: number; value: SpeechAudio }>();
 const pending = new Map<string, Promise<SpeechAudio>>();
 type SpeechAudio = { audio_base64: string; mime_type: 'audio/wav' };
+const providerFailure = z.object({ error: z.object({ details: z.array(z.object({
+  '@type': z.string().optional(), retryDelay: z.string().optional(),
+  violations: z.array(z.object({ quotaId: z.string().optional() })).optional(),
+})).optional() }) });
+function quotaError(daily: boolean, retryAt?: number) {
+  const retry = retryAt ? ` Thử lại từ ${new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(new Date(Math.ceil(retryAt / 60000) * 60000))} (giờ Việt Nam).` : ' Hãy chờ hạn mức Gemini được đặt lại.';
+  return new ApiError(429, daily ? 'TTS_PROVIDER_QUOTA' : 'TTS_RATE_LIMIT', (daily ? 'Giọng Việt AI đã hết hạn mức Gemini trong ngày.' : 'Gemini đang giới hạn tốc độ tạo giọng đọc.') + retry);
+}
 export async function vietnameseTts(req: NextRequest): Promise<SpeechAudio> {
   const user = requireUser(req); checkMutation(req, user); rateLimit('vietnamese-tts:' + user.id, 12, 60000);
   const reader = req.body?.getReader(); if (!reader) throw new ApiError(422, 'TTS_INPUT', 'Thiếu nội dung đọc.');
@@ -23,14 +31,37 @@ export async function vietnameseTts(req: NextRequest): Promise<SpeechAudio> {
   for (const [id, entry] of cache) if (entry.expires <= now) cache.delete(id);
   const cached = cache.get(hash); if (cached) return cached.value;
   const running = pending.get(hash); if (running) return running;
+  // A provider quota is shared across texts/users of this configured key/model.
+  // Persist its retry deadline so repeated clicks/restarts do not spend local calls.
+  const providerBucket = 'vietnamese-tts-provider:' + sha(key + ':' + model);
   const work = async (): Promise<SpeechAudio> => {
     const limit = Number(process.env.AI_DAILY_CALL_LIMIT || 20), day = new Date().toISOString().slice(0, 10), id = crypto.randomUUID();
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new ApiError(503, 'TTS_CONFIG', 'Hạn mức AI chưa hợp lệ.');
-    transaction(() => { const count = db().prepare('SELECT COUNT(*) AS n FROM ai_calls WHERE day=?').get(day) as { n: number }; if (count.n >= limit) throw new ApiError(429, 'AI_QUOTA', 'Hết hạn mức AI hôm nay. Giọng trên thiết bị và hướng dẫn chữ vẫn dùng được.'); db().prepare('INSERT INTO ai_calls VALUES(?,?,?,?,?,?)').run(id, user.id, day, 'RESERVED', '{}', new Date().toISOString()); });
+    transaction(() => {
+      for (const daily of [true, false]) {
+        const blocked = db().prepare('SELECT count,reset_at FROM limits WHERE bucket=?').get(providerBucket + (daily ? ':daily' : ':rate')) as { reset_at: number } | undefined;
+        if (blocked && blocked.reset_at > Date.now()) throw quotaError(daily, blocked.reset_at);
+      }
+      const count = db().prepare('SELECT COUNT(*) AS n FROM ai_calls WHERE day=?').get(day) as { n: number };
+      if (count.n >= limit) throw new ApiError(429, 'AI_QUOTA', 'Hết hạn mức AI hôm nay. Giọng trên thiết bị và hướng dẫn chữ vẫn dùng được.');
+      db().prepare('INSERT INTO ai_calls VALUES(?,?,?,?,?,?)').run(id, user.id, day, 'RESERVED', '{}', new Date().toISOString());
+    });
     try {
       requireUser(req);
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, signal: AbortSignal.timeout(45000), body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: parsed.data.text, speechMetadata: { style: 'Speak clearly in Vietnamese, natural and friendly, at a moderate pace. Read exactly the supplied Vietnamese text.' } }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { voice: 'Kore' } }, responseFormat: { audio: { mimeType: 'AUDIO_WAV' } } } }) });
-      if (!response.ok) throw new ApiError(response.status === 429 ? 429 : 503, 'TTS_UNAVAILABLE', 'Giọng Việt AI đang bận hoặc chưa được cấp quyền. Bấm nghe thử lại sau.');
+      if (response.status === 429) {
+        const failure = providerFailure.safeParse(await response.json().catch(() => null));
+        const details = failure.success ? failure.data.error.details || [] : [];
+        const daily = details.some(detail => detail['@type']?.endsWith('/google.rpc.QuotaFailure') && detail.violations?.some(v => v.quotaId?.includes('PerDay')));
+        const delay = details.find(detail => detail['@type']?.endsWith('/google.rpc.RetryInfo'))?.retryDelay;
+        const seconds = delay && /^\d+(\.\d+)?s$/.test(delay) ? Number(delay.slice(0, -1)) : NaN;
+        const retryAt = Number.isFinite(seconds) && seconds > 0 && seconds <= 86400 ? Date.now() + Math.ceil(seconds * 1000) : undefined;
+        if (retryAt) transaction(() => {
+          db().prepare('INSERT INTO limits VALUES(?,?,?) ON CONFLICT(bucket) DO UPDATE SET count=excluded.count,reset_at=excluded.reset_at').run(providerBucket + (daily ? ':daily' : ':rate'), 1, retryAt);
+        });
+        throw quotaError(daily, retryAt);
+      }
+      if (!response.ok) throw new ApiError(503, 'TTS_UNAVAILABLE', 'Giọng Việt AI đang bận hoặc chưa được cấp quyền. Bấm nghe thử lại sau.');
       const data = await response.json();
       const inline = data.candidates?.[0]?.content?.parts?.find((p: { inlineData?: { data?: string } }) => p.inlineData?.data)?.inlineData;
       if (typeof inline?.data !== 'string' || inline.data.length > 8000000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(inline.data)) throw new Error('INVALID_AUDIO');
@@ -40,7 +71,7 @@ export async function vietnameseTts(req: NextRequest): Promise<SpeechAudio> {
       db().prepare('UPDATE ai_calls SET status=?,usage=? WHERE id=?').run('SUCCEEDED', JSON.stringify(data.usageMetadata || {}), id);
       while (cache.size >= 8) cache.delete(cache.keys().next().value!);
       cache.set(hash, { expires: Date.now() + 300000, value }); return value;
-    } catch (error) { db().prepare('UPDATE ai_calls SET status=? WHERE id=?').run('FAILED_USAGE_UNKNOWN', id); if (error instanceof ApiError) throw error; throw new ApiError(503, 'TTS_FAILED', 'Chưa tạo được giọng Việt. Bấm nghe thử lại hoặc đọc hướng dẫn trên màn hình.'); }
+    } catch (error) { db().prepare('UPDATE ai_calls SET status=?,usage=? WHERE id=?').run('FAILED_USAGE_UNKNOWN', JSON.stringify({ model, error_code: error instanceof ApiError ? error.code : 'TTS_FAILED' }), id); if (error instanceof ApiError) throw error; throw new ApiError(503, 'TTS_FAILED', 'Chưa tạo được giọng Việt. Bấm nghe thử lại hoặc đọc hướng dẫn trên màn hình.'); }
   };
   const task = work(); pending.set(hash, task); try { return await task; } finally { pending.delete(hash); }
 }

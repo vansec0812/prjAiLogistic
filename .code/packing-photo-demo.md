@@ -1,5 +1,40 @@
 # Demo PA1/PA2 từ ảnh người dùng — 20/10/2026
 
+## Bộ sen đá cập nhật — 23/10/2026
+
+Nguồn hiện hành là `D:\Bản sao của Cây vạn lộc (1).docx` (nội dung là Cây sen đá) và hai RAR sen đá. Bản mới thay ảnh chậu trắng bằng ảnh chậu nhựa đen, chọn Nhựa/LOW; thay thông tin Gốm/sứ/MEDIUM ở trao đổi trước. Trường chiều cao tổng trống trong Word được user xác nhận **13 cm** trong chat. Hai RAR không đổi checksum so với lần nhập đầu. Nguồn và hash tại source-index.md.
+
+Ảnh `source/sen-da/plant.png`, 1254 × 1254, fingerprint `demo-succulent-photo-v2.json`, ID `sen-da-20261023-v2`. Preset: Cây sen đá/SUCCULENT; tổng cao 13 cm; dài/rộng tán 12/12 cm; đường kính/cao chậu 10/8 cm; tổng 0,3 kg; Nhựa/LOW. Tán tròn dùng cùng độ rộng 12 cm cho hai chiều. Giữ kiểm tra/xác nhận và USER edits. Không gọi Gemini để nhận ảnh mẫu. Phú quý vẫn có fingerprint/preset riêng. Ảnh khác tiếp tục nhận diện/nhập tay, không dựa tên file. Theo chỉnh sửa mới nhất của user: nơi đi, nơi đến, kênh bán và ngày gửi đều để người dùng tự nhập. Không điền hành trình từ ảnh mẫu; các giá trị Hoàng Hoa Thám - Hà Nội → Từ Sơn - Bắc Ninh, Shopee trong Word chỉ là kịch bản nhập tay khi demo. Hồ sơ đã lưu giữ nguyên dữ liệu.
+
+`demo-succulent.ts`, version `packing-succulent-2026.10.23-v1`, có hai ví dụ riêng được chọn khi mẫu sen đá còn evidence DEMO hoặc tên Cây sen đá + nhóm SUCCULENT trong chế độ demo local. Bộ gốc của Phú quý không đổi. Gallery, lời đọc, Vision, phiên và hậu kiểm dùng cùng snapshot của phương án đã chọn.
+
+| Bước | PA1 | PA2 |
+| --- | --- | --- |
+| 1 | Chuẩn bị vật liệu bảo vệ | Chuẩn bị vật liệu tiết kiệm |
+| 2 | Cố định chậu và bảo vệ giá thể | Gấp đế giữ chậu, phủ giấy mặt chậu |
+| 3 | Bảo vệ thân, lá bằng vách chắn | Đặt cây giữa thùng, chèn lót quanh chậu |
+| 4 | Chèn lót, đóng thùng, tạo lỗ thông khí | Đóng thùng, dán băng keo, tạo lỗ thông khí |
+
+Đã xem đủ 8 ảnh gốc, giữ nguyên khung/chú thích 941 × 1672 khi chuyển WebP. `prepare-succulent-demo.mjs` ghi manifest `succulent-demo-photos.json`; đường dẫn `/photos/packing-demo/sen-da/v1/pa1|pa2/step-N.webp` tách biệt bộ Phú quý. Hash trong manifest được dùng khi cấp ảnh mẫu cho Vision. Lỗ và độ chắc cần kiểm trực tiếp; không tự thêm kích thước lỗ hoặc xem ảnh mẫu là bằng chứng người dùng đã làm xong.
+
+| Vật liệu | Quy cách | Đơn giá | PA1: lượng / thành tiền | PA2: lượng / thành tiền |
+| --- | --- | ---: | ---: | ---: |
+| Thùng carton hai lớp | 20 × 20 × 25 cm | 7.000đ/thùng | 1 / 7.000đ | — |
+| Thùng carton một lớp | 18 × 18 × 22 cm | 4.000đ/thùng | — | 1 / 4.000đ |
+| Khay định vị chậu | 12 × 12 cm | 2.000đ/khay | 1 / 2.000đ | — |
+| Bìa carton gia cố | 12 × 15 cm | 500đ/miếng | 2 / 1.000đ | 3 / 1.500đ |
+| Giấy bọc bảo vệ giá thể | 20 × 20 cm | 500đ/tờ | 2 / 1.000đ | 2 / 1.000đ |
+| Màng bọc bảo vệ giá thể | Rộng 10 cm, dài 30 cm | 1.000đ/đoạn | 1 / 1.000đ | — |
+| Giấy tổ ong chèn lót | 30 × 40 cm | 2.000đ/tấm | 1 / 2.000đ | — |
+| Giấy chèn tái sử dụng | 30 × 30 cm | 500đ/tờ | — | 2 / 1.000đ |
+| Băng keo | Rộng 4,8 cm | 500đ/m | 1,2 / 600đ | 0,8 / 400đ |
+| Chi phí phụ trợ khác | Phân bổ theo đơn hàng | — | 1 đơn / 400đ | 1 đơn / 100đ |
+| Tổng | | | **15.000đ** | **8.000đ** |
+
+Giá/nguồn version `succulent-material-prices-2026.10.23-v1`; Decimal cho lượng × giá, tổng và tỷ lệ tiết kiệm 7.000đ/46,7%. Dòng phụ trợ là thành tiền phân bổ theo đơn hàng, đơn giá null, không giả 0đ. CatalogMaterial bổ sung specification cho bảng quy cách. Lớp bù giá demo cũ chỉ áp version Phú quý cũ, không áp 3.400đ/900đ cho sen đá. Không mutate bundle hay phiên lịch sử. Các giới hạn local/production, quyền, checklist và xác nhận tay bên dưới tiếp tục áp dụng.
+
+## Bộ Phú quý hiện có
+
 Theo yêu cầu hardcode hai phương án để demo. Đã đọc trực quan đủ 14 ảnh trong `source/pa1` và `source/pa2`; chú thích ảnh là căn cứ thứ tự. Không suy ảnh mẫu là bằng chứng kiện thực tế, quyền dataset hoặc nghiệm thu chuyên môn.
 
 | PA1 — thùng xốp, 6 bước | PA2 — ống carton, 8 bước |
@@ -13,9 +48,24 @@ Theo yêu cầu hardcode hai phương án để demo. Đã đọc trực quan đ
 | | 7. Ghi nhãn hướng lên |
 | | 8. Dán vận đơn |
 
-`apps/web/src/lib/demo-packing.ts` là bộ nội dung cố định, version `packing-photos-2026.10.20-v1`. Lời đọc tiếng Việt pin theo bước, tiêu chí chỉ phần nhìn thấy; số đo, độ chắc và dữ liệu vận đơn kiểm trực tiếp. Không tự thêm nhiệt độ/thời gian/giá hoặc claim tiết kiệm. BOM mô tả một bộ vật tư, mọi giá chưa biết là null.
+`apps/web/src/lib/demo-packing.ts` là bộ nội dung cố định, version `packing-photos-2026.10.20-v1`. Lời đọc tiếng Việt pin theo bước, tiêu chí chỉ phần nhìn thấy; số đo, độ chắc và dữ liệu vận đơn kiểm trực tiếp. Không tự thêm nhiệt độ/thời gian hoặc suy giá từ ảnh. BOM ban đầu chưa có đơn giá; mức cố định người dùng cung cấp ngày 22/10/2026 được áp dụng bên dưới.
 
-Tên giao diện theo yêu cầu tiếp theo: PA1 “Phương án an toàn nhất”, PA2 “Phương án tối ưu chi phí nhất”. Bỏ mô tả/gợi chú “theo bộ ảnh bạn cung cấp”, thu gọn nhãn thành “Chế độ demo”/“Ảnh hướng dẫn”. `mvp-labels.ts` áp nhãn theo ID cho cả bundle cũ; không migrate hoặc ghi đè dữ liệu lịch sử. Tên là nhãn sản phẩm người dùng yêu cầu, không thay phê duyệt/đánh giá chi phí; giá chưa có tiếp tục null.
+Tên giao diện theo yêu cầu tiếp theo: PA1 “Phương án an toàn nhất”, PA2 “Phương án tối ưu chi phí nhất”. Bỏ mô tả/gợi chú “theo bộ ảnh bạn cung cấp”, thu gọn nhãn thành “Chế độ demo”/“Ảnh hướng dẫn”. `mvp-labels.ts` áp nhãn theo ID cho cả bundle cũ; không migrate hoặc ghi đè dữ liệu lịch sử. Tên là nhãn sản phẩm người dùng yêu cầu, không thay phê duyệt chuyên môn.
+
+## Giá vật liệu cố định — 22/10/2026
+
+Theo bộ giá người dùng cung cấp, mỗi phương án dùng một bộ của từng dòng sau:
+
+| Vật liệu | PA1 | PA2 |
+| --- | ---: | ---: |
+| Thùng xốp | 2.000đ | — |
+| Vật liệu chèn lót | 1.000đ | — |
+| Màng bọc | 200đ | 200đ |
+| Băng keo | 200đ | 200đ |
+| Bìa carton | — | 500đ |
+| Tổng | **3.400đ** | **900đ** |
+
+`demo-pricing.ts`, version `demo-material-prices-2026.10.22-v1`, cấp BOM và tổng Decimal cho demo mới. `MvpResults` bổ sung mức này vào lớp hiển thị/export của demo cũ có tổng null, kèm trace nguồn; không sửa snapshot DB, hướng dẫn/ảnh hoặc giá lịch sử đã biết. Bộ giá chỉ gồm các dòng user yêu cầu; tem/vận đơn và các thao tác vẫn có trong hướng dẫn nhưng nằm ngoài bảng chi phí này. Rule Engine và danh mục không phải demo tiếp tục dùng giá cấu hình riêng.
 
 Theo yêu cầu tiếp theo: vào bước tự đọc “Bước N.” + speech_vi đúng ảnh, không đọc thêm lời nhắc nói đã xong hoặc hướng dẫn câu lệnh. Sau kiểm ảnh đạt chỉ báo kết quả ngắn. “Đã xong”/“Xong rồi” là xác nhận hoàn tất bước như “Đã xong bước này”, khác “Kiểm tra” chỉ xem ảnh; không cần AI nhắc trước mới nhận lệnh. Vẫn giữ guard lỗi/unknown/kiểm tay và micro opt-in. Không sửa snapshot hoặc speech_vi của phiên cũ; thay cách ghép lời đọc tại packing-narration.ts.
 

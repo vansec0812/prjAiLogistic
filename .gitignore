@@ -9,6 +9,7 @@ next-env.d.ts
 test-results/
 playwright-report/
 output/qa/
+output/imports/
 
 .next-*/
 __pycache__/

@@ -16,7 +16,6 @@ export const sampleInput=():CaseInput=>({
   ],shipment:{origin:'Hà Nội',destination:'Đà Nẵng',departure:new Date(Date.now()+86400000).toISOString(),duration:36,mode:'Xe tải thường',carrier:'',orientation:'UPRIGHT',minTemp:24,maxTemp:31,weatherSource:'Dữ liệu mẫu phát triển, không phải dự báo thật',confirmed:true,observedAt:new Date().toISOString(),coverage:'ENDPOINTS'},priority:'SAFETY'
 });
 export function demoUser():User{
-  if(!development())throw new Error('Development account is disabled.');
   const exists=db().prepare('SELECT id,username,phone,name,status,role FROM users WHERE id=?').get('local-demo') as unknown as User|undefined;
   if(exists)return exists;
   const user={id:'local-demo',username:'local_demo',phone:'+84000000000',name:'Vườn của bạn',status:'ACTIVE',role:'MEMBER'};

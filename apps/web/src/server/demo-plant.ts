@@ -1,8 +1,9 @@
 import sharp from 'sharp';
 import reference from '../data/demo-plant-photo.json';
+import succulentReference from '../data/demo-succulent-photo-v2.json';
 
 /** Recognize copies of the supplied photo, not arbitrary plants with similar foliage. */
-export async function matchesDemoPlantPhoto(bytes:Buffer):Promise<boolean>{
+async function matchesPhoto(bytes:Buffer,reference:typeof succulentReference):Promise<boolean>{
   try{
     const image=sharp(bytes,{limitInputPixels:30000000}),meta=await image.metadata();
     if(!meta.width||!meta.height||(meta.pages||1)>1)return false;
@@ -14,4 +15,11 @@ export async function matchesDemoPlantPhoto(bytes:Buffer):Promise<boolean>{
     let total=0,outliers=0;for(let i=0;i<pixels.length;i++){const d=Math.abs(pixels[i]-expected[i]);total+=d;if(d>20)outliers++;}
     return total/pixels.length<=5&&outliers/pixels.length<=0.03;
   }catch{return false;}
+}
+export async function identifyDemoPlantPhoto(bytes:Buffer):Promise<string|null>{
+  for(const photo of [reference,succulentReference])if(await matchesPhoto(bytes,photo))return photo.id;
+  return null;
+}
+export async function matchesDemoPlantPhoto(bytes:Buffer):Promise<boolean>{
+  return (await identifyDemoPlantPhoto(bytes))===reference.id;
 }

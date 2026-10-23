@@ -40,6 +40,27 @@ test('real checkpoint accepts the current provider schema for a nonblank illustr
   const response=await request.post('/api/v1/live-packing/check',{headers:{Origin:origin,'x-csrf-token':session.csrf},data:{sop_id:sop.id,shipping_form:sop.shipping_form,context:{species:'Cây lá minh họa, không là kiện thật',shop_scope_confirmed:true,pot_cm:null,height_cm:null,packed_kg:null},step_id:step.id,sop_version:sop.version,approved_for_trial:true,consent:true,image:'data:image/jpeg;base64,'+bytes.toString('base64')},timeout:50000});expect(response.status()).toBe(200);
   const result=validateResult((await response.json()).data,step);expect(result.manual_check_required).toBe(true);console.log(JSON.stringify({nonblankCheckpointHttp:response.status(),schemaValid:true,status:result.status,accuracyEvaluated:false}));
 });
+test('real demo step one validates wrapped and unwrapped sample images',async({request})=>{
+  test.skip(process.env.RUN_REAL_GEMINI!=='1','Opt in: two checkpoint calls with repository sample images, no camera accuracy assertion.');test.setTimeout(120000);
+  const origin='http://127.0.0.1:3109';expect((await request.post('/api/v1/auth/dev',{headers:{Origin:origin},data:{}})).status()).toBe(200);
+  const session=(await (await request.get('/api/v1/session')).json()).data,headers={Origin:origin,'x-csrf-token':session.csrf};
+  const read=async(response:Awaited<ReturnType<typeof request.get>>)=>{const body=await response.json();expect(response.ok(),JSON.stringify(body.error)).toBe(true);return body.data;};
+  let c=await read(await request.post('/api/v1/cases',{headers,data:{name:'Demo camera integration',sample:true}}));
+  c.input.shipment={...c.input.shipment,channel:'DIRECT',distanceKm:35,departure:new Date(Date.now()+86400000).toISOString()};
+  c=await read(await request.patch('/api/v1/cases/'+c.id,{headers,data:{name:c.name,input:c.input,expected_version:c.version}}));
+  const root=`/api/v1/cases/${c.id}`,bundle=await read(await request.post(root+'/mvp/proposals',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,demo:true}}));
+  await read(await request.post(root+'/mvp/selection',{headers,data:{bundle_id:bundle.id,alternative_id:'PA1',expected_revision:0}}));
+  let g=await read(await request.post(root+'/guidance',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{case_version:c.version,mode:'MVP',bundle_id:bundle.id,alternative_id:'PA1'}}));
+  g=await read(await request.post(root+`/guidance/${g.id}/control`,{headers,data:{expected_revision:g.revision,action:'BEGIN'}}));
+  for(const [name,file] of [['wrapped','apps/web/public'+g.boundSop.steps[0].reference_image.path],['unwrapped','source/cayphuquy.jpg']]){
+    const bytes=await sharp(readFileSync(file)).resize(960).jpeg({quality:80}).toBuffer();
+    const response=await request.post('/api/v1/live-packing/check',{headers,data:{case_id:c.id,session_id:g.id,session_revision:g.revision,sop_id:g.sopId,sop_version:g.sopVersion,shipping_form:'POTTED',context:g.context,step_id:g.boundSop.steps[0].id,approved_for_trial:true,consent:true,image:'data:image/jpeg;base64,'+bytes.toString('base64')},timeout:50000});
+    const body=await read(response),{guidance:updated,...result}=body;validateResult(result,g.boundSop.steps[0]);
+    expect(updated.index).toBe(0);expect(updated.revision).toBe(g.revision+1);g=updated;
+    console.log(JSON.stringify({sample:name,checkpointHttp:response.status(),schemaValid:true,status:result.status,stepUnchanged:true,accuracyEvaluated:false}));
+  }
+});
+
 test('real RAG answers with the pinned knowledge schema and source context',async({request})=>{
   test.skip(process.env.RUN_REAL_GEMINI!=='1','Opt in: one real RAG call.');test.setTimeout(120000);
   const origin='http://127.0.0.1:3109';expect((await request.post('/api/v1/auth/dev',{headers:{Origin:origin},data:{}})).status()).toBe(200);const session=(await (await request.get('/api/v1/session')).json()).data,headers={Origin:origin,'x-csrf-token':session.csrf};

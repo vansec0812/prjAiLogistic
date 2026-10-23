@@ -21,8 +21,7 @@ import { createJob, wakeWorker, type Job, type Upload } from './jobs';
 import { draftRulePack } from '@plantcare/rule-engine';
 import { retrieveKnowledge, KNOWLEDGE_VERSION, sources as knowledgeSources } from '../../../../packages/knowledge/src/index';
 import { exportMetadata } from './export';
-import { matchesDemoPlantPhoto } from './demo-plant';
-import { demoPlantId } from '../lib/demo-plant-profile';
+import { identifyDemoPlantPhoto } from './demo-plant';
 
 interface Inventory extends MaterialInput {stock:number;version:number;updatedAt:string;}
 interface Challenge {id:string;user_id:string;purpose:string;code_hash:string;expires_at:number;attempts:number;used:number;sent_at:number;}
@@ -103,8 +102,8 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   if(parts[0]==='auth'){
     if(method!=='POST')throw missing();checkOrigin(req);rateLimit('auth-global',100,60000);
     const value=await body(req);
-    if(parts[1]==='dev'){
-      if(!development())throw missing();return issueSession(demoUser(),{development:true});
+    if(parts[1]==='dev'||parts[1]==='demo'){
+      return issueSession(demoUser(),{development:true});
     }
     if(parts[1]==='register'){
       const data=parse(registerSchema,value);const old=db().prepare('SELECT * FROM users WHERE username=? OR phone=?').get(data.username,data.phone) as unknown as User|undefined;
@@ -146,7 +145,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
   }
   const user=requireUser(req);if(!['GET','HEAD'].includes(method))checkMutation(req,user);
   if(endpoint==='mvp/config'&&method==='GET')return success(activeMvpConfig());
-  if(endpoint==='mvp/journey'&&method==='POST'){const v=parse(z.object({origin:z.string().min(2).max(100),destination:z.string().min(2).max(100),departure:z.string().datetime(),channel:z.enum(['SHOPEE','TIKTOK','DIRECT','OTHER'])}).strict(),await body(req));if(Date.parse(v.departure)<Date.now())throw new ApiError(422,'DEPARTURE_INVALID','Chọn ngày gửi trong tương lai.');return success(journeyContext(v.origin,v.destination,v.departure,v.channel));}
+  if(endpoint==='mvp/journey'&&method==='POST'){const v=parse(z.object({origin:z.string().min(2).max(100),destination:z.string().min(2).max(100),departure:z.string().datetime(),channel:z.enum(['SHOPEE','TIKTOK','DIRECT','OTHER'])}).strict(),await body(req));if(Date.parse(v.departure)<Date.now())throw new ApiError(422,'DEPARTURE_INVALID','Chọn ngày gửi trong tương lai.');return success(await journeyContext(v.origin,v.destination,v.departure,v.channel));}
   if(parts[0]==='knowledge'){
     if(endpoint==='knowledge/sources'&&method==='GET')return success({version:KNOWLEDGE_VERSION,sources:knowledgeSources,trainingStatus:'NOT_FINE_TUNED'});
     if(endpoint==='knowledge/search'&&method==='GET'){const query=(req.nextUrl.searchParams.get('q')||'').slice(0,1000),scope=parse(z.enum(['POTTED_PLANTS','NURSERY','CACTUS','MARITIME']),req.nextUrl.searchParams.get('scope')||'POTTED_PLANTS');return success({version:KNOWLEDGE_VERSION,items:retrieveKnowledge(query,scope),mode:'LOCAL_RETRIEVAL',notice:'Các ghi chú có nguồn, chưa chuyên gia duyệt; không là rule an toàn.'});}
@@ -235,9 +234,9 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       if(['PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất.');
       const value=parse(z.object({upload_id:z.string()}).strict(),await body(req)),upload=owned<Upload>('upload',value.upload_id,user.id);
       if(upload.caseId!==c.id||upload.purpose!=='PLANT')throw missing();
-      const matched=await matchesDemoPlantPhoto(readPrivateFile('uploads',upload.file));
-      if(matched)audit(user.id,'DEMO_PLANT_MATCHED',c.id);
-      return success({sampleId:matched?demoPlantId:null});
+      const sampleId=await identifyDemoPlantPhoto(readPrivateFile('uploads',upload.file));
+      if(sampleId)audit(user.id,'DEMO_PLANT_MATCHED',c.id);
+      return success({sampleId});
     }
     if(parts[2]==='plant-analysis'||parts[2]==='material-analysis'){
       if(method!=='POST')throw missing();const value=parse(z.object({upload_ids:z.array(z.string()).min(1).max(parts[2]==='plant-analysis'?1:6),consent_id:z.string()}),await body(req));

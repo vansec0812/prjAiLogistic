@@ -1,0 +1,66 @@
+[
+  {
+    "alternative": "PA1",
+    "step": 1,
+    "source": "source/sen-da/pa1/1.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa1/step-1.webp",
+    "sourceSha256": "4422997e96c0a5054a194337ade1c83041d5c573af36f4cf4fa67833be37edc2",
+    "sha256": "678e20d3511e42b007578b98b1fa45879cced96e7278ea1d1e2c70d7bdbb16a1"
+  },
+  {
+    "alternative": "PA1",
+    "step": 2,
+    "source": "source/sen-da/pa1/2.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa1/step-2.webp",
+    "sourceSha256": "b607e3a3e61a436f70504ca5853ba0a26e36f5fdb273cce86df8fe07571fccb9",
+    "sha256": "b9fdac064c7e704fe977dc8ab83e4ec73fd51b71831b767f0dda409eedacfcef"
+  },
+  {
+    "alternative": "PA1",
+    "step": 3,
+    "source": "source/sen-da/pa1/3.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa1/step-3.webp",
+    "sourceSha256": "d3a82be85dd21f08159837b32027693b80af3fde348f01e431dc9c36f3a212e1",
+    "sha256": "e38528c605685e592d130430c02eac967809624483bbcbdc18e5ae2eec1deab3"
+  },
+  {
+    "alternative": "PA1",
+    "step": 4,
+    "source": "source/sen-da/pa1/4.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa1/step-4.webp",
+    "sourceSha256": "4c3a379e0b73ceb80e4da6a90ded26caaa30d9d63bdeaee25a5feb3977f3c408",
+    "sha256": "7e9f6a84eea91e443b5b0f0740e9deb546435983fc2d7482a4431291a99d7ea5"
+  },
+  {
+    "alternative": "PA2",
+    "step": 1,
+    "source": "source/sen-da/pa2/1.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa2/step-1.webp",
+    "sourceSha256": "4e17a4ebd1fccfad0b9e83039efba162c556e2c98f61f6eda7bb075440da2a3c",
+    "sha256": "d471180251e4135cbcf1e8a4b2d5cfcfb77435cc0d36e74a789cd999ae0ae80e"
+  },
+  {
+    "alternative": "PA2",
+    "step": 2,
+    "source": "source/sen-da/pa2/2.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa2/step-2.webp",
+    "sourceSha256": "19d2765ffd7739f921b0b363dcda40fb6a0dc568c68dbb391b44f2b045555c44",
+    "sha256": "f2e80e18c744d7d4c97db4f5c3822124bf5fc15aab667d29a31fc822218a984f"
+  },
+  {
+    "alternative": "PA2",
+    "step": 3,
+    "source": "source/sen-da/pa2/3.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa2/step-3.webp",
+    "sourceSha256": "f8276194898e3ec96086193917182b68344d001907de4a346c7dac5a862a6a6b",
+    "sha256": "b23850c3b45583612d585f8e13e4f9851a2f87a096279e67b7855ab316341461"
+  },
+  {
+    "alternative": "PA2",
+    "step": 4,
+    "source": "source/sen-da/pa2/4.png",
+    "image": "/photos/packing-demo/sen-da/v1/pa2/step-4.webp",
+    "sourceSha256": "e6061bd5117ff93ec1a81b8046019339583ed14b66fa278e54cdd3b273915cc9",
+    "sha256": "e4182b5f34e91d43cc27e2129e966864018c5d02ee333ec1f28e4d44a38e6279"
+  }
+]

@@ -2,10 +2,14 @@ import type { CaseInput, MvpAlternative, MvpBundle, MvpStep } from '@plantcare/d
 import { mvpInputIssues } from '../../../../packages/rule-engine/src/mvp';
 import photos from '../data/packing-demo-photos.json';
 import { alternativeNames } from './mvp-labels';
+import { demoPricingReason, demoPricingVersion, withDemoMaterialPricing } from './demo-pricing';
+import succulentPhotos from '../data/succulent-demo-photos.json';
+import { isSucculentDemoProfile } from './demo-plant-profile';
+import { succulentDemoAlternatives, succulentPackingVersion, succulentPackingSource, succulentPricingVersion, succulentPricingReason } from './demo-succulent';
 
 export const packingDemoVersion='packing-photos-2026.10.20-v1';
 export const packingDemoSource='USER-PACKING-DEMO-20261020';
-export const demoPhotoByPath=new Map(photos.map(p=>[p.image,p]));
+export const demoPhotoByPath=new Map([...photos,...succulentPhotos].map(p=>[p.image,p]));
 function step(pa:'PA1'|'PA2',n:number,id:string,title:string,instruction:string,manual:string,pass:string,fail:string,remedy:string):MvpStep{
   const image=photos.find(p=>p.alternative===pa&&p.step===n)!.image;
   return {id,title,instruction,speech:instruction,manual,remedy,image,mode:'visual',criteria:[{id:id+'-visible',visible_pass:pass,visible_fail:fail}]};
@@ -28,15 +32,15 @@ const pa2:MvpStep[]=[
   step('PA2',7,'direction','Ghi nhãn hướng lên','Ghi chữ hướng lên và mũi tên chỉ lên ở mặt ngoài ống như ảnh mẫu.','Tự kiểm mũi tên đúng chiều đứng của cây và chậu.','Thấy chữ hướng lên và mũi tên rõ ở mặt ngoài kiện.','Thấy dấu hướng bị che, nhòe không đọc được hoặc các mũi tên ngược nhau.','Ghi lại hướng rõ ràng và kiểm trực tiếp đúng chiều cây bên trong.'),
   step('PA2',8,'waybill','Dán vận đơn','Dán vận đơn phẳng lên mặt ngoài ống carton như ảnh mẫu. Không che chữ và mũi tên hướng lên.','Tự đối chiếu người nhận và mã vận đơn; AI không xác minh thông tin giao hàng.','Thấy vận đơn được dán ở mặt ngoài ống, dấu hướng còn nhìn thấy.','Thấy vận đơn bong, gấp che mã hoặc che dấu hướng lên.','Dán lại vận đơn phẳng, giữ dấu hướng lên rõ và tự kiểm thông tin gửi hàng.')
 ];
-function material(id:string,name:string,image:string){return {id,name,image,unit:'bộ',price:null,active:true,quantity:1,subtotal:null};}
-export const demoAlternatives:MvpAlternative[]=[
-  {id:'PA1',title:alternativeNames.PA1,description:'',steps:pa1,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:[],bom:[material('foam','Thùng xốp',pa1[1].image),material('padding','Vật liệu chèn lót',pa1[1].image),material('wrap','Màng co',pa1[0].image),material('tape','Băng keo',pa1[2].image),material('label','Tem hàng dễ vỡ',pa1[4].image),material('waybill','Vận đơn',pa1[5].image)]},
-  {id:'PA2',title:alternativeNames.PA2,description:'',steps:pa2,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:[],bom:[material('wrap','Màng bọc',pa2[0].image),material('pot-protection','Carton bảo vệ chậu',pa2[2].image),material('tube','Ống carton',pa2[3].image),material('tape','Băng keo',pa2[5].image),material('direction','Bút ghi hướng lên',pa2[6].image),material('waybill','Vận đơn',pa2[7].image)]}
-];
+export const demoAlternatives:MvpAlternative[]=([
+  {id:'PA1',title:alternativeNames.PA1,description:'',steps:pa1,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:[],bom:[]},
+  {id:'PA2',title:alternativeNames.PA2,description:'',steps:pa2,cost:{known:0,total:null},ruleIds:[packingDemoSource],notes:[],bom:[]}
+] satisfies MvpAlternative[]).map(withDemoMaterialPricing);
 
 /** Explicit local demonstration; never an eligibility or safety decision for the shipment. */
 export function proposePackingDemo(input:CaseInput,threshold=70,now=new Date()):Omit<MvpBundle,'id'|'caseId'|'inputHash'|'createdAt'>{
   const missing=mvpInputIssues(input,now);
   if(Object.values(input.plant.fieldEvidence||{}).some(e=>e?.source==='AI'&&(e.confidence===null||e.confidence<threshold)))missing.push('Nhập tay các trường AI dưới ngưỡng tin cậy');
-  return {snapshot:structuredClone(input),configVersion:packingDemoVersion,developmentOnly:true,demo:true,outcome:missing.length?'NEED_INPUT':'READY',missing,alternatives:missing.length?[]:structuredClone(demoAlternatives),suppressed:[],trace:[{id:packingDemoSource,reason:'Hai phương án cố định từ source/pa1 và source/pa2 theo yêu cầu demo. Không đánh giá phù hợp vận chuyển hoặc mức tiết kiệm; chưa có đơn giá.'}]};
+  if(isSucculentDemoProfile(input.plant))return {snapshot:structuredClone(input),configVersion:succulentPackingVersion,developmentOnly:true,demo:true,outcome:missing.length?'NEED_INPUT':'READY',missing,alternatives:missing.length?[]:structuredClone(succulentDemoAlternatives),suppressed:[],trace:[{id:succulentPackingSource,reason:'Hai phương án sen đá cố định theo bộ ảnh người dùng cung cấp. Không đánh giá phù hợp vận chuyển.'},{id:succulentPricingVersion,reason:succulentPricingReason}]};
+  return {snapshot:structuredClone(input),configVersion:packingDemoVersion,developmentOnly:true,demo:true,outcome:missing.length?'NEED_INPUT':'READY',missing,alternatives:missing.length?[]:structuredClone(demoAlternatives),suppressed:[],trace:[{id:packingDemoSource,reason:'Hai phương án cố định từ source/pa1 và source/pa2 theo yêu cầu demo. Không đánh giá phù hợp vận chuyển.'},{id:demoPricingVersion,reason:demoPricingReason}]};
 }

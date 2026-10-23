@@ -114,7 +114,11 @@ Guidance POST thêm mode REFERENCE/reference_ack:true, bắt buộc profile cây
 
 Multipart hard cap 12 MiB trước formData, file ≤10 MiB/30 MP. Client ảnh cây ≤1920 px/3 MiB. Proxy non-JSON/413/502 báo lỗi ngắn thay vì lỗi parse. API dispatch đặt private/no-store và x-vercel-enable-rewrite-caching:0 cho mọi response. beforeFiles proxy upstream HTTPS trên Vercel; handler local trên Vercel fail 503 BACKEND_ROUTING_REQUIRED trước DB. Provider GenerateContent dùng enum APPLICATION_JSON, không dùng MIME lowercase của Interactions. TTS chuẩn hóa phát âm ở cả client/server, WAV PCM valid, cache pin lexicon version.
 
+TTS provider HTTP429 phân biệt `TTS_PROVIDER_QUOTA` (QuotaFailure PerDay) và `TTS_RATE_LIMIT`; khác `AI_QUOTA` của budget local. Khi Google cung cấp RetryInfo hợp lệ, báo thời điểm thử lại theo giờ Việt Nam và lưu cooldown trong `limits`, scope hash key/model, trước khi reserve lượt mới. Audio đã cache vẫn phát; hết deadline được gọi lại; thay key không kế thừa cooldown key cũ. Không trả raw provider error/secret; failed attempt giữ `FAILED_USAGE_UNKNOWN` và metadata model/error_code, không xóa hoặc hoàn trả lượt đã gọi. Không tự nâng quota Google/bật billing.
+
 ## PRD MVP — 19/10/2026 (flow hiện hành)
+
+Demo local cập nhật 23/10: `POST /cases/:id/plant-demo` giữ auth/owner/case/purpose/CSRF và development guard; trả sampleId `phu-quy-red-20261020-v1`, `sen-da-20261023-v2` hoặc null theo fingerprint ảnh, không theo tên file. Giá trị preset ở client là gợi ý DEMO, vẫn lưu/xác nhận qua PATCH hiện hữu. Demo đề xuất chọn bộ sen đá 4/4 bước và BOM 15.000/8.000đ theo mẫu/nhóm sen đá; version và trace riêng. BOM response có `specification?: string` để hiện quy cách. Dòng phụ trợ có price=null nhưng subtotal phân bổ đã biết; không suy đơn giá 0. Phiên và hậu kiểm pin đúng nguồn/ảnh/hash/bước; các guard revision/confirmation và production gate giữ nguyên.
 
 Tất cả resource owner + session; mutation CSRF/origin, private/no-store. Các route SRS phía trên vẫn phục vụ phiên bản cũ.
 

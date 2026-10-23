@@ -12,6 +12,30 @@ function call(a:Actor,p:string,v:any,method:'post'|'patch'='post',key?:string){r
 async function ready(a:Actor){let c=await data(await call(a,'cases',{name:'PRD chuẩn',sample:true}));c.input.plant.weight=1;c.input.plant.fragility='LOW';c.input.shipment.channel='DIRECT';c.input.shipment.distanceKm=35;c.input.shipment.departure=new Date(Date.now()+86400000).toISOString();c=await data(await call(a,'cases/'+c.id,{name:c.name,input:c.input,expected_version:c.version},'patch'));return c;}
 function role(a:Actor,value:string){const db=new DatabaseSync(path.join(process.env.PLANTCARE_TEST_MVP_DATA_DIR!,'plantcare.sqlite'));db.prepare('UPDATE users SET role=? WHERE id=?').run(value,a.session.user.id);db.close();}
 
+for(const legacy of [false,true])test(`${legacy?'old unpriced':'new'} photo demo shows the supplied material prices and comparison totals`,async({page})=>{
+  const a=await actor(),c=await ready(a),root=`cases/${c.id}`,bundle=await data(await call(a,root+'/mvp/proposals',{case_version:c.version,demo:true},'post',randomUUID()));
+  expect(bundle.alternatives.map((alternative:any)=>alternative.cost.total)).toEqual([3400,900]);
+  if(legacy)await page.route('**/api/v1/'+root+'/mvp',async route=>{
+    const response=await route.fetch(),body=await response.json();
+    body.data.bundles=body.data.bundles.map((b:any)=>({...b,alternatives:b.alternatives.map((alternative:any)=>({...alternative,cost:{known:0,total:null},bom:alternative.bom.map((material:any)=>({...material,price:null,subtotal:null}))}))}));
+    await route.fulfill({response,json:body});
+  });
+  await page.context().addCookies((await a.client.storageState()).cookies);await page.setViewportSize({width:1440,height:1000});await page.goto(`/app/cases/${c.id}/options`);
+  await expect(page.locator('.mvp-price').nth(0)).toHaveText(/3\.400\s*₫/);await expect(page.locator('.mvp-price').nth(1)).toHaveText(/900\s*₫/);
+  const comparison=page.locator('.material-costs'),table=comparison.locator('details table');
+  await expect(comparison).toHaveText('Xem chi tiết',{useInnerText:true});await expect(table).toBeHidden();
+  await comparison.getByText('Xem chi tiết',{exact:true}).click();await expect(table).toBeVisible();
+  await expect(table.getByRole('row')).toHaveCount(7);
+  for(const [name,price] of [['Thùng xốp',/2\.000\s*₫/],['Vật liệu chèn lót',/1\.000\s*₫/],['Màng bọc',/200\s*₫/],['Băng keo',/200\s*₫/],['Bìa carton',/500\s*₫/]] as const)await expect(table.getByRole('row').filter({hasText:name}).getByRole('cell').nth(1)).toHaveText(price);
+  await expect(table.getByRole('row').filter({hasText:'Thùng xốp'}).getByRole('cell').nth(3)).toHaveText('—');
+  await expect(table.getByRole('row').filter({hasText:'Bìa carton'}).getByRole('cell').nth(2)).toHaveText('—');
+  await expect(table.getByRole('row').filter({hasText:'Tổng vật tư'}).locator('th')).toHaveText(['Tổng vật tư',/3\.400\s*₫/,/900\s*₫/]);
+  await expect(table).not.toContainText('Chưa có giá');await expect(table).not.toContainText('Vận đơn');
+  const saved=await data(await a.client.get('/api/v1/'+root+'/mvp'));expect(saved.bundles.find((b:any)=>b.id===bundle.id).alternatives).toEqual(bundle.alternatives);
+  if(legacy){await page.locator('.mvp-alternatives').screenshot({path:'output/qa/demo-material-prices-cards.png'});await comparison.screenshot({path:'output/qa/demo-material-prices-comparison.png'});}
+  await a.client.dispose();
+});
+
 for(const [alternative,count] of [['PA1',6],['PA2',8]] as const)test(`Phu quy sample upload fills the requested profile and opens ${alternative} with HIGH fragility`,async({page})=>{
   test.setTimeout(90000);const a=await actor();await page.context().addCookies((await a.client.storageState()).cookies);await page.setViewportSize(alternative==='PA1'?{width:1440,height:1000}:{width:390,height:844});
   // Sample matching works without Gemini and never calls the actual recognition provider.
@@ -25,7 +49,52 @@ for(const [alternative,count] of [['PA1',6],['PA2',8]] as const)test(`Phu quy sa
   await page.getByLabel('Nơi đi',{exact:false}).fill('Hà Nội');await page.getByLabel('Nơi đến',{exact:false}).fill('Bắc Ninh');await page.getByLabel('Kênh bán',{exact:false}).selectOption('DIRECT');await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await page.getByRole('button',{name:'Ước tính hành trình'}).click();await page.getByLabel('Tôi xác nhận hành trình và các ước tính').check();await page.getByRole('button',{name:'Xem hai phương án'}).click();await expect(page.locator('.mvp-alternative')).toHaveCount(2);await page.getByRole('button',{name:'Chọn '+alternative,exact:true}).click();await expect(page.locator('.sample-instruction')).toHaveCount(count);
   await expect(page.locator('.mvp-alternative').nth(0).getByRole('heading')).toHaveText('Phương án an toàn nhất');await expect(page.locator('.mvp-alternative').nth(1).getByRole('heading')).toHaveText('Phương án tối ưu chi phí nhất');await expect(page.locator('main')).not.toContainText('bạn cung cấp');await expect(page.locator('main')).not.toContainText('theo bộ ảnh');
   const caseId=page.url().split('/cases/')[1].split('/')[0],saved=await data(await a.client.get('/api/v1/cases/'+caseId));expect(saved.input.plant).toMatchObject({height:50,length:40,width:40,potDiameter:20,potHeight:25,weight:5,fragility:'HIGH',confirmed:true});expect(saved.input.plant.fieldEvidence.weight).toMatchObject({source:'DEMO',confidence:null});
-  await page.getByRole('button',{name:'Hướng dẫn thủ công',exact:true}).click();await page.getByLabel('Đọc hướng dẫn bằng tiếng Việt').uncheck();await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();await expect(page.locator('.guide-step-reference img')).toHaveAttribute('src',`/photos/packing-demo/v1/${alternative.toLowerCase()}/step-1.webp`);expect(analysisCalls).toBe(0);await a.client.dispose();
+  await page.getByRole('button',{name:'Sử dụng camera AI',exact:true}).click();await page.getByLabel('Đọc hướng dẫn bằng tiếng Việt').uncheck();await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();await expect(page.locator('.guide-step-reference img')).toHaveAttribute('src',`/photos/packing-demo/v1/${alternative.toLowerCase()}/step-1.webp`);expect(analysisCalls).toBe(0);await a.client.dispose();
+});
+
+for(const alternative of ['PA1','PA2'] as const)test(`updated succulent sample: ${alternative} profile, prices, photo steps and postcheck`,async({page})=>{
+  test.setTimeout(120000);const a=await actor();await page.context().addCookies((await a.client.storageState()).cookies);await page.setViewportSize(alternative==='PA1'?{width:1440,height:1000}:{width:390,height:844});
+  let analysisCalls=0;const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/api/v1/session',async route=>{const r=await route.fetch(),j=await r.json();j.data.aiConfigured=false;await route.fulfill({response:r,json:j});});
+  await page.route('**/api/v1/cases/*/plant-analysis',async route=>{analysisCalls++;await route.abort();});
+  await page.goto('/app/new');await page.getByPlaceholder('Ví dụ: Trầu bà gửi Đà Nẵng').fill('Sen đá mới '+alternative);await page.getByRole('button',{name:'Tạo hồ sơ',exact:true}).click();await expect(page).toHaveURL(/\/plant$/);
+  await page.getByLabel('Cho phép lưu ảnh cây và gửi AI nhận diện').check();await page.getByLabel('Tải ảnh cây',{exact:true}).setInputFiles(path.resolve('tests/fixtures/sen-da-demo.png'));
+  await expect(page.getByRole('heading',{name:'Các thông số mẫu',exact:true})).toBeVisible();await expect(page.getByLabel('Tên cây',{exact:true})).toHaveValue('Cây sen đá');await expect(page.getByLabel('Nhóm cây',{exact:true})).toHaveValue('SUCCULENT');
+  for(const [label,value] of [['Chiều cao tổng (cm)','13'],['Dài tán (cm)','12'],['Rộng tán (cm)','12'],['Đường kính chậu (cm)','10'],['Cao chậu (cm)','8'],['Cả cây + chậu + đất (kg)','0.3']])await expect(page.getByLabel(label,{exact:true})).toHaveValue(value);
+  await expect(page.getByLabel('Độ dễ hư hỏng',{exact:true})).toHaveValue('LOW');await expect(page.getByLabel('Vật liệu chậu',{exact:true})).toHaveValue('Nhựa');await expect(page.locator('main')).not.toContainText('Phú quý');
+  const next=page.getByRole('button',{name:'Xác nhận & nhập hành trình'});await expect(next).toBeDisabled();
+  if(alternative==='PA1')await page.screenshot({path:'output/qa/succulent-profile.png',fullPage:true});
+  await page.getByLabel('Tôi xác nhận thông số cây và chậu đã chính xác').check();await next.click();
+  await expect(page.getByLabel('Nơi đi',{exact:false})).toHaveValue('');await expect(page.getByLabel('Nơi đến',{exact:false})).toHaveValue('');await expect(page.getByLabel('Kênh bán',{exact:false})).toHaveValue('');await expect(page.getByLabel('Ngày giờ gửi',{exact:false})).toHaveValue('');
+  await expect(page.getByRole('button',{name:'Ước tính hành trình',exact:true})).toBeDisabled();
+  if(alternative==='PA1')await page.screenshot({path:'output/qa/succulent-journey-empty.png',fullPage:true});
+  await page.getByLabel('Nơi đi',{exact:false}).fill('Hoàng Hoa Thám - Hà Nội');await page.getByLabel('Nơi đến',{exact:false}).fill('Từ Sơn - Bắc Ninh');await page.getByLabel('Kênh bán',{exact:false}).selectOption('SHOPEE');
+  await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await page.getByRole('button',{name:'Ước tính hành trình'}).click();await page.getByLabel('Tôi xác nhận hành trình và các ước tính').check();await page.getByRole('button',{name:'Xem hai phương án'}).click();
+  await expect(page.locator('.mvp-price').nth(0)).toHaveText(/15\.000\s*₫/);await expect(page.locator('.mvp-price').nth(1)).toHaveText(/8\.000\s*₫/);
+  const comparison=page.locator('.material-costs'),table=comparison.locator('details table');
+  await expect(comparison.getByText('Xem chi tiết',{exact:true})).toBeVisible();await expect(table).toBeHidden();await expect(comparison.locator('h2')).toBeHidden();await expect(comparison.getByText('PA2 tiết kiệm',{exact:false})).toBeHidden();
+  if(alternative==='PA1')await comparison.screenshot({path:'output/qa/material-costs-collapsed.png'});
+  await comparison.getByText('Xem chi tiết',{exact:true}).click();await expect(table).toBeVisible();
+  await expect(table.getByRole('row')).toHaveCount(12);await expect(table.getByRole('columnheader',{name:'Quy cách',exact:true})).toBeVisible();
+  const tape=table.getByRole('row').filter({hasText:'Băng keo'});await expect(tape.getByRole('cell').nth(3)).toHaveText(/1,2 · 600\s*₫/);await expect(tape.getByRole('cell').nth(4)).toHaveText(/0,8 · 400\s*₫/);
+  const auxiliary=table.getByRole('row').filter({hasText:'Chi phí phụ trợ khác'});await expect(auxiliary.getByRole('cell').nth(2)).toHaveText('—');await expect(auxiliary.getByRole('cell').nth(3)).toHaveText(/1 · 400\s*₫/);await expect(auxiliary.getByRole('cell').nth(4)).toHaveText(/1 · 100\s*₫/);
+  await expect(comparison).toContainText(/PA2 tiết kiệm 7\.000\s*₫ \(46,7%\)/);await expect(table).not.toContainText('Chưa có giá');
+  if(alternative==='PA1'){await page.locator('.mvp-alternatives').screenshot({path:'output/qa/succulent-options.png'});await comparison.screenshot({path:'output/qa/succulent-cost-comparison.png'});}
+  await comparison.getByText('Thu gọn',{exact:true}).click();await expect(table).toBeHidden();await expect(comparison.locator('h2')).toBeHidden();await expect(comparison.getByText('PA2 tiết kiệm',{exact:false})).toBeHidden();await expect(comparison.getByText('Xem chi tiết',{exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const caseId=page.url().split('/cases/')[1].split('/')[0],state=await data(await a.client.get(`/api/v1/cases/${caseId}/mvp`)),bundle=state.bundles[0],selected=bundle.alternatives.find((x:any)=>x.id===alternative);
+  expect(selected.steps).toHaveLength(4);expect(selected.steps.every((s:any)=>s.image.startsWith(`/photos/packing-demo/sen-da/v1/${alternative.toLowerCase()}/`))).toBe(true);
+  await page.getByRole('button',{name:'Chọn '+alternative,exact:true}).click();await expect(page.locator('.sample-instruction')).toHaveCount(4);
+  await page.getByRole('button',{name:'Sử dụng camera AI',exact:true}).click();await page.getByLabel('Đọc hướng dẫn bằng tiếng Việt').uncheck();await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();
+  for(const [i,s] of selected.steps.entries()){
+    await expect(page.locator('.live-step h2')).toHaveText(s.title);await expect(page.locator('.guide-step-reference img')).toHaveAttribute('src',s.image);
+    await expect.poll(()=>page.locator('.guide-step-reference img').evaluate(i=>(i as HTMLImageElement).naturalHeight)).toBe(1672);
+    if(i===0){await page.getByRole('button',{name:'Đã xong bước này',exact:true}).click();await expect(page.locator('.live-step h2')).toHaveText(s.title);await page.screenshot({path:`output/qa/succulent-${alternative.toLowerCase()}-guide.png`,fullPage:true});}
+    const manual=page.getByRole('button',{name:'Dùng kiểm tay & tiếp tục',exact:true});if(!await manual.isVisible())await page.getByText('Xác nhận thủ công',{exact:true}).click();await page.getByLabel('Tôi đã kiểm tra trực tiếp',{exact:true}).check();await page.getByLabel('Lý do / ghi nhận').fill('Đã kiểm trực tiếp theo đúng ảnh mẫu sen đá của bước này.');await manual.click();
+  }
+  const guides=await data(await a.client.get(`/api/v1/cases/${caseId}/guidance`)),g=guides[0];expect(g.boundSop.source_ids).toEqual(['USER-SUCCULENT-DEMO-20261023']);expect(g.boundSop.steps.every((s:any)=>s.reference_image?.path===s.image)).toBe(true);
+  await page.getByRole('link',{name:'Hậu kiểm kiện',exact:true}).click();const checks=page.getByLabel('Tôi đã kiểm trực tiếp và xác nhận đạt',{exact:true});await expect(checks).toHaveCount(alternative==='PA1'?4:5);await expect(page.getByRole('button',{name:'Lưu hồ sơ đã đóng gói'})).toBeDisabled();for(let i=0;i<await checks.count();i++)await checks.nth(i).check();
+  await page.getByRole('button',{name:'Lưu hồ sơ đã đóng gói'}).click();await expect(page.getByRole('heading',{name:'Đã đóng gói chắc chắn'})).toBeVisible();expect(errors).toEqual([]);expect(analysisCalls).toBe(0);await a.client.dispose();
 });
 
 test('sample matching is owner/case scoped and ignores unrelated images',async()=>{
@@ -51,7 +120,7 @@ for(const [alternative,count] of [['PA1',6],['PA2',8]] as const)test(`photo demo
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:`output/qa/demo-${alternative.toLowerCase()}-gallery.png`,fullPage:true});
   const state=await data(await a.client.get('/api/v1/'+root+'/mvp')),bundle=state.bundles.find((b:any)=>b.id===state.selection.bundleId);expect(bundle.demo).toBe(true);
-  await page.getByRole('button',{name:'Hướng dẫn thủ công',exact:true}).click();
+  await page.getByRole('button',{name:'Sử dụng camera AI',exact:true}).click();
   await page.getByLabel('Đọc hướng dẫn bằng tiếng Việt').uncheck();
   await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();
   expect((await call(a,root+'/mvp/proposals',{case_version:c.version,demo:true},'post',randomUUID())).status()).toBe(409);

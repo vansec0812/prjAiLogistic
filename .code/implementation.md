@@ -217,3 +217,65 @@ Kiểm thực chạy:
 ## Tên phương án và copy giao diện — 20/10/2026
 
 Theo yêu cầu mới: PA1 hiển thị “Phương án an toàn nhất”, PA2 hiển thị “Phương án tối ưu chi phí nhất”. Dùng nhãn theo ID ở lớp trình bày cho cả hồ sơ cũ; bộ đề xuất mới cũng lưu tên mới, bỏ mô tả và notes demo kiểu “6 bước theo bộ ảnh bạn cung cấp”. Thu gọn banner/chú thích thành “Chế độ demo”/“Ảnh hướng dẫn”, bỏ dòng giải thích nguồn ảnh ở bảng chi phí. Không đổi mã, ảnh, số/thứ tự bước, lời đọc hoặc snapshot lịch sử. `playwright test --config playwright.mvp.config.ts --grep 'Phu quy sample|old catalog results'`: **3 PASS**, có assert đúng hai tên và không còn câu nguồn thừa. `npm.cmd run build`: **PASS**, gồm TypeScript. Chỉnh sửa copy không tạo test unit mới hoặc chạy lại provider thật.
+
+## Khôi phục giọng AI local — 21/10/2026
+
+Điều tra lỗi không nghe hướng dẫn: server local được mở trong môi trường chặn outbound; kiểm tra kết nối Google cùng môi trường trả `EACCES`. Có 20 lượt `FAILED_USAGE_UNKNOWN`, sau đó endpoint speech trả `429 AI_QUOTA`. Khởi động lại đúng server với quyền kết nối Gemini; theo xác nhận của người dùng, đặt riêng `AI_DAILY_CALL_LIMIT=100` trong `apps/web/.env.local` được Git bỏ qua. Giữ nguyên lịch sử usage và quota mặc định trong code.
+
+Máy không có giọng Việt cài sẵn còn cần mở AudioContext bằng tương tác người dùng. `LivePacking.control` nay gọi `activate` ngay khi bấm Bắt đầu/Tiếp tục phiên, trước request điều khiển, khi lời đọc đang bật, âm lượng > 0 và thiếu giọng Việt. Giữ generation guard nếu phiên bị dừng trong lúc mở âm thanh. Không bật camera/micro hoặc chuyển bước từ thao tác nghe.
+
+Kiểm thực: `npm.cmd run typecheck` **PASS**; E2E mới `--grep 'MVP start and resume play cloud narration'` **1 PASS** (không có giọng Việt, tự phát từ Bắt đầu và Tiếp tục, dùng lại audio cache); regression `--grep 'automatically narrates|PRD create'` **3 PASS**. Bốn bài browser này dùng provider/thiết bị giả lập. Kiểm riêng trên Chrome đang dùng và Gemini thật: `/api/v1/live-packing/speech` HTTP200, usage `SUCCEEDED`, giao diện báo “Đã đọc xong” sau cả nghe trực tiếp và Tiếp tục phiên; ảnh tại `output/qa/tts-fixed.jpg`. Không xác minh âm lượng loa vật lý hoặc chất lượng phát âm bằng người nghe; không chạy production build hoặc toàn bộ test suite cho thay đổi này.
+
+## Giọng phản hồi khi kiểm ảnh bước 1 — 22/10/2026
+
+Log phiên trước có speech HTTP200 nhưng checkpoint HTTP503: câu đọc lỗi kiểm ảnh không chứng minh bộ phát giọng bị hỏng. Lần điều tra này chưa tái hiện được HTTP503 cũ: kiểm tra trực tiếp hai ảnh mẫu và bài tích hợp qua API đều trả JSON hợp lệ. Không kết luận nguyên nhân 503 khi thiếu body phản hồi cũ.
+
+Đã xác định lỗi độc lập trong client: mỗi kết quả kiểm ảnh trả lại guidance/boundSop có tham chiếu object mới. Effect đọc bước phụ thuộc object SOP nên cleanup có thể hủy ngay lượt đọc kết quả đang tạo/phát, dù bước không đổi. Chuyển dependency sang nội dung narration đã pin; kết quả ảnh/revision mới cùng bước không ngắt giọng hoặc đọc lại lời bước. Lượt kiểm thủ công gặp lỗi nay đọc chính thông báo tiếng Việt từ API thay vì luôn đọc câu lỗi chung. Vẫn giữ bước khi lỗi/ảnh chưa đạt, giữ xác nhận riêng và các guard camera/micro.
+
+Kiểm thực: `npm.cmd run typecheck` **PASS**; `playwright.live.config.ts --grep 'MVP camera .* result finishes'` **2 PASS**, gồm kết quả đạt/cần chỉnh, cloud speech trì hoãn có decode/phát hết, không abort request hoặc lặp lời bước. Bài `MVP camera service failure` **1 PASS** sau khi chọn đúng alert lỗi (Next có một route announcer rỗng cùng role); Bắt đầu/Tiếp tục và lời PA1/PA2 **3 PASS**. Sáu bài này dùng thiết bị/provider giả lập. Ảnh QA tại `output/qa/camera-step-1-feedback.png`.
+
+Opt-in `RUN_REAL_GEMINI=1` + `playwright.gemini.config.ts --grep 'real demo step one'`: **1 PASS**, hai lượt Gemini thật qua session MVP riêng và quota kiểm thử, ảnh mẫu đã bọc trả `passed`, ảnh `source/cayphuquy.jpg` chưa bọc trả `needs_adjustment`; HTTP200, đúng schema/revision và không tự chuyển bước. Đây là bằng chứng giao tiếp trên hai mẫu, không phải đánh giá accuracy hoặc camera/micro/loa vật lý. Không thay model, quota 100 đã được đồng ý, dữ liệu lịch sử hay approval chuyên môn; không chạy toàn bộ suite/production build. Server local được mở lại trên cổng 3000 vì process cũ đã dừng.
+
+## Giá vật liệu bao gói demo — 22/10/2026
+
+Theo bộ giá mới người dùng cung cấp: PA1 2.000 + 1.000 + 200 + 200 = 3.400đ; PA2 500 + 200 + 200 = 900đ. `demo-pricing.ts` giữ chung BOM/tổng và version nguồn, cộng bằng Decimal. Demo mới lưu bốn/ba dòng giá; demo cũ tổng null nhận cùng bảng giá ở lớp hiển thị/export, không ghi đè DB hoặc giá đã biết. Card và bảng “So sánh chi phí vật liệu bao gói” dùng cùng dữ liệu. Giữ nguyên ảnh, lời/bước, lựa chọn và các guard phiên; vật tư tem/vận đơn ngoài bộ giá không được gán giá 0.
+
+Kiểm thực: typecheck **PASS**; `vitest run tests/packing-demo.test.ts` **7 PASS** (giá/tổng, số dòng, không mutation, lịch sử giá đã biết và non-demo); `playwright test --config playwright.mvp.config.ts --grep 'photo demo shows the supplied material prices'` **2 PASS** cho bundle mới và fixture demo cũ chưa có giá, kiểm card, từng đơn giá, tổng, đúng cột và snapshot không đổi. Chrome trên hồ sơ local cũ thực tế cũng đã hiện 3.400đ/900đ và đầy đủ bảng năm loại vật liệu; ảnh `output/qa/material-prices-live.jpg`, QA tự động tại `demo-material-prices-cards.png`/`demo-material-prices-comparison.png`. Không gọi AI, đổi dữ liệu người dùng, chạy toàn bộ suite/build production hoặc deploy trong task giá này.
+
+## Hạn mức giọng Gemini và thay key local — 22/10/2026
+
+Giọng mất ở phiên PA2 bước 1 do Gemini TTS trả HTTP429 `RESOURCE_EXHAUSTED`: QuotaFailure `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, limit 10 cho `gemini-3.8-flash-lite-tts`, RetryInfo khoảng 1 giờ. Lúc kiểm tra DB local mới dùng 46/100 lượt; kiểm ảnh HTTP200 không chứng minh TTS còn quota. Một câu thử cố định xác nhận chính xác lỗi provider; không lưu raw key, audio hoặc prompt cá nhân vào log.
+
+Server nay phân biệt quota TTS theo ngày/tốc độ với quota local; chỉ dùng RetryInfo hợp lệ để báo giờ thử lại tại Việt Nam. Cooldown lưu bền trong `limits`, scope hash key/model, chặn trước reserve/gọi provider cho mọi nội dung mới, không chặn audio cache. Failed usage vẫn được tính; metadata chỉ model/error_code. Không tự tăng hạn mức Google, đổi model hoặc bật billing. Key mới do user cung cấp đã thay trong `.env.local` bị Git ignore; Next xác nhận reload env. Kiểm endpoint local với key mới trả HTTP200, audio/wav 130.918 byte, RIFF/WAVE hợp lệ.
+
+Kiểm thực: typecheck **PASS**; `vitest run tests/vietnamese-tts.test.ts` **12 PASS**, gồm quota/cooldown/expiry/cache và đổi key; `playwright.live.config.ts --grep 'Gemini speech quota|MVP start and resume play cloud narration|MVP camera .* result finishes'` **4 PASS**. Bài browser dùng provider/thiết bị giả lập; teardown Windows chờ tắt server test, đã dọn đúng cây process cổng 3107, lệnh thoát 0. Không chạy toàn bộ suite/build/deploy. Chrome ban đầu bị giới hạn công cụ xét duyệt tạm thời, sau thời điểm cho phép đã truy cập lại được; form người dùng vẫn giữ tại tab cũ, kiểm âm thanh ở tab riêng.
+
+Chrome + key mới: bấm Dùng giọng AI tại PA2 bước 1, DB ghi SUCCEEDED, giao diện “Đã đọc xong”; ảnh `output/qa/tts-new-key.jpg`. Không bật camera/micro, thay bước hoặc kết luận đã nghe âm thanh qua loa vật lý.
+
+## Demo sen đá theo dữ liệu mới nhất — 23/10/2026
+
+Đọc Word mới `Bản sao của Cây vạn lộc (1).docx` và hai RAR user cung cấp; xem ảnh cây mới và đủ 8 ảnh hướng dẫn. Word mới có Nhựa/LOW và chậu cao 8 cm; user bổ sung chiều cao tổng 13 cm. Thay dữ liệu gốm/sứ/trung bình và ảnh chậu trắng trong bản trước còn đang triển khai. Lưu nguồn/hash tại source-index.md. Không sửa tài liệu gốc. Các bản trích/copy tạm ở `output/imports/` được ignore để tránh đưa nguyên tài liệu vào Git.
+
+Registry ảnh/preset nhận cùng ảnh qua fingerprint, trả sampleId riêng, giữ Phú quý và USER/late edits. Sen đá điền đủ 13/12/12/10/8 cm, 0,3 kg, Nhựa/LOW và chỉ gợi ý route/channel còn trống. Ngày gửi do user chọn, không tự dùng 20/10 đã qua. Bộ `demo-succulent.ts` có hai phương án 4 bước đúng ảnh; version/hash riêng; gallery, lời đọc, Vision reference và hậu kiểm dùng đúng phương án/snapshot. Checklist và production gate giữ nguyên. Phú quý tiếp tục 6/8 bước và giá trước đó.
+
+BOM gồm lượng/quy cách/giá trong Word, băng keo 1,2/0,8 m và phụ trợ 400/100đ. Decimal tính tổng 15.000/8.000đ và tiết kiệm 7.000đ/46,7%. MaterialComparison hiện quy cách khi có, lượng thập phân Việt và dấu — cho đơn giá phụ trợ được phân bổ, không giả 0 hoặc thiếu tổng. Lớp bổ sung giá legacy chỉ áp version Phú quý cũ, không ghi giá Phú quý vào sen đá hoặc sửa snapshot DB. Script tái tạo giữ nguyên đầy đủ ảnh/chú thích, kiểm nguồn đổi trước ghi đè version.
+
+Kiểm thực: `npm.cmd run typecheck` **PASS**; `vitest run tests/succulent-demo.test.ts tests/demo-plant.test.ts tests/packing-demo.test.ts tests/guidance.test.ts tests/live-packing.test.ts` **59 PASS**; sau cập nhật chiều cao 13 cm chạy lại 6 test sen đá **PASS**. `playwright.mvp.config.ts --grep 'updated succulent sample|Phu quy sample upload|photo demo shows the supplied material prices|sample matching is owner'` **7 PASS**, gồm desktop/mobile sen đá từ upload đến hậu kiểm/lưu, số/ảnh/giá, chặn xác nhận thiếu, không gọi model nhận diện, regression Phú quý và owner/CSRF. Ảnh profile/options/cost-comparison/PA1/PA2 tại `output/qa/succulent-*`, đã xem lại profile, card và bảng. Browser dùng DB riêng, không gọi Gemini thật/camera/micro hoặc chứng minh độ chính xác chuyên môn. Không chạy toàn suite/build/deploy.
+
+Server local đã mở lại cổng 3000, health HTTP200. Lần khởi động đầu của Next dừng vì cảnh báo nâng cấp bảo mật dependency; chạy lại lệnh nguyên trạng thì server và test chạy được. Chưa thay dependency trong phạm vi demo này; cảnh báo Next.js 16.4.0 cần được xử lý ở task nâng cấp riêng.
+
+### Cập nhật mới nhất: chỉ hiện liên kết chi phí
+
+User thay yêu cầu thu gọn trước đó: mặc định chỉ có “Xem chi tiết”; tiêu đề, tổng vật tư và mức tiết kiệm đều nằm bên trong disclosure cùng toàn bộ bảng. “Thu gọn” ẩn toàn bộ nội dung lại. Đã bỏ mini-table/CSS tổng bên ngoài và đổi test để kiểm nội dung ẩn. Typecheck và 4 E2E sen đá desktop/mobile, giá Phú quý mới/cũ **PASS**. Đã xem ảnh `output/qa/material-costs-collapsed.png`, chỉ có liên kết mở; không thay số tiền hoặc dữ liệu lưu.
+
+### Chỉnh sửa tiếp theo: hành trình nhập tay
+
+Bảng chi phí thu gọn theo yêu cầu mới: MaterialComparison mặc định chỉ hiện bảng tổng vật tư từng PA và dòng tiết kiệm. Native details/summary “Xem chi tiết” mở toàn bảng, “Thu gọn” đóng lại; bundle mới bắt đầu ở trạng thái đóng. Bảng chi tiết giữ nguyên giá/quy cách/lượng/tổng; màn hình nhỏ cuộn ngang trong vùng bảng. Typecheck **PASS**, 4 E2E sen đá desktop/mobile và giá Phú quý mới/cũ **PASS** (kiểm tổng luôn hiện, chi tiết ẩn/mở/đóng, dòng giá và không tràn viewport). Ảnh đã xem tại `output/qa/material-costs-collapsed.png` và `succulent-cost-comparison.png`. Không gọi AI, đổi dữ liệu hoặc chạy toàn bộ suite/build.
+
+Ảnh đại diện thẻ phương án theo yêu cầu tiếp theo: PA1/PA2 dùng `steps[0].image` của chính phương án; fallback ảnh vật tư khi thiếu ảnh bước. Áp dụng cả hai bộ demo và dữ liệu phương án hiện có, chỉ đổi hiển thị thẻ, không mutate bước hoặc bundle. Typecheck và diff whitespace **PASS**.
+
+Chỉnh giao diện kết quả theo yêu cầu tiếp theo: đã bỏ toàn bộ khối mở rộng “Quy tắc và dữ liệu đã dùng” khỏi `MvpResults`, gồm version/trace/JSON snapshot trên màn hình. Dữ liệu bundle và tải hồ sơ vẫn giữ. Typecheck và diff whitespace **PASS**; thay đổi hiển thị đơn giản, không bổ sung test hoặc chạy lại E2E.
+
+Theo user, hành trình không được điền sẵn khi tải ảnh sen đá. Đã bỏ `applyDemoJourney` và lời gọi trong callback nhận mẫu; nhận ảnh chỉ thay các trường cây/chậu. Nơi đi, nơi đến, kênh bán và ngày gửi của hồ sơ mới trống, người dùng tự nhập theo kịch bản demo. Không xóa/migrate dữ liệu hành trình đã lưu và không thay mẫu cây, ảnh, giá hoặc các bước đóng gói.
+
+Kiểm thực: typecheck **PASS**, `tests/succulent-demo.test.ts` **5 PASS**; browser `playwright.mvp.config.ts --grep 'updated succulent sample'` **2 PASS**. Cả desktop PA1/mobile PA2 kiểm bốn trường trống và nút ước tính bị khóa, rồi nhập tay Hoàng Hoa Thám - Hà Nội → Từ Sơn - Bắc Ninh, Shopee/ngày thực tế, đi hết hướng dẫn và hậu kiểm. Bằng chứng UI `output/qa/succulent-journey-empty.png`; DB kiểm thử riêng, không gọi Gemini thật. Cập nhật hướng dẫn và ADR hiện hành để bỏ mặc định hành trình.

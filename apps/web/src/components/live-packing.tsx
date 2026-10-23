@@ -7,7 +7,6 @@ import { Camera, Mic, Volume2, ArrowRight, AlertTriangle } from 'lucide-react';
 import { api, useSession, useLoad, Spinner, Alert, Empty, PageHeading } from './common';
 import { useVietnameseSpeech } from './use-vietnamese-speech';
 import { usePackingCommands } from './use-packing-commands';
-import { instructionImage } from './packing-results';
 import { MvpProgress } from './mvp-flow';
 import { packingNarration } from '../lib/packing-narration';
 import { confirmationDecision, type GuidanceSession } from '../lib/guidance';
@@ -31,6 +30,7 @@ export function LivePacking({caseRecord}:{caseRecord:CaseRecord}){
   const checkRef=useRef<(auto:boolean,advance:boolean)=>Promise<void>>(async()=>{}),frameSignature=useRef<number[]|null>(null);
   const {speak:say,cancel:cancelSpeech,activate,voiceName,audioState,speaking,isSpeaking,notice:voiceNotice}=useVietnameseSpeech(voice&&volume>0,session.csrf,volume);
   const sop=guidance?.boundSop||sopCatalog.sops.find(s=>s.id===guidance?.sopId&&s.version===guidance?.sopVersion)||sopCatalog.sops[0],index=guidance?.index||0,step=sop.steps[index],finished=!!guidance&&guidance.status!=='ACTIVE',busy=phase!=='idle';
+  const narration=packingNarration(sop,index);
   const record=override||(guidance?.checks[step.id]?{kind:'ai' as const,result:guidance.checks[step.id]}:guidance?.records[step.id]);
   const enabled=!!guidance&&!finished&&online&&(guidance.mode==='MVP'?active&&guidance.executionState==='RUNNING':session.development||session.referenceGuideEnabled===true);
   const commands=usePackingCommands({ready:enabled,paused:busy||isSpeaking,speaking,onCommand:intent=>{void handleVoiceCommand(intent);}});
@@ -42,7 +42,7 @@ export function LivePacking({caseRecord}:{caseRecord:CaseRecord}){
   }).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[caseRecord.id,requested]);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;stop();};},[]);
   useEffect(()=>{const hide=()=>{if(document.hidden)stop();};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},[]);
-  useEffect(()=>{if(enabled&&!locked.current){const prefix=ack.current;ack.current='';void speak(prefix+packingNarration(sop,index));}return cancelSpeech;},[index,guidance?.id,finished,voice,voiceName,speak,cancelSpeech,enabled,sop]);
+  useEffect(()=>{if(enabled&&!locked.current){const prefix=ack.current;ack.current='';void speak(prefix+narration);}return cancelSpeech;},[index,guidance?.id,finished,voice,voiceName,speak,cancelSpeech,enabled,narration]);
   useEffect(()=>{const offline=()=>{setOnline(false);stop();setError('Mất kết nối. Hướng dẫn đã tải vẫn xem được; AI tạm dừng.');},online=()=>{setOnline(true);setError(e=>e.startsWith('Mất kết nối.')?'':e);setMessage('Đã có mạng. Chọn Tiếp tục phiên khi sẵn sàng.');};window.addEventListener('offline',offline);window.addEventListener('online',online);return()=>{window.removeEventListener('offline',offline);window.removeEventListener('online',online);};},[]);
   useEffect(()=>{frameSignature.current=null;},[guidance?.id,index]);
   useEffect(()=>{
@@ -60,7 +60,16 @@ export function LivePacking({caseRecord}:{caseRecord:CaseRecord}){
       if(video.current){video.current.srcObject=media;await video.current.play();}if(!mounted.current||token!==generation.current){media.getTracks().forEach(t=>t.stop());return;}setCamera(true);setError('');
     }catch{stop();if(mounted.current)setError('Không mở được camera. Cấp quyền camera rồi thử lại trên HTTPS hoặc localhost.');}finally{starting.current=false;}
   }
-  async function control(action:'BEGIN'|'PAUSE'|'RESUME'|'END'){if(!guidance||busy)return;stop();const token=generation.current;setError('');if(action==='RESUME'&&guidance.executionState==='RUNNING'){setActive(navigator.onLine&&!document.hidden);return;}setPhase('saving');try{const g=await api<GuidanceSession>(`cases/${caseRecord.id}/guidance/${guidance.id}/control`,{method:'POST',body:JSON.stringify({expected_revision:guidance.revision,action})},session.csrf);apply(g);setActive((action==='BEGIN'||action==='RESUME')&&token===generation.current&&navigator.onLine&&!document.hidden);}catch(e){setError((e as Error).message);}finally{setPhase('idle');}}
+  async function control(action:'BEGIN'|'PAUSE'|'RESUME'|'END'){
+    if(!guidance||busy)return;stop();const token=generation.current;setError('');setPhase('saving');
+    try{
+      // Unlock audio within the click, before the control request consumes the user gesture.
+      if((action==='BEGIN'||action==='RESUME')&&voice&&volume>0&&!voiceName)await activate();
+      if(action==='RESUME'&&guidance.executionState==='RUNNING'){setActive(token===generation.current&&navigator.onLine&&!document.hidden);return;}
+      const g=await api<GuidanceSession>(`cases/${caseRecord.id}/guidance/${guidance.id}/control`,{method:'POST',body:JSON.stringify({expected_revision:guidance.revision,action})},session.csrf);
+      apply(g);setActive((action==='BEGIN'||action==='RESUME')&&token===generation.current&&navigator.onLine&&!document.hidden);
+    }catch(e){setError((e as Error).message);}finally{setPhase('idle');}
+  }
   async function mutate(action:'CONFIRM'|'MANUAL'|'SKIP'|'REPORT_ISSUE'|'RESOLVE_ISSUE',method:'BUTTON'|'VOICE',base=guidance,note=manualNote.trim()){
     if(!base||locked.current||finished)return;locked.current=true;saving.current=true;commands.suspend();setPhase('saving');setError('');cancelSpeech();
     try{const g=await api<GuidanceSession>(`cases/${caseRecord.id}/guidance/${base.id}`,{method:'PATCH',body:JSON.stringify({expected_revision:base.revision,step_id:sop.steps[base.index].id,action,method,manual_checked:!['REPORT_ISSUE','RESOLVE_ISSUE'].includes(action),note})},session.csrf);
@@ -108,7 +117,7 @@ export function LivePacking({caseRecord}:{caseRecord:CaseRecord}){
       if(result.status!=='passed'){setMessage(result.reason);const warningKey=step.id+':'+result.status;if(!auto||Date.now()-(warnings.current.get(warningKey)||0)>=5000){warnings.current.set(warningKey,Date.now());await speak(labels[result.status]+'. '+result.reason+'. '+step.remedy_vi);}}
       else if(advance&&updated){locked.current=false;await mutate('CONFIRM',method,updated);}
       else if(!auto)await speak('Phần nhìn thấy đạt.');
-    }catch(e){if(!active())return;frameSignature.current=null;setError((e as Error).message);if(auto)setMonitor(false);else await speak('Chưa kiểm tra được ảnh. Thử lại hoặc kiểm tra thủ công.');}
+    }catch(e){if(!active())return;frameSignature.current=null;const text=e instanceof Error?e.message:'Chưa kiểm tra được ảnh. Thử lại hoặc kiểm tra thủ công.';setError(text);if(auto)setMonitor(false);else await speak(text);}
     finally{if(active()){locked.current=false;setPhase('idle');setCountdown(null);}commands.resume();}
   }
   checkRef.current=(auto,advance)=>check(auto,advance);
@@ -136,7 +145,6 @@ export function LivePacking({caseRecord}:{caseRecord:CaseRecord}){
       {message&&<p role="status">{message}</p>}
       <div className="button-row">{step.mode==='visual'&&<button className="button secondary" disabled={busy||!camera||!consent||!session.aiConfigured} onClick={()=>void check()}>Kiểm tra ảnh</button>}<button className="button primary" disabled={busy||!enabled} onClick={()=>void done('BUTTON')}>Đã xong bước này <ArrowRight size={17}/></button></div>
       <details className="manual-override"><summary>Xác nhận thủ công</summary><label className="check-label"><input type="checkbox" checked={manual} disabled={busy} onChange={e=>setManual(e.target.checked)}/>Tôi đã kiểm tra trực tiếp</label><label>Lý do / ghi nhận<textarea value={manualNote} maxLength={500} onChange={e=>setManualNote(e.target.value)}/></label><button className="button secondary" disabled={busy||!enabled||!manual||step.mode==='visual'&&manualNote.trim().length<10} onClick={()=>void mutate('MANUAL','BUTTON')}>Dùng kiểm tay & tiếp tục</button><button className="button subtle" disabled={busy||!enabled} onClick={()=>void mutate('SKIP','BUTTON')}>Bỏ qua và ghi chưa hoàn tất</button></details>
-      <details><summary>Ảnh minh họa & nguồn SOP</summary>{!step.reference_image&&<img className="guide-reference-image" src={step.image||(guidance.boundSop?'/illustrations/step-'+({prepare:1,wrap:3,fix:2,padding:3,close:6}[step.id]||1)+'.svg':instructionImage(sop,step,index,caseRecord.input.plant.group))} alt={'Minh họa '+step.title}/>}<p>{step.source_id} · {step.source_locator}</p><p>{sop.version} · {sop.status==='PUBLISHED'?'đã được duyệt trong phạm vi cấu hình':'nguồn tham khảo chưa duyệt chuyên môn'}.</p>{step.criteria.map(c=><p key={c.id}>{c.visible_pass} Lỗi: {c.visible_fail}</p>)}{sop.reference_notes?.filter(n=>n.step_id===step.id).map(n=><p key={n.source_id}>{n.text}</p>)}</details>
       {!!lastChecked&&<small className="muted">Kiểm ảnh gần nhất {lastChecked}</small>}<details><summary>Âm thanh</summary><p>{audioState}</p><button className="button secondary" onClick={async()=>{setVoice(true);await activate();await speak(packingNarration(sop,index));}}>Dùng giọng AI</button><p>Nội dung đọc được gửi tới Gemini khi dùng giọng AI.</p></details>
     </section></div></>}
   </div>;

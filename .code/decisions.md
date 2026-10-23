@@ -95,3 +95,7 @@ Yêu cầu tiếp theo cùng ngày: bỏ lời nhắc “nói đã xong để ch
 ## ADR-008: Nhận ảnh Phú quý để điền bộ thông số mẫu — 20/10/2026
 
 User cung cấp `source/cayphuquy.jpg`, yêu cầu bỏ badge AI/phần trăm/Cần nhập tay và hardcode đúng bộ số để demo. Dùng fingerprint ảnh local thay vì prompt ép Gemini trả số mẫu. Chỉ ảnh này hoặc bản nén/resize khớp mới gợi ý preset; không dùng tên file hay gán số cho mọi cây. Giữ dữ liệu với source=DEMO, confidence=null, chờ xác nhận, không ghi đè USER/late edits. Các gợi ý DEMO chưa sửa có thể bị scan thật tiếp theo thay thế. Giữ fragility HIGH và gốm/sứ; demo chỉ xem cả PA1/PA2 theo source đã có, eligibility thường không đổi. [Chi tiết](packing-photo-demo.md).
+
+## ADR-009: Demo sen đá riêng, theo bản Word mới — 23/10/2026
+
+User yêu cầu thêm demo thứ hai như Phú quý, sau đó thay dữ liệu bằng `Bản sao của Cây vạn lộc (1).docx`. Bản mới có ảnh nhựa đen, LOW, chậu 8 cm; user xác nhận cao tổng 13 cm. Chọn registry fingerprint/preset riêng, không ép Gemini trả thông số cố định. Preset sen đá và tên Cây sen đá/SUCCULENT trong demo chọn hai phương án 4 bước từ RAR. Tán rộng 12 cm được dùng cho hai chiều của tán tròn; không suy kích thước từ ảnh. BOM 15.000/8.000đ dùng số lượng thực, quy cách và phân bổ phụ trợ; không dùng giá Phú quý. Theo chỉnh sửa tiếp theo: không gợi ý hoặc tự điền route/channel/ngày gửi; người dùng nhập cả bốn trường theo kịch bản demo. Không nâng production gate hoặc mutate lịch sử. [Chi tiết và bằng chứng](packing-photo-demo.md).

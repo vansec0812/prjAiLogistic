@@ -3,7 +3,7 @@ import type { CaseInput, Group } from './index';
 export type AlternativeId = 'PA1' | 'PA2';
 export type ProfileField = 'name'|'group'|'height'|'length'|'width'|'potDiameter'|'potHeight'|'weight'|'fragility'|'potMaterial';
 export interface FieldEvidence {source:'AI'|'USER'|'DEMO';confidence:number|null;status:'SUGGESTED'|'NEED_INPUT'|'CONFIRMED';evidence:string;}
-export interface CatalogMaterial {id:string;name:string;unit:string;price:number|null;image:string;active:boolean;}
+export interface CatalogMaterial {id:string;name:string;unit:string;price:number|null;image:string;active:boolean;specification?:string;}
 export interface MvpStep {id:string;title:string;instruction:string;speech:string;manual:string;remedy:string;image:string;mode:'manual'|'visual';criteria:{id:string;visible_pass:string;visible_fail:string}[];}
 export interface MvpConfig {
   version:string;status:'DRAFT'|'APPROVED';author:string;createdAt:string;effectiveAt:string;reason:string;

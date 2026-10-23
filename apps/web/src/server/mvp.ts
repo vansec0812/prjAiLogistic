@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { AlternativeId, CaseRecord, MvpBundle, MvpConfig, MvpSelection, MvpPostCheck } from '@plantcare/domain';
 import { inferJourney, proposeMvp } from '../../../../packages/rule-engine/src/mvp';
+import { estimateJourneyWithAi } from './journey-ai';
 import { defaultMvpConfig } from '../lib/mvp-config';
 import { proposePackingDemo, demoPhotoByPath, packingDemoSource } from '../lib/demo-packing';
 import { doc, docs, insertDoc, updateDoc, audit, development } from './db';
@@ -39,7 +40,7 @@ export function selectMvp(owner:string,c:CaseRecord,bundleId:string,alternativeI
 export function selectedMvp(owner:string,c:CaseRecord,allowCompleted=false){const s=selectionFor(owner,c);if(!s)throw new ApiError(422,'SELECTION_REQUIRED','Chọn một phương án trước.');const b=bundleFor(owner,c,s.bundleId,allowCompleted),a=b.alternatives.find(a=>a.id===s.alternativeId);if(!a)throw new ApiError(409,'SELECTION_CHANGED','Phương án không còn khớp.');return {s,b,a};}
 export function mvpSop(owner:string,c:CaseRecord):LiveSop{
   const {b,a}=selectedMvp(owner,c,true);const review=mvpConfigs().find(x=>x.version===b.configVersion)?.expertReview;
-  const source=b.demo?packingDemoSource:'PRD-MVP-20261019';
+  const source=b.demo?b.trace[0]?.id||packingDemoSource:'PRD-MVP-20261019';
   return {id:'mvp-'+b.id+'-'+a.id,plant:'potted',shipping_form:'POTTED',title:a.title,version:b.configVersion,status:b.developmentOnly?'DRAFT':'PUBLISHED',published:!b.developmentOnly,production_enabled:!b.developmentOnly,reviewer:review?.by||null,approved_at:review?.at||null,validation_status:b.developmentOnly?'NOT_EVALUATED':'EXPERT_REVIEWED',completeness:b.demo?'User supplied photo demonstration':'PRD fixed selected alternative',supersedes_research:'',source_ids:[source],scope:b.demo?'Demo theo ảnh mẫu người dùng cung cấp':'Một cây nguyên chậu theo nhóm đã xác nhận',limits:null,steps:a.steps.map(s=>{
     const photo=b.demo?demoPhotoByPath.get(s.image):undefined;
     return {id:s.id,title:s.title,instruction:s.instruction,speech_vi:s.speech,manual:s.manual,image:s.image,...(photo?{reference_image:{path:photo.image,sha256:photo.sha256}}:{}),source_id:source,source_locator:photo?.source||'Tính năng 5–8; mẫu cấu hình '+b.configVersion,mode:s.mode,camera_prompt_vi:'Đưa vùng đang đóng gói vào camera, giữ máy đủ sáng và rõ.',criteria:s.criteria,unverifiable:['Độ chắc, kích thước và phần bị che kín phải kiểm tra trực tiếp.'],remedy_vi:s.remedy,criterion_origin:b.configVersion};
@@ -57,7 +58,7 @@ export function savePostCheckAi(owner:string,c:CaseRecord,g:GuidanceSession,expe
   const p=newPostCheck(owner,c,g);if(p.revision!==expected||p.completedAt)throw new ApiError(409,'VERSION_CONFLICT','Kết quả hậu kiểm đã thay đổi.');
   p.items=p.items.map(item=>{const r=result.criterion_results.find(r=>r.criterion_id===item.id)!;return {...item,status:item.id==='fixation'?'unverifiable':r.status,reason:item.id==='fixation'?'Cần kiểm trực tiếp bằng tay; ảnh không chứng minh chậu không xê dịch.':r.observation,source:'AI'};});p.revision++;p.updatedAt=new Date().toISOString();updateDoc('mvp-postcheck',p.id,owner,p);audit(owner,'MVP_POSTCHECK_AI',p.id);return p;
 }
-export function journeyContext(origin:string,destination:string,departure:string,channel:string){return inferJourney(origin,destination,departure,channel,activeMvpConfig());}
+export async function journeyContext(origin:string,destination:string,departure:string,channel:string){return estimateJourneyWithAi(origin,destination,departure,channel);}
 
 const localImage=z.string().max(300).refine(x=>/^\/(?:illustrations|photos)\/[a-zA-Z0-9._/-]+$/.test(x)&&!x.includes('..'),'Dùng ảnh trong thư viện đã kiểm tra.');
 const stepSchema=z.object({id:z.string().regex(/^[a-z0-9-]{1,40}$/),title:z.string().min(2).max(100),instruction:z.string().min(10).max(1200),speech:z.string().min(10).max(1200),manual:z.string().min(5).max(500),remedy:z.string().min(5).max(500),image:localImage,mode:z.enum(['manual','visual']),criteria:z.array(z.object({id:z.string().max(80),visible_pass:z.string().min(5).max(500),visible_fail:z.string().min(5).max(500)}).strict()).max(10)}).strict().refine(s=>(s.mode==='visual')===(s.criteria.length>0));

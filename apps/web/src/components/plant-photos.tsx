@@ -4,7 +4,7 @@ import { Camera, Upload, X, ScanLine } from 'lucide-react';
 import type { PlantInput } from '@plantcare/domain';
 import { api, useLoad, useSession, Alert } from './common';
 import { visionSchema, type PlantRecognition } from '../lib/plant-recognition';
-import { demoPlantId } from '../lib/demo-plant-profile';
+import { demoPlantProfiles } from '../lib/demo-plant-profile';
 
 /** Bound client uploads also fit comfortably through a deployment proxy. */
 async function preparePhoto(file:File):Promise<File>{
@@ -18,7 +18,7 @@ async function preparePhoto(file:File):Promise<File>{
     if(!blob||blob.size>3*1024*1024)throw new Error('Ảnh còn quá lớn, chọn ảnh nhỏ hơn.');return new File([blob],'plant.jpg',{type:'image/jpeg'});
   }finally{bitmap.close();}
 }
-export function PlantPhotos({caseId,plant,onResult,onSample,onPhotoChange,onBusyChange}:{caseId:string;plant:PlantInput;onPhotoChange?:()=>void;onBusyChange?:(busy:boolean)=>void;onResult:(result:PlantRecognition,snapshot:PlantInput)=>void;onSample?:(snapshot:PlantInput)=>void}){
+export function PlantPhotos({caseId,plant,onResult,onSample,onPhotoChange,onBusyChange}:{caseId:string;plant:PlantInput;onPhotoChange?:()=>void;onBusyChange?:(busy:boolean)=>void;onResult:(result:PlantRecognition,snapshot:PlantInput)=>void;onSample?:(snapshot:PlantInput,sampleId:string)=>void}){
   const {session}=useSession(),{data,reload}=useLoad<{id:string;purpose:string}[]>('uploads?case_id='+caseId);
   const [accepted,setAccepted]=useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -41,7 +41,7 @@ export function PlantPhotos({caseId,plant,onResult,onSample,onPhotoChange,onBusy
     if(session.development&&latest.current.onSample){
       const sample=await api<{sampleId:string|null}>(`cases/${caseId}/plant-demo`,{method:'POST',signal:controller.current?.signal,body:JSON.stringify({upload_id:ids[0]})},session.csrf);
       if(!alive.current||token!==serial.current)return;
-      if(sample.sampleId===demoPlantId){latest.current.onSample(snapshot);setNotice('Đã điền thông số mẫu. Kiểm tra và xác nhận.');return;}
+      if(sample.sampleId&&demoPlantProfiles[sample.sampleId]){latest.current.onSample(snapshot,sample.sampleId);setNotice('Đã điền thông số mẫu. Kiểm tra và xác nhận.');return;}
     }
     if(!session.aiConfigured){setNotice('AI chưa kết nối. Bạn có thể nhập thông tin bên dưới.');return;}
     const consent=await api<{id:string}>('consents',{method:'POST',body:JSON.stringify({purpose:'AI_ANALYSIS',accepted:true}),signal:controller.current?.signal},session.csrf);
