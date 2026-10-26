@@ -12,6 +12,56 @@ function call(a:Actor,p:string,v:any,method:'post'|'patch'='post',key?:string){r
 async function ready(a:Actor){let c=await data(await call(a,'cases',{name:'PRD chuẩn',sample:true}));c.input.plant.weight=1;c.input.plant.fragility='LOW';c.input.shipment.channel='DIRECT';c.input.shipment.distanceKm=35;c.input.shipment.departure=new Date(Date.now()+86400000).toISOString();c=await data(await call(a,'cases/'+c.id,{name:c.name,input:c.input,expected_version:c.version},'patch'));return c;}
 function role(a:Actor,value:string){const db=new DatabaseSync(path.join(process.env.PLANTCARE_TEST_MVP_DATA_DIR!,'plantcare.sqlite'));db.prepare('UPDATE users SET role=? WHERE id=?').run(value,a.session.user.id);db.close();}
 
+for(const fallback of [false,true])test(`departure weather ${fallback?'fallback':'forecast'} displays source and survives save`,async({page})=>{
+  const a=await actor(),c=await ready(a),date=new Date(Date.now()+7*3600000+86400000).toISOString().slice(0,10);
+  const weather={provider:'OPEN_METEO',status:fallback?'FALLBACK':'FORECAST',date,fetchedAt:new Date().toISOString(),locations:fallback?[]:[{name:'Hà Nội',latitude:21,longitude:105},{name:'Đà Nẵng',latitude:16,longitude:108}],...(fallback?{reason:'Không lấy được dự báo thời tiết.'}:{})};
+  const context={distanceKm:35,distanceKind:'STRAIGHT_LINE',duration:24,minTemp:fallback?25:18.4,maxTemp:fallback?32:29.8,source:fallback?'Dữ liệu dự phòng 25–32°C.':'Open-Meteo',seasonalFallback:fallback,configVersion:'test-only',weather};
+  await page.context().addCookies((await a.client.storageState()).cookies);await page.goto(`/app/cases/${c.id}/shipment`);
+  await page.route('**/api/v1/mvp/journey',route=>route.fulfill({json:{data:context}}));
+  await page.getByRole('button',{name:'Ước tính hành trình',exact:true}).click();
+  const min=page.getByLabel('Nhiệt độ tối thiểu (°C)',{exact:true}),max=page.getByLabel('Nhiệt độ tối đa (°C)',{exact:true});
+  await expect(min).toHaveValue(String(context.minTemp));await expect(max).toHaveValue(String(context.maxTemp));
+  if(fallback)await expect(page.locator('.weather-context')).toContainText('Dữ liệu dự phòng 25–32°C');else await expect(page.locator('.weather-context')).toHaveCount(0);
+  await page.getByRole('button',{name:'Lưu nháp',exact:true}).click();await expect(page.getByRole('button',{name:'Lưu nháp',exact:true})).toBeEnabled();
+  const saved=await data(await a.client.get(`/api/v1/cases/${c.id}`));expect(saved.input.shipment.context.weather).toEqual(weather);expect(saved.input.plant).toEqual(c.input.plant);
+  await page.reload();await expect(min).toHaveValue(String(context.minTemp));if(fallback)await expect(page.locator('.weather-context')).toContainText('Dữ liệu dự phòng');else await expect(page.locator('.weather-context')).toHaveCount(0);
+  await page.screenshot({path:`output/qa/weather-${fallback?'fallback':'forecast'}.png`,fullPage:true});
+  await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+2*86400000).toISOString().slice(0,16));
+  await expect(min).toHaveValue('');await expect(max).toHaveValue('');await expect(page.getByLabel('Tôi xác nhận hành trình và các ước tính')).toBeDisabled();
+  await a.client.dispose();
+});
+
+test('late weather response preserves edits made while estimating',async({page})=>{
+  const a=await actor(),c=await ready(a);await page.context().addCookies((await a.client.storageState()).cookies);await page.goto(`/app/cases/${c.id}/shipment`);
+  let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/api/v1/mvp/journey',async route=>{await gate;await route.fulfill({json:{data:{distanceKm:35,distanceKind:'STRAIGHT_LINE',duration:24,minTemp:18,maxTemp:29,source:'Open-Meteo',seasonalFallback:false,configVersion:'test-only'}}});});
+  const pending=page.waitForRequest('**/api/v1/mvp/journey');await page.getByRole('button',{name:'Ước tính hành trình',exact:true}).click();await pending;
+  const min=page.getByLabel('Nhiệt độ tối thiểu (°C)',{exact:true});await min.fill('19');release();
+  await expect(page.getByText('Thông tin vừa thay đổi.',{exact:false})).toBeVisible();await expect(min).toHaveValue('19');await a.client.dispose();
+});
+
+test('temperature season follows entered range and hides legacy fixture source',async({page})=>{
+  const a=await actor(),c=await ready(a);
+  await page.context().addCookies((await a.client.storageState()).cookies);
+  await page.goto(`/app/cases/${c.id}/shipment`);
+  const season=page.getByLabel('Mùa theo nhiệt độ',{exact:true}),min=page.getByLabel('Nhiệt độ tối thiểu (°C)',{exact:true}),max=page.getByLabel('Nhiệt độ tối đa (°C)',{exact:true});
+  await expect(season).toHaveValue('Mùa ấm');await expect(season).toHaveAttribute('readonly','');
+  await page.route('**/api/v1/mvp/journey',route=>route.fulfill({json:{data:{distanceKm:35,distanceKind:'STRAIGHT_LINE',duration:24,minTemp:10,maxTemp:20,source:'Giả định mùa ấm (fixture, chưa có dự báo)',seasonalFallback:true,configVersion:'test-only'}}}));
+  await page.getByRole('button',{name:'Ước tính hành trình',exact:true}).click();
+  await expect(season).toHaveValue('Mùa mát');await expect(page.locator('main')).not.toContainText('fixture');
+  await page.getByRole('button',{name:'Lưu nháp',exact:true}).click();await expect(page.getByRole('button',{name:'Lưu nháp',exact:true})).toBeEnabled();
+  let saved=await data(await a.client.get(`/api/v1/cases/${c.id}`));expect(saved.input.shipment.weatherSource).toBe('Giả định mùa ấm (fixture, chưa có dự báo)');
+  await min.fill('30');await max.fill('34');await expect(season).toHaveValue('Mùa nóng');
+  await expect(page.getByLabel('Tôi xác nhận hành trình và các ước tính')).not.toBeChecked();
+  await min.fill('');await expect(season).toHaveValue('');await expect(page.getByLabel('Tôi xác nhận hành trình và các ước tính')).toBeDisabled();
+  await min.fill('35');await expect(season).toHaveValue('');
+  await min.fill('20');await max.fill('24');await expect(season).toHaveValue('Mùa mát');
+  await page.getByRole('button',{name:'Lưu nháp',exact:true}).click();await expect(page.getByRole('button',{name:'Lưu nháp',exact:true})).toBeEnabled();
+  saved=await data(await a.client.get(`/api/v1/cases/${c.id}`));expect(saved.input.shipment.weatherSource).toBe('Nhiệt độ do người dùng nhập.');expect(saved.input.shipment.context).toBeUndefined();
+  await page.reload();await expect(season).toHaveValue('Mùa mát');await page.screenshot({path:'output/qa/temperature-season.png',fullPage:true});
+  await a.client.dispose();
+});
+
 for(const legacy of [false,true])test(`${legacy?'old unpriced':'new'} photo demo shows the supplied material prices and comparison totals`,async({page})=>{
   const a=await actor(),c=await ready(a),root=`cases/${c.id}`,bundle=await data(await call(a,root+'/mvp/proposals',{case_version:c.version,demo:true},'post',randomUUID()));
   expect(bundle.alternatives.map((alternative:any)=>alternative.cost.total)).toEqual([3400,900]);
@@ -46,7 +96,7 @@ for(const [alternative,count] of [['PA1',6],['PA2',8]] as const)test(`Phu quy sa
   for(const [label,value] of [['Chiều cao tổng (cm)','50'],['Dài tán (cm)','40'],['Rộng tán (cm)','40'],['Đường kính chậu (cm)','20'],['Cao chậu (cm)','25'],['Cả cây + chậu + đất (kg)','5']])await expect(page.getByLabel(label,{exact:true})).toHaveValue(value);
   await expect(page.getByLabel('Độ dễ hư hỏng',{exact:true})).toHaveValue('HIGH');await expect(page.getByLabel('Vật liệu chậu',{exact:true})).toHaveValue('Gốm / sứ');await expect(page.locator('.field-evidence')).toHaveCount(0);await expect(page.locator('main')).not.toContainText('Cần nhập tay');expect(analysisCalls).toBe(0);
   const next=page.getByRole('button',{name:'Xác nhận & nhập hành trình'});await expect(next).toBeDisabled();await page.screenshot({path:`output/qa/phu-quy-${alternative.toLowerCase()}-profile.png`,fullPage:true});await page.getByLabel('Tôi xác nhận thông số cây và chậu đã chính xác').check();await next.click();
-  await page.getByLabel('Nơi đi',{exact:false}).fill('Hà Nội');await page.getByLabel('Nơi đến',{exact:false}).fill('Bắc Ninh');await page.getByLabel('Kênh bán',{exact:false}).selectOption('DIRECT');await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await page.getByRole('button',{name:'Ước tính hành trình'}).click();await page.getByLabel('Tôi xác nhận hành trình và các ước tính').check();await page.getByRole('button',{name:'Xem hai phương án'}).click();await expect(page.locator('.mvp-alternative')).toHaveCount(2);await page.getByRole('button',{name:'Chọn '+alternative,exact:true}).click();await expect(page.locator('.sample-instruction')).toHaveCount(count);
+  await page.getByLabel('Nơi đi',{exact:false}).fill('Hà Nội');await page.getByLabel('Nơi đến',{exact:false}).fill('Bắc Ninh');await page.getByLabel('Kênh bán',{exact:false}).selectOption('DIRECT');await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await page.getByRole('heading',{name:'Hành trình vận chuyển',exact:true}).click();await page.getByRole('button',{name:'Ước tính hành trình'}).click();await page.getByLabel('Tôi xác nhận hành trình và các ước tính').check();await page.getByRole('button',{name:'Xem hai phương án'}).click();await expect(page.locator('.mvp-alternative')).toHaveCount(2);await page.getByRole('button',{name:'Chọn '+alternative,exact:true}).click();await expect(page.locator('.sample-instruction')).toHaveCount(count);
   await expect(page.locator('.mvp-alternative').nth(0).getByRole('heading')).toHaveText('Phương án an toàn nhất');await expect(page.locator('.mvp-alternative').nth(1).getByRole('heading')).toHaveText('Phương án tối ưu chi phí nhất');await expect(page.locator('main')).not.toContainText('bạn cung cấp');await expect(page.locator('main')).not.toContainText('theo bộ ảnh');
   const caseId=page.url().split('/cases/')[1].split('/')[0],saved=await data(await a.client.get('/api/v1/cases/'+caseId));expect(saved.input.plant).toMatchObject({height:50,length:40,width:40,potDiameter:20,potHeight:25,weight:5,fragility:'HIGH',confirmed:true});expect(saved.input.plant.fieldEvidence.weight).toMatchObject({source:'DEMO',confidence:null});
   await page.getByRole('button',{name:'Sử dụng camera AI',exact:true}).click();await page.getByLabel('Đọc hướng dẫn bằng tiếng Việt').uncheck();await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();await expect(page.locator('.guide-step-reference img')).toHaveAttribute('src',`/photos/packing-demo/v1/${alternative.toLowerCase()}/step-1.webp`);expect(analysisCalls).toBe(0);await a.client.dispose();
@@ -69,7 +119,7 @@ for(const alternative of ['PA1','PA2'] as const)test(`updated succulent sample: 
   await expect(page.getByRole('button',{name:'Ước tính hành trình',exact:true})).toBeDisabled();
   if(alternative==='PA1')await page.screenshot({path:'output/qa/succulent-journey-empty.png',fullPage:true});
   await page.getByLabel('Nơi đi',{exact:false}).fill('Hoàng Hoa Thám - Hà Nội');await page.getByLabel('Nơi đến',{exact:false}).fill('Từ Sơn - Bắc Ninh');await page.getByLabel('Kênh bán',{exact:false}).selectOption('SHOPEE');
-  await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await page.getByRole('button',{name:'Ước tính hành trình'}).click();await page.getByLabel('Tôi xác nhận hành trình và các ước tính').check();await page.getByRole('button',{name:'Xem hai phương án'}).click();
+  await page.getByLabel('Ngày giờ gửi',{exact:false}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await page.getByRole('heading',{name:'Hành trình vận chuyển',exact:true}).click();await page.getByRole('button',{name:'Ước tính hành trình'}).click();await page.getByLabel('Tôi xác nhận hành trình và các ước tính').check();await page.getByRole('button',{name:'Xem hai phương án'}).click();
   await expect(page.locator('.mvp-price').nth(0)).toHaveText(/15\.000\s*₫/);await expect(page.locator('.mvp-price').nth(1)).toHaveText(/8\.000\s*₫/);
   const comparison=page.locator('.material-costs'),table=comparison.locator('details table');
   await expect(comparison.getByText('Xem chi tiết',{exact:true})).toBeVisible();await expect(table).toBeHidden();await expect(comparison.locator('h2')).toBeHidden();await expect(comparison.getByText('PA2 tiết kiệm',{exact:false})).toBeHidden();

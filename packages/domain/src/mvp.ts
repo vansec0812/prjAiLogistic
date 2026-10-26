@@ -16,7 +16,7 @@ export interface MvpConfig {
   materials:CatalogMaterial[];
   alternatives:{id:AlternativeId;title:string;description:string;bom:{materialId:string;quantity:number}[];steps:MvpStep[]}[];
 }
-export interface JourneyContext {distanceKm:number|null;distanceKind:'STRAIGHT_LINE'|'USER';duration:number|null;minTemp:number|null;maxTemp:number|null;source:string;seasonalFallback:boolean;configVersion:string;}
+export interface JourneyContext {distanceKm:number|null;distanceKind:'STRAIGHT_LINE'|'USER';duration:number|null;minTemp:number|null;maxTemp:number|null;source:string;seasonalFallback:boolean;configVersion:string;weather?:{provider:'OPEN_METEO';status:'FORECAST'|'FALLBACK';date:string;fetchedAt:string;locations:{name:string;latitude:number;longitude:number}[];reason?:string};}
 export interface MvpAlternative {id:AlternativeId;title:string;description:string;bom:(CatalogMaterial&{quantity:number;subtotal:number|null})[];cost:{known:number;total:number|null};steps:MvpStep[];ruleIds:string[];notes:string[];}
 export interface MvpBundle {id:string;caseId:string;inputHash:string;snapshot:CaseInput;configVersion:string;createdAt:string;developmentOnly:boolean;demo?:boolean;confidenceThreshold?:number;outcome:'READY'|'NEED_INPUT'|'NEEDS_EXPERT';missing:string[];alternatives:MvpAlternative[];suppressed:{id:AlternativeId;reason:string}[];trace:{id:string;reason:string}[];}
 export interface MvpSelection {id:string;caseId:string;bundleId:string;alternativeId:AlternativeId;revision:number;started:boolean;}

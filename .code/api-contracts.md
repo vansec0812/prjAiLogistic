@@ -1,5 +1,9 @@
 # Hợp đồng API logic
 
+### Cập nhật thời tiết MVP — 25/10/2026
+
+`POST /mvp/journey` giữ input origin/destination/departure/channel và kiểm auth/CSRF/ngày tương lai. Min/max lấy từ Open-Meteo cho ngày gửi UTC+7 tại hai tâm tỉnh/thành; lỗi trả HTTP200 với 25–32°C dự phòng theo user. JourneyContext thêm weather tùy chọn `{provider:'OPEN_METEO',status:'FORECAST'|'FALLBACK',date,fetchedAt,locations:[{name,latitude,longitude}],reason?}`; schema PATCH hồ sơ chấp nhận metadata này để lưu/reload. seasonalFallback=true cho fallback, false cho dự báo. Nguồn và thời điểm luôn được giữ; user sửa số thì bỏ context và xác nhận. Đổi nơi đi/đến/ngày/kênh bỏ dữ liệu thời tiết gắn context cũ. Hợp đồng cũ không có weather vẫn đọc được.
+
 Nguồn SRS p.45-51. Prefix `/api/v1`, JSON UTF-8. Các endpoint dưới đây chưa tồn tại; M1/M2 sẽ viết OpenAPI/schema cụ thể và generate client types. Quyền kiểm server và projection DTO riêng cho từng scope.
 
 ## Quy ước

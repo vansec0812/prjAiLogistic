@@ -1,3 +1,4 @@
+import { photoDemoEnabled } from './demo-mode';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkLivePacking } from './live-packing';
 import { listGuidance, startGuidance, advanceGuidance, controlGuidance } from './guidance';
@@ -91,7 +92,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
     db().prepare('SELECT 1 AS ok').get();
     return success({status:'ok',mode:development()?'development':'production-gated',storage:process.env.PLANTCARE_STORAGE==='postgres'?'postgres':'sqlite',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL),smsConfigured:!!process.env.SMS_ADAPTER_URL});
   }
-  if(endpoint==='session'&&method==='GET'){const user=session(req);return success({user:user?{id:user.id,name:user.name,username:user.username,role:user.role}:null,csrf:user?.csrf||null,development:development(),referenceGuideEnabled:development()||process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED==='true',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL)});}
+  if(endpoint==='session'&&method==='GET'){const user=session(req);return success({user:user?{id:user.id,name:user.name,username:user.username,role:user.role}:null,csrf:user?.csrf||null,development:development(),photoDemoEnabled:photoDemoEnabled(),referenceGuideEnabled:development()||process.env.PLANTCARE_REFERENCE_GUIDE_ENABLED==='true',aiConfigured:!!(process.env.GEMINI_API_KEY&&process.env.GEMINI_VISION_MODEL)});}
   if(parts[0]==='articles'&&method==='GET')return success(parts[1]?articles.find(a=>a.slug===parts[1])||null:articles);
   if(parts[0]==='shared'&&method==='GET'){
     const s=db().prepare('SELECT * FROM shares WHERE token_hash=? AND revoked=0 AND expires_at>?').get(sha(parts[1]||''),Date.now()) as {version_id:string;expires_at:number}|undefined;
@@ -103,7 +104,8 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
     if(method!=='POST')throw missing();checkOrigin(req);rateLimit('auth-global',100,60000);
     const value=await body(req);
     if(parts[1]==='dev'||parts[1]==='demo'){
-      return issueSession(demoUser(),{development:true});
+      if(!photoDemoEnabled())throw new ApiError(409,'DEMO_DISABLED','Demo is not enabled.');
+      return issueSession(session(req)||demoUser(),{development:development(),photoDemoEnabled:photoDemoEnabled()});
     }
     if(parts[1]==='register'){
       const data=parse(registerSchema,value);const old=db().prepare('SELECT * FROM users WHERE username=? OR phone=?').get(data.username,data.phone) as unknown as User|undefined;
@@ -230,7 +232,7 @@ async function route(req:NextRequest,parts:string[]):Promise<NextResponse>{
       });wakeWorker();return success({job_id:job.id,status:job.status},202);
     }
     if(parts[2]==='plant-demo'&&method==='POST'){
-      if(!development())throw new ApiError(409,'DEMO_LOCAL_ONLY','Ảnh mẫu chỉ dùng trong chế độ demo local.');
+      if(!photoDemoEnabled())throw new ApiError(409,'DEMO_LOCAL_ONLY','Ảnh mẫu chỉ dùng trong chế độ demo local.');
       if(['PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất.');
       const value=parse(z.object({upload_id:z.string()}).strict(),await body(req)),upload=owned<Upload>('upload',value.upload_id,user.id);
       if(upload.caseId!==c.id||upload.purpose!=='PLANT')throw missing();

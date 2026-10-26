@@ -1,0 +1,13 @@
+.data
+.env*
+apps/web/.env*
+.git
+.agents
+node_modules
+apps/web/.next*
+output
+test-results
+playwright-report
+source
+tests
+.playwright-browsers

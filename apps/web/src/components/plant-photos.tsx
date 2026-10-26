@@ -38,7 +38,7 @@ export function PlantPhotos({caseId,plant,onResult,onSample,onPhotoChange,onBusy
   }
   const photos=(data||[]).filter(p=>p.purpose==='PLANT');
   async function recognize(ids:string[],snapshot:PlantInput,token:number){
-    if(session.development&&latest.current.onSample){
+    if((session.development||session.photoDemoEnabled)&&latest.current.onSample){
       const sample=await api<{sampleId:string|null}>(`cases/${caseId}/plant-demo`,{method:'POST',signal:controller.current?.signal,body:JSON.stringify({upload_id:ids[0]})},session.csrf);
       if(!alive.current||token!==serial.current)return;
       if(sample.sampleId&&demoPlantProfiles[sample.sampleId]){latest.current.onSample(snapshot,sample.sampleId);setNotice('Đã điền thông số mẫu. Kiểm tra và xác nhận.');return;}
@@ -70,6 +70,6 @@ export function PlantPhotos({caseId,plant,onResult,onSample,onPhotoChange,onBusy
     {photos.map(p=><div className="upload-preview" key={p.id}><img src={'/api/v1/uploads/'+p.id} alt="Ảnh cây đã tải"/><button className="icon-button" aria-label="Xóa ảnh cây" disabled={busy} onClick={async()=>{try{await api('uploads/'+p.id,{method:'DELETE'},session.csrf);await reload();}catch(e){setError((e as Error).message);}}}><X size={15}/></button></div>)}</div>
     {camera&&<div className="plant-camera"><video ref={video} autoPlay muted playsInline aria-label="Camera chụp cây"/><div className="button-row"><button className="button primary" disabled={busy} onClick={()=>void capture()}>Chụp ảnh này</button><button className="button secondary" onClick={stopCamera}>Đóng camera</button></div></div>}
     {busy&&<p role="status" className="recognition-status">Đang quét ảnh và tự điền…</p>}{notice&&<Alert kind="info">{notice}</Alert>}{error&&<Alert kind="error">{error}</Alert>}
-    {!!photos.length&&<button className="button secondary small" disabled={busy||!session.aiConfigured&&!session.development||!accepted} onClick={()=>void retry()}>Nhận diện lại</button>}
+    {!!photos.length&&<button className="button secondary small" disabled={busy||!session.aiConfigured&&!(session.development||session.photoDemoEnabled)||!accepted} onClick={()=>void retry()}>Nhận diện lại</button>}
   </section>;
 }

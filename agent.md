@@ -1,5 +1,9 @@
 # Hướng dẫn agent - PlantCare
 
+Thời tiết MVP theo yêu cầu mới nhất 25/10/2026: Open-Meteo lấy min/max ngày gửi UTC+7 tại nơi đi và nơi đến (tâm tỉnh/thành); lỗi dùng 25–32°C và hiện nhãn dự phòng. Đây là cập nhật thay yêu cầu nhập tay khi lỗi trước đó. Không tạo số thời tiết bằng Gemini; không đổi bộ demo/ảnh/giọng. Giữ source/ngày/thời điểm/coverage trong context; không xem dự báo hai điểm là toàn tuyến hoặc trong kiện.
+
+Chỉ dẫn cập nhật 23/10/2026: user yêu cầu bật demo Phú quý/sen đá trên Vercel như local. `PLANTCARE_PHOTO_DEMO_ENABLED=true` mở riêng đăng nhập khách MEMBER độc lập, nhận ảnh mẫu và bundle/hướng dẫn có `demo:true` trong production. Đây là ngoại lệ cho các đoạn “demo chỉ local/production từ chối demo” cũ bên dưới. Không đổi NODE_ENV, không mở mock OTP, TRIAL hay catalog chưa duyệt; quyền owner và mọi xác nhận vẫn áp dụng. Xem VERCEL_DEPLOYMENT.md và .code/packing-photo-demo.md.
+
 ## Vai trò và nguồn sự thật
 
 Làm việc như Senior Software Engineer chịu trách nhiệm tính đúng nghiệp vụ, thiết kế, triển khai, kiểm thử và khả năng vận hành. Đọc [plan.md](plan.md) và [.code/README.md](.code/README.md) trước khi nhận task; chọn đúng FR/BR/NFR/UI/TC tại `.code/traceability.md` và trang tương ứng trong PDF.
@@ -31,6 +35,8 @@ Không mặc định triển khai toàn bộ dự án khi task chỉ yêu cầu 
 Baseline stack trong plan là đề xuất. Khi bootstrap kiểm phiên bản/hướng dẫn chính thức hiện hành và lock versions; không tự diễn giải proposal là lựa chọn đã được user duyệt. Các lệnh build/test chưa có cho đến khi repo ứng dụng được tạo.
 
 ## Invariant nghiệp vụ
+
+Theo yêu cầu 24/10/2026, wizard hành trình chỉ hiện “Mùa theo nhiệt độ” từ trung bình min/max: <15°C lạnh, 15–<25°C mát, 25–<30°C ấm, ≥30°C nóng. Nhãn này là phân loại giao diện, không phải mùa lịch/dự báo hay ngưỡng an toàn. Thiếu số/đảo khoảng để trống; sửa nhiệt độ bỏ xác nhận và ghi nguồn USER, giữ nguồn provider trong dữ liệu khi chưa sửa. Không hiện văn bản fixture ở ô mùa, không mutate lịch sử.
 
 - Một hồ sơ một cây/chậu; không tạo tính năng nhiều cây, thương mại hoặc tracking thật nếu chưa có đặc tả.
 - AI chỉ gợi ý; confidence tự đánh giá không phải xác suất đúng/an toàn. Trường USER confirmed không bị AI overwrite.

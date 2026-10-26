@@ -1,5 +1,15 @@
 # Bằng chứng triển khai website local — 2026-10-12
 
+## Open-Meteo cho hành trình — 25/10/2026
+
+Chỉnh UI tiếp theo theo ảnh user: bỏ khung xanh Open-Meteo/ngày/địa điểm khi dự báo thành công. Nguồn và metadata vẫn lưu, việc lấy nhiệt độ không đổi; chỉ thông báo dự phòng còn hiện khi lỗi. Cập nhật assertion sẵn có cho không có khung thành công, giữ kiểm lưu/reload. Typecheck và diff whitespace PASS; thay đổi hiển thị nhỏ, không chạy lại toàn bộ flow/provider.
+
+Kiểm giao diện: 6 bài thời tiết thành công/dự phòng, lưu/reload, phản hồi muộn, nhãn mùa và giá Phú quý mới/cũ đạt. Hai bài sen đá toàn luồng ban đầu kẹt do menu địa điểm che nút; chỉnh bài kiểm thử đóng menu rồi chạy lại: 2 PASS (PA1 desktop, PA2 mobile), đủ ảnh/bước/hậu kiểm/lưu. Không thay component chọn địa điểm hoặc nới điều kiện nghiệp vụ để test qua. Ảnh đã xem output/qa/weather-forecast.png và weather-fallback.png. Local HTTP200 sau kiểm; chưa kiểm âm thanh/camera vật lý trong task này.
+
+Theo yêu cầu cuối cùng, dùng nguồn thời tiết công khai Open-Meteo thay số Gemini ước tính. Geocoding VN chọn tâm tỉnh/thành trong địa chỉ, lấy min/max ngày gửi UTC+7 của cả hai điểm và gộp cực trị. Timeout toàn lượt 8 giây; ngoài 16 ngày, thiếu địa điểm, dữ liệu thiếu/sai hoặc lỗi mạng trả 25–32°C dự phòng có nguồn/trạng thái rõ. Không giữ kết quả thời tiết cũ khi đổi hành trình; kết quả trả muộn không ghi đè người dùng đang sửa. Metadata nguồn/ngày/thời điểm/tọa độ được schema nhận để lưu/reload. Không sửa bộ cây, giá, ảnh, hướng dẫn hoặc TTS; không migrate hồ sơ cũ.
+
+Typecheck PASS; 37 unit (6 file thời tiết, route, mùa và demo cây) PASS. Smoke thật qua API local hành trình Hoàng Hoa Thám–Hà Nội → Từ Sơn–Bắc Ninh, ngày 26/10/2026: HTTP200 trong 1,866 giây, min 23,3°C/max 31,2°C, seasonalFallback=false, nguồn Open-Meteo, hai tọa độ VN và fetchedAt lưu rõ. Không gọi Gemini trong lượt này. Nguồn kỹ thuật: https://open-meteo.com/en/docs và /en/docs/geocoding-api. Dữ liệu là dự báo tại hai tâm địa danh trong ngày gửi, không phải toàn tuyến hoặc trong kiện. Chỉ cập nhật local, chưa deploy Vercel. Cảnh báo Next 16.4.0 đã ghi trước đó vẫn còn.
+
 Đây là bản ghi bổ sung cho task xây website theo PDF/MD, không thay đổi nội dung SRS hoặc xác nhận R0/R1 đã phát hành. Nguồn yêu cầu và trang vẫn nằm tại `source-index.md`/`traceability.md`; các quyết định còn OPEN tiếp tục có hiệu lực.
 
 ## Vercel và dữ liệu cloud — 21/10/2026
@@ -279,3 +289,14 @@ Chỉnh giao diện kết quả theo yêu cầu tiếp theo: đã bỏ toàn b�
 Theo user, hành trình không được điền sẵn khi tải ảnh sen đá. Đã bỏ `applyDemoJourney` và lời gọi trong callback nhận mẫu; nhận ảnh chỉ thay các trường cây/chậu. Nơi đi, nơi đến, kênh bán và ngày gửi của hồ sơ mới trống, người dùng tự nhập theo kịch bản demo. Không xóa/migrate dữ liệu hành trình đã lưu và không thay mẫu cây, ảnh, giá hoặc các bước đóng gói.
 
 Kiểm thực: typecheck **PASS**, `tests/succulent-demo.test.ts` **5 PASS**; browser `playwright.mvp.config.ts --grep 'updated succulent sample'` **2 PASS**. Cả desktop PA1/mobile PA2 kiểm bốn trường trống và nút ước tính bị khóa, rồi nhập tay Hoàng Hoa Thám - Hà Nội → Từ Sơn - Bắc Ninh, Shopee/ngày thực tế, đi hết hướng dẫn và hậu kiểm. Bằng chứng UI `output/qa/succulent-journey-empty.png`; DB kiểm thử riêng, không gọi Gemini thật. Cập nhật hướng dẫn và ADR hiện hành để bỏ mặc định hành trình.
+## Hosted photo demo — 23/10/2026
+
+### Nhãn mùa theo nhiệt độ — 24/10/2026
+
+Theo user, wizard hiện ô chỉ đọc “Mùa theo nhiệt độ”, lấy trung bình min/max: <15°C lạnh, <25°C mát, <30°C ấm, còn lại nóng. Khoảng thiếu/đảo không hiện nhãn. Giữ dữ liệu nguồn/context khi ước tính; sửa nhiệt độ ghi nguồn người dùng nhập và bỏ xác nhận/context. Không mutate lịch sử hoặc đổi rule đóng gói. Typecheck PASS, 15 unit PASS, E2E nhãn mùa/lưu/reload PASS trên DB thử riêng. Ảnh đã xem output/qa/temperature-season.png: 20–24°C hiện Mùa mát. Local HTTP200; không deploy Vercel hoặc gọi Gemini thật.
+
+Theo yêu cầu bật demo trên Vercel, bổ sung gate `PLANTCARE_PHOTO_DEMO_ENABLED`, khách MEMBER riêng trong production và truyền flag session cho nhận mẫu/đề xuất/hướng dẫn. Giữ production, OTP thật, owner/CSRF và chặn catalog/TRIAL chưa duyệt. `npm.cmd run typecheck` PASS; Vitest cloud-demo/guidance/succulent-demo/live-packing: 49 PASS. Vercel build/typecheck/postbuild PASS, deployment READY `dpl_9yKY6JEXxTw6eugH2Pfx4qyTosu6` trên https://plantcare-logistic.vercel.app.
+
+`output/imports/cloud-demo-smoke.cjs` chạy trên cloud thật: hai khách độc lập; upload/nhận sen-da-20261023-v2 và phu-quy-red-20261020-v1; giá lần lượt 15.000/8.000 và 3.400/900; bắt đầu và kết thúc PA1/PA2 với đủ ảnh, 4/4 và 6/8 bước; cross-owner 404. Không gọi Gemini hoặc kiểm SMS/camera/micro vật lý. Next 16.4.0 vẫn có advisory critical đã ghi trong deployment notes; chưa xử lý trong thay đổi demo.
+
+Chrome cloud xác nhận đăng nhập khách, tạo hồ sơ, nhập tay cây sen đá/hành trình và hiển thị hai PA đúng ảnh bước đầu, 15.000đ/8.000đ, bảng chỉ hiện “Xem chi tiết”. Ảnh QA `output/qa/vercel-succulent-demo.jpg`. Upload qua trình duyệt kiểm thử bị quyền file URL của tiện ích chặn; nhận fixture qua API cloud đã đạt như trên. Không thay quyền tiện ích hoặc suy lỗi app từ giới hạn này.

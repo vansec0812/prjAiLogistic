@@ -8,6 +8,7 @@ import { ApiError, inputHash } from './security';
 import { parse } from './schemas';
 import { plantProfileIssues } from '../lib/plant-recognition';
 import { selectedMvp, mvpSop, selectionFor, mvpConfigs } from './mvp';
+import { canUseBundle } from './demo-mode';
 
 const missing=()=>new ApiError(404,'NOT_FOUND','Không tìm thấy phiên hướng dẫn.');
 export function assertGuidanceCase(c:CaseRecord,mode:'TRIAL'|'REFERENCE'|'MVP'='TRIAL'){
@@ -18,7 +19,7 @@ export function guidanceSop(g:GuidanceSession){const sop=g.mode==='MVP'?g.boundS
 export function ownedGuidance(owner:string,c:CaseRecord,id:string,revision?:number){
   const g=doc<GuidanceSession>('guidance',id,owner);if(!g||g.caseId!==c.id)throw missing();assertGuidanceCase(c,g.mode);
   if(g.inputHash!==inputHash(c.input))throw new ApiError(409,'GUIDANCE_STALE','Đầu vào hồ sơ đã thay đổi. Tạo phiên hướng dẫn mới.');
-  if(g.mode==='MVP'){const {s,b}=selectedMvp(owner,c);if(s.bundleId!==g.bundleId||s.alternativeId!==g.alternativeId||!development()&&b.developmentOnly)throw new ApiError(409,'SELECTION_CHANGED','Phiên không còn thuộc phương án đã chọn.');}
+  if(g.mode==='MVP'){const {s,b}=selectedMvp(owner,c);if(s.bundleId!==g.bundleId||s.alternativeId!==g.alternativeId||!canUseBundle(b))throw new ApiError(409,'SELECTION_CHANGED','Phiên không còn thuộc phương án đã chọn.');}
   if(revision!==undefined&&g.revision!==revision)throw new ApiError(409,'VERSION_CONFLICT','Phiên đã thay đổi ở nơi khác. Tải lại tiến độ.');
   guidanceSop(g);return g;
 }
@@ -28,7 +29,7 @@ export function startGuidance(owner:string,c:CaseRecord,value:unknown){
   if((value as {mode?:string})?.mode==='MVP'){
     const v=parse(z.object({case_version:z.number().int().positive(),mode:z.literal('MVP'),bundle_id:z.string(),alternative_id:z.enum(['PA1','PA2'])}).strict(),value),{s,b}=selectedMvp(owner,c);assertGuidanceCase(c,'MVP');
     if(c.version!==v.case_version||s.bundleId!==v.bundle_id||s.alternativeId!==v.alternative_id)throw new ApiError(409,'SELECTION_CHANGED','Dữ liệu hoặc lựa chọn vừa thay đổi.');
-    if(!development()&&b.developmentOnly)throw new ApiError(409,'SOP_NOT_APPROVED','Quy tắc chưa được chuyên gia duyệt.');
+    if(!canUseBundle(b))throw new ApiError(409,'SOP_NOT_APPROVED','Quy tắc chưa được chuyên gia duyệt.');
     const existing=listGuidance(owner,c).find(g=>g.mode==='MVP'&&!g.stale&&['ACTIVE','FINISHED'].includes(g.status));if(existing)return existing;
     const sop=mvpSop(owner,c),now=new Date().toISOString(),g:GuidanceSession={id:randomUUID(),caseId:c.id,inputHash:b.inputHash,sopId:sop.id,sopVersion:sop.version,context:{species:c.input.plant.name,shop_scope_confirmed:true,pot_cm:c.input.plant.potDiameter,height_cm:c.input.plant.height,packed_kg:null},mode:'MVP',bundleId:b.id,alternativeId:s.alternativeId,boundSop:sop,confidenceThreshold:b.confidenceThreshold??mvpConfigs().find(x=>x.version===b.configVersion)?.confidenceThreshold??70,executionState:'READY',revision:1,index:0,status:'ACTIVE',records:{},checks:{},createdAt:now,updatedAt:now};insertDoc('guidance',g.id,owner,g,'ACTIVE');audit(owner,'GUIDANCE_READY',g.id);return g;
   }

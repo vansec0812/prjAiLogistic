@@ -1,5 +1,9 @@
 # Truy vết yêu cầu PlantCare
 
+Thời tiết hành trình 25/10/2026 (MVP/TC-06/14): dùng Open-Meteo theo ngày/địa điểm, giữ metadata và nguồn, dự phòng 25–32°C theo chỉ dẫn cuối của user. Typecheck và 37 unit đạt; provider thật qua local trả 23,3–31,2°C cho Hà Nội/Bắc Ninh ngày 26/10. Không tác động bộ demo, ảnh, giọng hoặc chấp thuận chuyên môn. Chi tiết tại implementation.md và api-contracts.md.
+
+UI mùa theo nhiệt độ 24/10/2026 (hành trình MVP, TC-06/14): bỏ nhãn giả định/fixture, phân loại theo trung bình min/max. Giữ nguồn dữ liệu riêng, sửa nhiệt độ bỏ xác nhận. Typecheck, 15 unit và 1 E2E lưu/reload đạt; bằng chứng output/qa/temperature-season.png. Chỉ quy ước hiển thị, không là dự báo hay rule chuyên môn mới.
+
 UI bảng chi phí 23/10 (FR-18..21/26, TC-06/14), yêu cầu mới nhất: mặc định chỉ hiện Xem chi tiết; mở mới hiện tiêu đề, BOM, tổng vật tư và dòng tiết kiệm; Thu gọn ẩn toàn bộ nội dung. Typecheck và kiểm mở/đóng bảng sen đá desktop/mobile, Phú quý mới/cũ tại implementation.md.
 
 Chỉnh hành trình sen đá tiếp theo 23/10 (FR-15..21, TC-02/06/14): bỏ preset route/channel, ảnh mẫu chỉ điền cây/chậu. 5 unit và 2 E2E đạt, kiểm bốn ô hành trình trống trước khi nhập tay và tiếp tục trọn flow PA1/PA2; hồ sơ đã lưu không bị xóa. Evidence tại implementation.md.
@@ -132,3 +136,4 @@ Kiểm ảnh/giọng bước 1 ngày 22/10/2026 (FR-18..21/26/53, TC-06/07/13/14
 Giá demo cố định 22/10/2026 (FR-18..21/26, TC-06/14): card và bảng vật liệu dùng mức user cung cấp PA1 3.400đ/PA2 900đ. Bundle demo mới lưu giá, demo cũ null được bổ sung khi hiển thị/export với trace nguồn, không đổi DB, giá đã biết hoặc non-demo. Typecheck, 7 unit/ảnh mẫu và 2 browser case mới/cũ đạt; Chrome hồ sơ cũ thực tế xác nhận bảng. Chi tiết mức giá, phạm vi chi phí và ảnh QA tại packing-photo-demo.md/implementation.md. Không đóng nghiệm thu chuyên môn hay FR/NFR OPEN.
 
 Quota giọng 22/10/2026 (FR-18..21/26/53, TC-06/07/13/14): TTS báo quota Gemini theo ngày và thời điểm thử lại, cooldown key/model lưu DB trước reserve; giữ cache, failure accounting và guard hiện hữu. 12 unit + 4 E2E giả lập + typecheck đạt; key thay theo yêu cầu user, endpoint local với Gemini thật trả WAV HTTP200. Giới hạn provider/teardown/bằng chứng tại implementation.md, không đóng các gate chuyên môn/NFR.
+Hosted photo demo 23/10/2026 (FR-10..21/26, TC-02/06/07/13/14): user cho phép demo ảnh trên cloud qua flag riêng; khách MEMBER riêng, không đổi OTP/catalog approval. Typecheck, 49 unit/integration và Vercel build đạt; smoke cloud thật kiểm cả hai ảnh, hai PA, giá/ảnh/hướng dẫn và owner isolation 404. Chi tiết tại implementation.md và VERCEL_DEPLOYMENT.md. Không đóng các acceptance chuyên môn, accuracy Gemini, SMS hoặc NFR còn OPEN.

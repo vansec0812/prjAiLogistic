@@ -7,6 +7,7 @@ import { defaultMvpConfig } from '../lib/mvp-config';
 import { proposePackingDemo, demoPhotoByPath, packingDemoSource } from '../lib/demo-packing';
 import { doc, docs, insertDoc, updateDoc, audit, development } from './db';
 import { ApiError, inputHash } from './security';
+import { photoDemoEnabled, canUseBundle } from './demo-mode';
 import type { GuidanceSession } from '../lib/guidance';
 import type { LiveSop, LiveStep, CheckpointResult } from '../lib/live-packing';
 
@@ -15,7 +16,7 @@ export function mvpConfigs(){return [defaultMvpConfig,...docs<MvpConfig>('mvp-co
 export function activeMvpConfig(){const active=doc<{version:string}>('mvp-active','current');return mvpConfigs().find(c=>c.version===active?.version)||defaultMvpConfig;}
 export function propose(owner:string,c:CaseRecord,demo=false){
   if(['PACKED','SHIPPED','RECEIVED'].includes(c.status))throw new ApiError(409,'CASE_COMPLETED','Hồ sơ đã hoàn tất. Tạo bản nháp mới.');
-  if(demo&&!development())throw new ApiError(409,'DEMO_LOCAL_ONLY','Bộ ảnh demo chỉ dùng trong chế độ phát triển.');
+  if(demo&&!photoDemoEnabled())throw new ApiError(409,'DEMO_LOCAL_ONLY','Bộ ảnh demo chưa được bật.');
   if(demo&&selectionFor(owner,c)?.started)throw new ApiError(409,'PACKING_STARTED','Kết thúc phiên hiện tại trước khi tạo bộ demo mới.');
   const config=activeMvpConfig(),proposal=demo?proposePackingDemo(c.input,config.confidenceThreshold):proposeMvp(c.input,config,development());
   const bundle:MvpBundle={...proposal,confidenceThreshold:config.confidenceThreshold,id:randomUUID(),caseId:c.id,inputHash:inputHash(c.input),createdAt:new Date().toISOString()};
@@ -32,7 +33,7 @@ export function selectMvp(owner:string,c:CaseRecord,bundleId:string,alternativeI
   const b=bundleFor(owner,c,bundleId),old=selectionFor(owner,c);
   if(old&&old.revision!==revision||!old&&revision!==0)throw new ApiError(409,'VERSION_CONFLICT','Lựa chọn đã đổi. Tải lại phương án.');
   if(old?.started&&old.bundleId===b.id)throw new ApiError(409,'PACKING_STARTED','Đã bắt đầu đóng gói. Kết thúc phiên hiện tại trước khi đổi phương án.');
-  if(b.outcome!=='READY'||!b.alternatives.some(a=>a.id===alternativeId)||!development()&&b.developmentOnly)throw new ApiError(422,'PLAN_INELIGIBLE','Phương án chưa đủ điều kiện áp dụng.');
+  if(b.outcome!=='READY'||!b.alternatives.some(a=>a.id===alternativeId)||!canUseBundle(b))throw new ApiError(422,'PLAN_INELIGIBLE','Phương án chưa đủ điều kiện áp dụng.');
   const selection:MvpSelection={id:c.id,caseId:c.id,bundleId:b.id,alternativeId,revision:(old?.revision||0)+1,started:false};
   if(old)updateDoc('mvp-selection',c.id,owner,selection);else insertDoc('mvp-selection',c.id,owner,selection);
   updateDoc('case',c.id,owner,{...c,status:'PLAN_READY',selectedVersion:b.id},'PLAN_READY');audit(owner,'MVP_SELECTED',b.id);return selection;

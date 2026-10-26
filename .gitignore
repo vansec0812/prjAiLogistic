@@ -14,3 +14,6 @@ output/imports/
 .next-*/
 __pycache__/
 *.py[cod]
+
+.vercel
+.env*

@@ -1,35 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { estimateJourneyWithAi } from '../apps/web/src/server/journey-ai';
-
-describe('Journey AI estimation', () => {
-  it('falls back to rule engine when offline or no API key', async () => {
-    // With dummy invalid key or without key, it gracefully returns rule-based fallback
-    const result = await estimateJourneyWithAi(
-      'Hà Nội',
-      'Bắc Ninh',
-      '2026-11-01T00:00:00.000Z',
-      'DIRECT'
-    );
-
-    expect(result).toBeDefined();
-    expect(result.distanceKm).toBeGreaterThan(0);
-    expect(result.duration).toBeGreaterThan(0);
-    expect(typeof result.minTemp).toBe('number');
-    expect(typeof result.maxTemp).toBe('number');
-    expect(result.distanceKind).toBe('STRAIGHT_LINE');
-    expect(typeof result.source).toBe('string');
+vi.mock('../apps/web/src/server/mvp',async()=>{const {defaultMvpConfig}=await import('../apps/web/src/lib/mvp-config');return {activeMvpConfig:()=>defaultMvpConfig};});
+vi.mock('../apps/web/src/server/journey-weather',()=>({journeyWeather:vi.fn(async()=>({minTemp:18,maxTemp:27,source:'Open-Meteo',seasonalFallback:false}))}));
+afterEach(()=>vi.unstubAllGlobals());
+describe('Journey route and weather integration',()=>{
+  it('keeps route estimates and uses weather temperatures without Gemini calls',async()=>{
+    const network=vi.fn();vi.stubGlobal('fetch',network);
+    const result=await estimateJourneyWithAi('Hà Nội','Bắc Ninh','2026-11-01T00:00:00Z','DIRECT');
+    expect(result.distanceKm).toBeGreaterThan(0);expect(result.duration).toBe(12);
+    expect(result).toMatchObject({minTemp:18,maxTemp:27,source:'Open-Meteo',seasonalFallback:false,distanceKind:'STRAIGHT_LINE'});
+    expect(network).not.toHaveBeenCalled();
   });
-
-  it('handles unknown locations gracefully with fallback', async () => {
-    const result = await estimateJourneyWithAi(
-      'Tỉnh Chưa Biết',
-      'Huyện Chưa Biết',
-      '2026-11-01T00:00:00.000Z',
-      'OTHER'
-    );
-
-    expect(result).toBeDefined();
-    expect(result.distanceKind).toBe('STRAIGHT_LINE');
+  it('keeps distance unknown for unknown places',async()=>{
+    expect((await estimateJourneyWithAi('Chưa rõ','Chưa biết','2026-11-01T00:00:00Z','OTHER')).distanceKm).toBeNull();
   });
 });
-

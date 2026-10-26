@@ -4,6 +4,8 @@ import type { CaseInput, CaseRecord, MaterialInput } from '@plantcare/domain';
 import { emptyInput } from '@plantcare/domain';
 import { db, doc, insertDoc, development } from './db';
 import type { User } from './security';
+import { ApiError } from './security';
+import { photoDemoEnabled } from './demo-mode';
 
 export const sampleInput=():CaseInput=>({
   plant:{name:'Trầu bà xanh',group:'FOLIAGE',height:55,length:30,width:30,potDiameter:18,potHeight:16,weight:3.2,fragility:'MEDIUM',potMaterial:'Nhựa',confirmed:true},
@@ -16,6 +18,12 @@ export const sampleInput=():CaseInput=>({
   ],shipment:{origin:'Hà Nội',destination:'Đà Nẵng',departure:new Date(Date.now()+86400000).toISOString(),duration:36,mode:'Xe tải thường',carrier:'',orientation:'UPRIGHT',minTemp:24,maxTemp:31,weatherSource:'Dữ liệu mẫu phát triển, không phải dự báo thật',confirmed:true,observedAt:new Date().toISOString(),coverage:'ENDPOINTS'},priority:'SAFETY'
 });
 export function demoUser():User{
+  if(!photoDemoEnabled())throw new ApiError(409,'DEMO_DISABLED','Bản dùng thử chưa được bật.');
+  if(!development()){
+    const id='demo-'+randomUUID(),user={id,username:id,phone:id,name:'Khách dùng thử',status:'ACTIVE',role:'MEMBER'};
+    db().prepare('INSERT INTO users VALUES(?,?,?,?,?,?,?,?)').run(id,id,id,user.name,hashSync(randomUUID()+randomUUID(),12),user.status,user.role,new Date().toISOString());
+    return user;
+  }
   const exists=db().prepare('SELECT id,username,phone,name,status,role FROM users WHERE id=?').get('local-demo') as unknown as User|undefined;
   if(exists)return exists;
   const user={id:'local-demo',username:'local_demo',phone:'+84000000000',name:'Vườn của bạn',status:'ACTIVE',role:'MEMBER'};

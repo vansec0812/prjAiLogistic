@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState, useRef, type ReactNode 
 import { Leaf, ArrowRight, AlertCircle, CheckCircle2, LoaderCircle, X, ShieldCheck, Sprout } from 'lucide-react';
 import Link from 'next/link';
 
-export interface Session {user:{id:string;name:string;username:string;role:string}|null;csrf:string|null;development:boolean;aiConfigured:boolean;referenceGuideEnabled?:boolean;}
+export interface Session {user:{id:string;name:string;username:string;role:string}|null;csrf:string|null;development:boolean;photoDemoEnabled?:boolean;aiConfigured:boolean;referenceGuideEnabled?:boolean;}
 export class ClientError extends Error {constructor(message:string,public status:number,public code:string,public fields?:Record<string,string>){super(message);}}
 export const SessionContext=createContext<{session:Session;refresh:()=>Promise<void>;toast:(message:string)=>void}>({session:{user:null,csrf:null,development:false,aiConfigured:false},refresh:async()=>{},toast:()=>{}});
 export const useSession=()=>useContext(SessionContext);

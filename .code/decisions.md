@@ -1,5 +1,9 @@
 # Decision log và câu hỏi triển khai
 
+## Thời tiết hành trình — 25/10/2026
+
+Yêu cầu mới nhất của user thay chỉ dẫn nhập tay khi lỗi trước đó: dùng Open-Meteo không cần key; nếu lỗi vẫn điền 25–32°C với nhãn dữ liệu dự phòng. Lấy dự báo ngày gửi theo giờ Việt Nam tại tâm tỉnh/thành nơi đi và nơi đến, min của hai min/max của hai max; không coi là dự báo toàn tuyến hoặc trong kiện. Giới hạn 16 ngày, timeout toàn lượt 8 giây, thiếu một điểm/thiếu nhiệt độ cũng là fallback. Gemini không tạo số thời tiết. Khoảng cách/ETA giữ suy luận cấu hình hiện có. Không thay cây demo, bundle, ảnh, giọng hoặc lịch sử; chưa deploy cloud trong task này.
+
 Ngày khởi tạo 11/10/2026. **Tất cả quyết định dưới đây còn OPEN hoặc PROPOSED**, chưa có xác nhận từ chủ sản phẩm/chuyên gia. Tài liệu là đề xuất review được, không quyết định production thay người sở hữu.
 
 ## ADR-009: Vercel Functions và Neon riêng — 21/10/2026
@@ -97,5 +101,9 @@ Yêu cầu tiếp theo cùng ngày: bỏ lời nhắc “nói đã xong để ch
 User cung cấp `source/cayphuquy.jpg`, yêu cầu bỏ badge AI/phần trăm/Cần nhập tay và hardcode đúng bộ số để demo. Dùng fingerprint ảnh local thay vì prompt ép Gemini trả số mẫu. Chỉ ảnh này hoặc bản nén/resize khớp mới gợi ý preset; không dùng tên file hay gán số cho mọi cây. Giữ dữ liệu với source=DEMO, confidence=null, chờ xác nhận, không ghi đè USER/late edits. Các gợi ý DEMO chưa sửa có thể bị scan thật tiếp theo thay thế. Giữ fragility HIGH và gốm/sứ; demo chỉ xem cả PA1/PA2 theo source đã có, eligibility thường không đổi. [Chi tiết](packing-photo-demo.md).
 
 ## ADR-009: Demo sen đá riêng, theo bản Word mới — 23/10/2026
+
+### Chỉnh hiển thị mùa theo nhiệt độ — 24/10/2026
+
+User yêu cầu bỏ “Giả định”, “fixture…” ở ô bối cảnh và lấy nhãn mùa từ nhiệt độ min/max. Chọn trung bình hai mức với ngưỡng trình bày <15/lạnh, <25/mát, <30/ấm, còn lại/nóng. Đây là quy ước UI, không là chuẩn khí tượng hoặc rule chuyên môn. Ô mùa chỉ đọc, tính lại cả hồ sơ cũ; không dùng tháng hoặc nội dung source làm nhãn. Giữ source/provider context đã lưu, sửa nhiệt độ thì source là người dùng nhập và bỏ xác nhận. Khoảng thiếu/sai không có nhãn. Không migrate snapshot hoặc đổi dữ liệu dự phòng theo tháng của endpoint ước tính.
 
 User yêu cầu thêm demo thứ hai như Phú quý, sau đó thay dữ liệu bằng `Bản sao của Cây vạn lộc (1).docx`. Bản mới có ảnh nhựa đen, LOW, chậu 8 cm; user xác nhận cao tổng 13 cm. Chọn registry fingerprint/preset riêng, không ép Gemini trả thông số cố định. Preset sen đá và tên Cây sen đá/SUCCULENT trong demo chọn hai phương án 4 bước từ RAR. Tán rộng 12 cm được dùng cho hai chiều của tán tròn; không suy kích thước từ ảnh. BOM 15.000/8.000đ dùng số lượng thực, quy cách và phân bổ phụ trợ; không dùng giá Phú quý. Theo chỉnh sửa tiếp theo: không gợi ý hoặc tự điền route/channel/ngày gửi; người dùng nhập cả bốn trường theo kịch bản demo. Không nâng production gate hoặc mutate lịch sử. [Chi tiết và bằng chứng](packing-photo-demo.md).

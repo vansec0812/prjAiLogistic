@@ -1,5 +1,19 @@
 # Deploy PlantCare lên Vercel
 
+## Demo Phú quý/sen đá trên cloud — 23/10/2026
+
+Theo yêu cầu mới “bật demo Phú quý/sen đá như bản local”, Production đã đặt `PLANTCARE_PHOTO_DEMO_ENABLED=true` và triển khai READY `dpl_9yKY6JEXxTw6eugH2Pfx4qyTosu6` tại https://plantcare-logistic.vercel.app. Đây là ngoại lệ demo ảnh có cấu hình riêng, thay thế các mô tả “demo chỉ local” bên dưới; không đổi NODE_ENV. Có thể tắt bằng cách bỏ flag rồi redeploy.
+
+Nút “Khám phá bản dùng thử trực tiếp” tạo tài khoản MEMBER riêng cho mỗi khách mới; không chia sẻ `local-demo` hoặc seed hồ sơ local. Nhận ảnh mẫu, tạo/chọn PA1/PA2 và hướng dẫn MVP dùng cùng gate. Quyền owner, CSRF, xác nhận số đo/hành trình, checklist và giới hạn AI giữ nguyên. SMS thiếu vẫn fail closed; TRIAL và catalog/rule chưa duyệt không được mở bởi flag.
+
+Cloud smoke thực đã upload hai fixture, nhận đúng `sen-da-20261023-v2` / `phu-quy-red-20261020-v1`, tạo giá 15.000đ/8.000đ và 3.400đ/900đ, khởi chạy cả hai hướng dẫn với đủ ảnh (sen đá 4/4 bước, Phú quý 6/8 bước). Hai khách có ID riêng; truy cập chéo hồ sơ trả 404. Smoke không gọi Gemini, không kiểm camera/micro vật lý hoặc SMS.
+
+## Deployment tài khoản mới — 23/10/2026
+
+Theo yêu cầu và xác thực CLI của user, đã tạo `namnguyen2142006-lab/plantcare-logistic`, root `apps/web`, Next.js/Node 24. Link production: https://plantcare-logistic.vercel.app. Deployment READY `dpl_EtZsEYCGHHHLuJyvHLhXowSyYZDY`. Neon `plantcare-db`, Free `free_v3`, Singapore `sin1`, chỉ kết nối Production sau khi user chấp nhận điều khoản. APP_ORIGIN khớp domain mới, PLANTCARE_STORAGE=postgres; OTP secret ngẫu nhiên mới và Gemini key server lưu Secret, AI quota 100 theo cấu hình local đã được đồng ý. `.vercelignore` loại env/local DB/outputs/source/test khỏi upload; không chuyển dữ liệu local.
+
+Cloud build/typecheck/postbuild PASS; trang chủ, health và session trả HTTP200. Cookie session không tồn tại cũng trả user=null sau truy vấn PostgreSQL, không tạo tài khoản. Chrome đã mở được trang chủ, ảnh `output/qa/vercel-plantcare-live.jpg`. Runtime production-gated, SMS chưa cấu hình, demo local chưa bật trên cloud; không tuyên bố đã kiểm flow đăng ký/OTP, Gemini thật hoặc demo sen đá trên production. Build báo Next 16.4.0 có advisory critical; cần xử lý nâng cấp ở task riêng, không tự chạy audit fix --force. Không kết nối Git tự deploy hoặc nâng gói trả phí.
+
 ## Runtime đang triển khai — 21/10/2026
 
 Theo yêu cầu tự triển khai mới, ứng dụng chạy trực tiếp trên Vercel Node 24 Functions tại `sin1`, dùng database Neon riêng `plantcare-production` trên gói Free. Root Directory là `apps/web`, bật include ngoài root; install/build/output lấy từ `apps/web/vercel.json`.
